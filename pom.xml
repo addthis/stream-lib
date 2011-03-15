@@ -4,7 +4,7 @@
 
   <groupId>com.clearspring.analytics</groupId>
   <artifactId>stream</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>2.0.0</version>
   <name>Analytics Stream Library</name>
   <licenses>
     <license>
