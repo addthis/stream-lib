@@ -1,0 +1,61 @@
+#!/bin/bash
+
+STREAM_LIB_DIR=${STREAM_LIB_DIR:-./target}
+HELP=0
+
+function help () {
+	cat <<-HELP
+	cardinality -- Cardinality estimation command line utility.
+	
+	Usage:     $( basename $0 ) [options] [RATE]
+	
+	Calculates the cardinality of a stream, reporting a summary at the end.
+	cardinality looks for the Stream Summary analytics library at the location
+	of the environment variable STREAM_LIB_DIR (default is ./target).
+	
+	Arguments:
+	    RATE            Report interim summary every RATE elements.
+	
+	Options:
+	    -h              Displays this help.
+	
+	Stream Lib Dir:     ${STREAM_LIB_DIR}
+	
+HELP
+}
+
+function fail () {
+    echo "PREDICTABLE FAILURE. $1"
+    if [ "$2" ]; then 
+        help
+    fi
+    exit 1
+}
+
+SHIFT=0
+function incshift () {
+    SHIFT=$(( $SHIFT + ${1:-1} ))
+}
+
+for opt in $*; do
+    case "$opt" in
+        -h | -he | -hel | -help | --h | --he | --hel | --help ) 
+            HELP=1 ;;
+    esac
+done
+
+while getopts "h" opt; do
+    case $opt in
+        h ) HELP=1; incshift ;;
+        # $opt ) B=$OPTARG; incshift 2 ;;
+    esac
+done
+shift $SHIFT
+
+if test $HELP == 1; then 
+    help
+    exit 0
+fi
+
+java -cp "${STREAM_LIB_DIR}"/stream-*-exec.jar com.clearspring.analytics.util.ObyCount $*
+
