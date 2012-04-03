@@ -140,10 +140,32 @@ public class TestCountThenEstimate
         clone = new CountThenEstimate(cte.getBytes());
         assertCountThenEstimateEquals(cte, clone);
         assertEquals(0, clone.tippingPoint);                
-    }   
+    }
 
-    
-    private void assertCountThenEstimateEquals(CountThenEstimate expected, CountThenEstimate actual) throws IOException
+	@Test
+	public void testAdaptiveCountingSerialization_withHyperLogLog() throws IOException, ClassNotFoundException
+	{
+		CountThenEstimate cte = new CountThenEstimate(3, new HyperLogLog.Builder(0.05));
+		CountThenEstimate clone = new CountThenEstimate(cte.getBytes());
+		assertCountThenEstimateEquals(cte, clone);
+
+		cte.offer("1");
+		cte.offer("2");
+		cte.offer("3");
+
+		assertEquals(3, cte.cardinality());
+		clone = new CountThenEstimate(cte.getBytes());
+		assertCountThenEstimateEquals(cte, clone);
+
+		cte.offer("4");
+		clone = new CountThenEstimate(cte.getBytes());
+		assertCountThenEstimateEquals(cte, clone);
+		assertEquals(0, clone.tippingPoint);
+	}
+
+
+
+	private void assertCountThenEstimateEquals(CountThenEstimate expected, CountThenEstimate actual) throws IOException
     {
         assertEquals(expected.tipped, actual.tipped);
         if(expected.tipped)

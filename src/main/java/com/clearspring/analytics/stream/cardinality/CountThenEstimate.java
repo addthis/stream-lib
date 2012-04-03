@@ -45,7 +45,8 @@ import com.clearspring.analytics.util.IBuilder;
 public class CountThenEstimate implements ICardinality, Externalizable
 {
     protected final static byte LC = 1;
-    protected final static byte AC = 2;    
+    protected final static byte AC = 2;
+	protected final static byte HLC = 3;
     
     /**
      * Cardinality after which exact counting gives way to estimation
@@ -220,6 +221,9 @@ public class CountThenEstimate implements ICardinality, Externalizable
             case AC:
                 estimator = new AdaptiveCounting(bytes);
                 break;
+			case HLC:
+				estimator = new HyperLogLog(HyperLogLog.getBits(bytes));
+				break;
             default:
                 throw new IOException("Unrecognized estimator type: "+type);
             }
@@ -254,6 +258,10 @@ public class CountThenEstimate implements ICardinality, Externalizable
             {
                 out.writeByte(AC);
             }
+			else if(estimator instanceof HyperLogLog)
+			{
+				out.writeByte(HLC);
+			}
             else throw new IOException("Estimator unsupported for serialization: "+estimator.getClass().getName());
             
             byte[] bytes = estimator.getBytes();
