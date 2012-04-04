@@ -52,7 +52,7 @@ public class TestHyperLogLog
 		hll.offer("d");
 		hll.offer("e");
 
-		HyperLogLog hll2 = new HyperLogLog(HyperLogLog.getBits(hll.getBytes()), .05, 100000);
+		HyperLogLog hll2 = HyperLogLog.Builder.build(hll.getBytes());
         assertArrayEquals(hll.getBits(), hll2.getBits());
         assertEquals(hll.cardinality(), hll2.cardinality());
         assertEquals(hll.getRegisterSize(), hll2.getRegisterSize());
