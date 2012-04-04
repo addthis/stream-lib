@@ -152,6 +152,8 @@ public class TestCountThenEstimate
 		cte.offer("1");
 		cte.offer("2");
 		cte.offer("3");
+		cte.offer("3");
+		cte.offer("2");
 
 		assertEquals(3, cte.cardinality());
 		clone = new CountThenEstimate(cte.getBytes());
@@ -159,6 +161,8 @@ public class TestCountThenEstimate
 
 		cte.offer("4");
 		clone = new CountThenEstimate(cte.getBytes());
+		assertEquals(4, clone.cardinality());
+		assertEquals(cte.cardinality(), clone.cardinality());
 		assertCountThenEstimateEquals(cte, clone);
 		assertEquals(0, clone.tippingPoint);
 	}

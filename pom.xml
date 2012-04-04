@@ -15,13 +15,18 @@
 
   <dependencies>
     <dependency>
+      <groupId>it.unimi</groupId>
+      <artifactId>dsiutils</artifactId>
+      <version>2.0.4-ma</version>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.5</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- Test -->
     <dependency>
       <groupId>colt</groupId>
       <artifactId>colt</artifactId>
@@ -45,7 +50,7 @@
       <artifactId>guava</artifactId>
       <version>r03</version>
       <scope>test</scope>
-    </dependency>    
+    </dependency>
   </dependencies>
 
   <build>

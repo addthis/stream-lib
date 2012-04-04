@@ -52,17 +52,18 @@ public class TestHyperLogLog
 		hll.offer("d");
 		hll.offer("e");
 
-		HyperLogLog hll2 = new HyperLogLog(HyperLogLog.getBits(hll.getBytes()), .05);
-        assertArrayEquals(hll.bitVector.bits(), hll2.bitVector.bits());
+		HyperLogLog hll2 = new HyperLogLog(HyperLogLog.getBits(hll.getBytes()), .05, 100000);
+        assertArrayEquals(hll.getBits(), hll2.getBits());
         assertEquals(hll.cardinality(), hll2.cardinality());
-        assertEquals(hll.registerSize, hll2.registerSize);
+        assertEquals(hll.getRegisterSize(), hll2.getRegisterSize());
     }
+
 
 	@Test
 	public void testICardinality()
 	{
-		HyperLogLog hyperLogLog = new HyperLogLog(.005);
-		int size = 5000000;
+		LogLog hyperLogLog = new LogLog.Builder(16).build();
+		int size = 50000000;
 		for (int i = 0; i < size; i++)
 		{
 			hyperLogLog.offer(TestICardinality.streamElement(i));
@@ -70,7 +71,7 @@ public class TestHyperLogLog
 
 		long estimate = hyperLogLog.cardinality();
 		double err = Math.abs(estimate - size) / (double) size;
-		assertTrue(err < .01);
+		assertTrue(err < .1);
 	}
     
     @Test

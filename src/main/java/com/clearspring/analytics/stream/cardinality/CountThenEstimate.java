@@ -222,7 +222,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
                 estimator = new AdaptiveCounting(bytes);
                 break;
 			case HLC:
-				estimator = new HyperLogLog(HyperLogLog.getBits(bytes));
+				estimator = HyperLogLog.Builder.build(bytes);
 				break;
             default:
                 throw new IOException("Unrecognized estimator type: "+type);
