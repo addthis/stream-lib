@@ -17,7 +17,7 @@
     <dependency>
       <groupId>it.unimi</groupId>
       <artifactId>dsiutils</artifactId>
-      <version>2.0.5-ma</version>
+      <version>2.0.5</version>
     </dependency>
 
     <!-- Test -->
