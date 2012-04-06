@@ -62,17 +62,20 @@ public class TestHyperLogLog
 	@Test
 	public void testICardinality()
 	{
-		LogLog hyperLogLog = new LogLog.Builder(16).build();
-		int size = 50000000;
+		long start = System.currentTimeMillis();
+		HyperLogLog hyperLogLog = new HyperLogLog(.03);
+		int size = 10000000;
 		for (int i = 0; i < size; i++)
 		{
 			hyperLogLog.offer(TestICardinality.streamElement(i));
 		}
-
+		System.out.println("time: " + (System.currentTimeMillis() - start));
 		long estimate = hyperLogLog.cardinality();
 		double err = Math.abs(estimate - size) / (double) size;
+		System.out.println(err);
 		assertTrue(err < .1);
 	}
+
     
     @Test
     public void testMerge() throws CardinalityMergeException

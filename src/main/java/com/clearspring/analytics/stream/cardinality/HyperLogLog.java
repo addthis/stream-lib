@@ -2,7 +2,9 @@ package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.IBuilder;
+import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.bits.LongArrayBitVector;
+import it.unimi.dsi.fastutil.longs.LongBigList;
 import it.unimi.dsi.util.IntHyperLogLogCounterArray;
 
 import java.io.*;
@@ -12,6 +14,7 @@ public class HyperLogLog extends IntHyperLogLogCounterArray implements ICardinal
 {
 	private double rsd;
 	private long n;
+	private long sentinelMask;
 	
 	// default of 1 million will give us a bucket size of 5
 	// fact is bucket size remains 5 until several Nmax > several billion
@@ -41,6 +44,7 @@ public class HyperLogLog extends IntHyperLogLogCounterArray implements ICardinal
 		super(1, n, rsd);
 		this.rsd = rsd;
 		this.n = n;
+		sentinelMask = 1L << ( 1 << registerSize ) - 2;
 	}
 
 	/**
@@ -76,7 +80,12 @@ public class HyperLogLog extends IntHyperLogLogCounterArray implements ICardinal
 	 */
 	public boolean offer(Object o)
 	{
-		this.add(0, MurmurHash.hash(o.toString().getBytes()));
+		long x= MurmurHash.hash(o.toString().getBytes());
+		final int j = (int)( x & mMinus1 );
+		final int r = Fast.leastSignificantBit(x >>> log2m | sentinelMask);
+		final LongBigList l = registers[ 0 >>> counterShift ];
+		final long offset = ( ( (long)0 << log2m ) + j ) & CHUNK_MASK;
+		l.set( offset, Math.max( r + 1, l.getLong( offset ) ) );
 		return true;
 	}
 
