@@ -22,17 +22,20 @@ public class RegisterSet
 
 		if (initialValues == null)
 		{
-		if (bits == 0)
-		{
-			this.M = new int[1];
-		} else if (bits % Integer.SIZE == 0)
-		{
-			this.M = new int[bits];
-		} else
-		{
-			this.M = new int[bits+1];
+			if (bits == 0)
+			{
+				this.M = new int[1];
+			}
+			else if (bits % Integer.SIZE == 0)
+			{
+				this.M = new int[bits];
+			}
+			else
+			{
+				this.M = new int[bits + 1];
+			}
 		}
-		} else
+		else
 		{
 			this.M = initialValues;
 		}
@@ -46,14 +49,14 @@ public class RegisterSet
 
 	public void set(int position, int value)
 	{
-		int bucketPos = (int)Math.floor(position / LOG2_BITS_PER_WORD);
+		int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
 		int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
 		this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
 	}
 
 	public int get(int position)
 	{
-		int bucketPos = (int)Math.floor(position / LOG2_BITS_PER_WORD);
+		int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
 		int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
 		return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
 	}
