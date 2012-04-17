@@ -18,7 +18,7 @@ public class RegisterSetTest
 	public void testGetAndSet_allPositions() throws Exception
 	{
 		RegisterSet rs = new RegisterSet((int)Math.pow(2, 4));
-		for (int i = 0; i < Math.pow(2,6); i++)
+		for (int i = 0; i < Math.pow(2,4); i++)
 		{
 			rs.set(i, i % 31);
 			assertEquals(i % 31, rs.get(i));
