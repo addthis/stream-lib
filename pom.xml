@@ -14,11 +14,6 @@
   </licenses>
 
   <dependencies>
-    <dependency>
-      <groupId>it.unimi</groupId>
-      <artifactId>dsiutils</artifactId>
-      <version>2.0.5</version>
-    </dependency>
 
     <!-- Test -->
     <dependency>

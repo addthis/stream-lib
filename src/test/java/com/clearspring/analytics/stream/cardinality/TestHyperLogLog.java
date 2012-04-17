@@ -21,14 +21,15 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestHyperLogLog
 {
     @Test
     public void testComputeCount()
     {
-        HyperLogLog2 hyperLogLog = new HyperLogLog2(.03);
+        HyperLogLog hyperLogLog = new HyperLogLog(16);
         hyperLogLog.offer(0);
         hyperLogLog.offer(1);
 		hyperLogLog.offer(2);
@@ -40,29 +41,27 @@ public class TestHyperLogLog
 		hyperLogLog.offer(19);
         assertEquals(8, hyperLogLog.cardinality());
     }
-
     
     @Test
     public void testSerialization() throws IOException
 	{
-        HyperLogLog2 hll = new HyperLogLog2(.05);
+        HyperLogLog hll = new HyperLogLog(8);
         hll.offer("a");
         hll.offer("b");
 		hll.offer("c");
 		hll.offer("d");
 		hll.offer("e");
 
-		HyperLogLog2 hll2 = HyperLogLog2.Builder.build(hll.getBytes());
+		HyperLogLog hll2 = HyperLogLog.Builder.build(hll.getBytes());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
-
 
 	@Test
 	public void testHighCardinality()
 	{
 		long start = System.currentTimeMillis();
-		HyperLogLog2 hyperLogLog = new HyperLogLog2(.03);
-		int size = 1000000000;
+		HyperLogLog hyperLogLog = new HyperLogLog(10);
+		int size = 10000000;
 		for (int i = 0; i < size; i++)
 		{
 			hyperLogLog.offer(TestICardinality.streamElement(i));
@@ -74,36 +73,53 @@ public class TestHyperLogLog
 		assertTrue(err < .1);
 	}
 
-    
+	@Test
+	public void testHighCardinality_withDefinedRSD()
+	{
+		long start = System.currentTimeMillis();
+		HyperLogLog hyperLogLog = new HyperLogLog(0.01);
+		int size = 10000000;
+		for (int i = 0; i < size; i++)
+		{
+			hyperLogLog.offer(TestICardinality.streamElement(i));
+		}
+		System.out.println("time: " + (System.currentTimeMillis() - start));
+		long estimate = hyperLogLog.cardinality();
+		double err = Math.abs(estimate - size) / (double) size;
+		System.out.println(err);
+		assertTrue(err < .1);
+	}
+
     @Test
     public void testMerge() throws CardinalityMergeException
     {
         int numToMerge = 5;
-        double rds = .05;
+        int bits = 16;
         int cardinality = 1000000;
 
-		HyperLogLog2[] hyperLogLogs = new HyperLogLog2[numToMerge];
-
+		HyperLogLog[] hyperLogLogs = new HyperLogLog[numToMerge];
+		HyperLogLog baseline = new HyperLogLog(bits);
         for(int i=0; i<numToMerge; i++)
         {
-            hyperLogLogs[i] = new HyperLogLog2(rds);
+            hyperLogLogs[i] = new HyperLogLog(bits);
             for(int j=0; j<cardinality; j++)
-                hyperLogLogs[i].offer(Math.random());
+			{
+				double val = Math.random();
+                hyperLogLogs[i].offer(val);
+				baseline.offer(val);
+			}
         }
 
-		HyperLogLog2 baseline = new HyperLogLog2(rds);
-		for (int j = 0; j < cardinality*numToMerge; j++)
-		{
-			baseline.offer(Math.random());
-		}
 
-		long expectedCardinality = baseline.cardinality();
-        HyperLogLog2 hll = hyperLogLogs[0];
-        hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLog2[0]);
+		long expectedCardinality = numToMerge * cardinality;
+        HyperLogLog hll = hyperLogLogs[0];
+        hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLog[0]);
         long mergedEstimate = hll.merge(hyperLogLogs).cardinality();
+		double se = expectedCardinality * (1.04/Math.sqrt(Math.pow(2,bits)));
 
-        double error = Math.abs(mergedEstimate - expectedCardinality) / (double)expectedCardinality;
-		System.out.println(mergedEstimate + ":" + error);
-        assertTrue(error < .1);
+        System.out.println("Expect estimate: " + mergedEstimate + " is between " + (expectedCardinality - (3*se)) + " and " + (expectedCardinality + (3*se)));
+
+		assertTrue(mergedEstimate >= expectedCardinality - (3*se));
+		assertTrue(mergedEstimate <= expectedCardinality + (3*se));
     }
 }
