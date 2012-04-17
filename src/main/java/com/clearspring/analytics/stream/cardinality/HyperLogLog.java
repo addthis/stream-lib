@@ -103,10 +103,10 @@ public class HyperLogLog implements ICardinality
 	 *
 	 * @param registerSet - the initial values for the register set
 	 */
-	public HyperLogLog(RegisterSet registerSet)
+	public HyperLogLog(int log2m, RegisterSet registerSet)
 	{
 		this.registerSet = registerSet;
-		this.log2m = (int)(Math.sqrt(Math.sqrt(registerSet.count)));
+		this.log2m = log2m;
 		this.m = (int) Math.pow(2, this.log2m);
 
 		// See the paper.
@@ -261,7 +261,7 @@ public class HyperLogLog implements ICardinality
 		HyperLogLog merged = null;
 
 		RegisterSet mergedSet = mergeRegisters(estimators);
-		if(mergedSet != null) merged = new HyperLogLog(mergedSet);
+		if(mergedSet != null) merged = new HyperLogLog(estimators[0].log2m, mergedSet);
 
 		return merged;
 	}
@@ -313,7 +313,7 @@ public class HyperLogLog implements ICardinality
 			int size = oi.readInt();
 			byte[] longArrayBytes = new byte[size];
 			oi.readFully(longArrayBytes);
-			return new HyperLogLog(new RegisterSet((int) Math.pow(2, bits), getBits(longArrayBytes)));
+			return new HyperLogLog(bits, new RegisterSet((int) Math.pow(2, bits), getBits(longArrayBytes)));
 		}
 	}
 }
