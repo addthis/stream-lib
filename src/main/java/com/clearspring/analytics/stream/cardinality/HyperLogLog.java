@@ -38,6 +38,8 @@ import java.io.Serializable;
  */
 public class HyperLogLog implements ICardinality
 {
+	private final static int POW_2_32 = (int)Math.pow(2, 32);
+	private final static int NEGATIVE_POW_2_32 = (int)Math.pow(-2, 32);
 
 	private final RegisterSet registerSet;
 	private final int log2m;
@@ -162,12 +164,12 @@ public class HyperLogLog implements ICardinality
 				if(registerSet.get(z) == 0) { zeros++; }
 			}
 			return Math.round(count * Math.log(count / zeros));
-		} else if(estimate <= (1.0/30.0) * Math.pow(2, 32)) {
+		} else if(estimate <= (1.0/30.0) * POW_2_32) {
 			// Intermedia Range Estimate
 			return Math.round(estimate);
-		} else if(estimate > (1.0/30.0) * Math.pow(2, 32)) {
+		} else if(estimate > (1.0/30.0) * POW_2_32) {
 			// Large Range Estimate
-			return Math.round( (Math.pow(-2, 32) * Math.log(1 - (estimate / Math.pow(2, 32)))) );
+			return Math.round( (NEGATIVE_POW_2_32 * Math.log(1 - (estimate / POW_2_32))) );
 		}
 		return 0;
 	}
@@ -282,16 +284,10 @@ public class HyperLogLog implements ICardinality
 	{
 		private int k;
 
-		public Builder()
-		{
-			this(16);
-		}
-
 		public Builder(int k)
 		{
 			this.k = k;
 		}
-
 
 		@Override
 		public HyperLogLog build()
@@ -309,11 +305,11 @@ public class HyperLogLog implements ICardinality
 		{
 			ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 			DataInputStream oi = new DataInputStream(bais);
-			int bits = oi.readInt();
+			int log2m = oi.readInt();
 			int size = oi.readInt();
 			byte[] longArrayBytes = new byte[size];
 			oi.readFully(longArrayBytes);
-			return new HyperLogLog(bits, new RegisterSet((int) Math.pow(2, bits), getBits(longArrayBytes)));
+			return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), getBits(longArrayBytes)));
 		}
 	}
 }
