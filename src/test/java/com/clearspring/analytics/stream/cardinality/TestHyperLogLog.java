@@ -28,7 +28,7 @@ public class TestHyperLogLog
     @Test
     public void testComputeCount()
     {
-        HyperLogLog hyperLogLog = new HyperLogLog(.05);
+        HyperLogLog2 hyperLogLog = new HyperLogLog2(.03);
         hyperLogLog.offer(0);
         hyperLogLog.offer(1);
 		hyperLogLog.offer(2);
@@ -45,26 +45,24 @@ public class TestHyperLogLog
     @Test
     public void testSerialization() throws IOException
 	{
-        HyperLogLog hll = new HyperLogLog(.05);
+        HyperLogLog2 hll = new HyperLogLog2(.05);
         hll.offer("a");
         hll.offer("b");
 		hll.offer("c");
 		hll.offer("d");
 		hll.offer("e");
 
-		HyperLogLog hll2 = HyperLogLog.Builder.build(hll.getBytes());
-        assertArrayEquals(hll.getBits(), hll2.getBits());
+		HyperLogLog2 hll2 = HyperLogLog2.Builder.build(hll.getBytes());
         assertEquals(hll.cardinality(), hll2.cardinality());
-        assertEquals(hll.getRegisterSize(), hll2.getRegisterSize());
     }
 
 
 	@Test
-	public void testICardinality()
+	public void testHighCardinality()
 	{
 		long start = System.currentTimeMillis();
-		HyperLogLog hyperLogLog = new HyperLogLog(.03);
-		int size = 10000000;
+		HyperLogLog2 hyperLogLog = new HyperLogLog2(.03);
+		int size = 1000000000;
 		for (int i = 0; i < size; i++)
 		{
 			hyperLogLog.offer(TestICardinality.streamElement(i));
@@ -81,23 +79,31 @@ public class TestHyperLogLog
     public void testMerge() throws CardinalityMergeException
     {
         int numToMerge = 5;
-        double rds = 0.005;
-        int cardinality = 1000;
+        double rds = .05;
+        int cardinality = 1000000;
 
-		HyperLogLog[] hyperLogLogs = new HyperLogLog[numToMerge];
+		HyperLogLog2[] hyperLogLogs = new HyperLogLog2[numToMerge];
 
         for(int i=0; i<numToMerge; i++)
         {
-            hyperLogLogs[i] = new HyperLogLog(rds);
+            hyperLogLogs[i] = new HyperLogLog2(rds);
             for(int j=0; j<cardinality; j++)
                 hyperLogLogs[i].offer(Math.random());
         }
 
-		int expectedCardinality = numToMerge*cardinality;
-        HyperLogLog hll = hyperLogLogs[0];
-        hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLog[0]);
+		HyperLogLog2 baseline = new HyperLogLog2(rds);
+		for (int j = 0; j < cardinality*numToMerge; j++)
+		{
+			baseline.offer(Math.random());
+		}
+
+		long expectedCardinality = baseline.cardinality();
+        HyperLogLog2 hll = hyperLogLogs[0];
+        hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLog2[0]);
         long mergedEstimate = hll.merge(hyperLogLogs).cardinality();
+
         double error = Math.abs(mergedEstimate - expectedCardinality) / (double)expectedCardinality;
-        assertTrue(error < .01);
+		System.out.println(mergedEstimate + ":" + error);
+        assertTrue(error < .1);
     }
 }

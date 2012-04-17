@@ -10,6 +10,8 @@ import it.unimi.dsi.util.IntHyperLogLogCounterArray;
 import java.io.*;
 import java.nio.ByteBuffer;
 
+import static com.clearspring.analytics.util.Bytes.addByteArray;
+
 public class HyperLogLog extends IntHyperLogLogCounterArray implements ICardinality
 {
 	private double rsd;
@@ -117,70 +119,6 @@ public class HyperLogLog extends IntHyperLogLogCounterArray implements ICardinal
 		return bArray;
 	}
 
-	private void addByteArray(byte[] bArray, int index, long[] bits)
-	{
-		for (long bit : bits)
-		{
-			index = addByteArray(bArray, index, bit);
-		}
-	}
-
-	private int addByteArray(byte[] bArray, int index, int value)
-	{
-		byte[] bytes = int2bytearray(value);
-		for (byte aByte : bytes)
-		{
-			bArray[index++] = aByte;
-		}	
-		return index;
-	}
-
-	private int addByteArray(byte[] bArray, int index, long value)
-	{
-		byte[] bytes = long2bytearray(value);
-		for (byte aByte : bytes)
-		{
-			bArray[index++] = aByte;
-		}
-		return index;
-	}
-
-	private void addByteArray(byte[] bArray, int startIndex, double value)
-	{
-		byte[] bytes = double2bytearray(value);
-		for (byte aByte : bytes)
-		{
-			bArray[startIndex++] = aByte;
-		}
-	}
-
-	
-	private static byte[] long2bytearray(long l)
-	{
-		byte b[] = new byte[8];
-
-		ByteBuffer buf = ByteBuffer.wrap(b);
-		buf.putLong(l);
-		return b;
-	}
-
-	private static byte[] int2bytearray(int i)
-	{
-		byte b[] = new byte[4];
-
-		ByteBuffer buf = ByteBuffer.wrap(b);
-		buf.putInt(i);
-		return b;
-	}
-
-	private static byte[] double2bytearray(double d)
-	{
-		byte b[] = new byte[8];
-
-		ByteBuffer buf = ByteBuffer.wrap(b);
-		buf.putDouble(d);
-		return b;
-	}
 
 
 	@Override
