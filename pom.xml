@@ -119,6 +119,7 @@
     </plugins>        
   </build>
 
+  <!--
   <distributionManagement>
       <repository>
           <id>buildspring.releases</id>
@@ -129,5 +130,6 @@
           <url>http://buildspring/nexus/content/repositories/snapshots</url>
       </snapshotRepository>
   </distributionManagement>
+  -->
 
 </project>
