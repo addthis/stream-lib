@@ -71,7 +71,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(double rsd)
     {
-        this.log2m = (int) (Math.log((1.106 / rsd) * (1.106 / rsd)) / Math.log(2));
+        this.log2m = log2m(rsd);
         this.m = (int) Math.pow(2, this.log2m);
         this.registerSet = new RegisterSet(m);
 
@@ -90,6 +90,11 @@ public class HyperLogLog implements ICardinality
             default:
                 alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
         }
+    }
+
+    private static int log2m(double rsd)
+    {
+        return (int) (Math.log((1.106 / rsd) * (1.106 / rsd)) / Math.log(2));
     }
 
     /**
@@ -323,23 +328,25 @@ public class HyperLogLog implements ICardinality
 
     public static class Builder implements IBuilder<ICardinality>, Serializable
     {
-        private int k;
+        private double rsd;
 
-        public Builder(int k)
+        public Builder(double rsd)
         {
-            this.k = k;
+            this.rsd = rsd;
         }
 
         @Override
         public HyperLogLog build()
         {
-            return new HyperLogLog(k);
+            return new HyperLogLog(rsd);
         }
 
         @Override
         public int sizeof()
         {
-            return RegisterSet.getBits(1 << k) * 4;
+            int log2m = log2m(rsd);
+            int k = (int)Math.pow(2, log2m);
+            return RegisterSet.getBits(k) * 4;
         }
 
         public static HyperLogLog build(byte[] bytes) throws IOException
