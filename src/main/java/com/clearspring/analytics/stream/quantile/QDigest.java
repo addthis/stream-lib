@@ -6,7 +6,7 @@ import java.util.*;
  * Q-Digest datastructure.
  * <p>
  * Answers approximate quantile queries: actual rank of the result of query(q)
- * is in (1-eps)q .. (1+eps)q, where eps = log(sigma)/compressionFactor
+ * is in q-eps .. q+eps, where eps = log(sigma)/compressionFactor
  * and log(sigma) is ceiling of binary log of the largest value inserted,
  * i.e. height of the tree.
  * <p>
