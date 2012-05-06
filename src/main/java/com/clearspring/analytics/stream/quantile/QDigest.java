@@ -57,6 +57,9 @@ public class QDigest implements IQuantileEstimator {
 
     @Override
     public void offer(long value) {
+        if(value < 0 || value == Long.MAX_VALUE) {
+            throw new IllegalArgumentException("Can only accept values in the range 0.." + (Long.MAX_VALUE-1));
+        }
         // Rebuild if the value is too large for the current tree height
         if(value >= capacity) {
             rebuildToCapacity(Long.highestOneBit(value) << 1);
