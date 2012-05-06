@@ -36,7 +36,7 @@ import java.util.*;
  */
 public class QDigest implements IQuantileEstimator {
     private long size;
-    private int logCapacity;
+    private long capacity = 1;
     private double compressionFactor;
     private Map<Long,Long> node2count = new HashMap<Long,Long>();
 
@@ -44,10 +44,10 @@ public class QDigest implements IQuantileEstimator {
 	this.compressionFactor = compressionFactor;
     }
 
-    private long    value2leaf(long  x) { return (1L << logCapacity) + x; }
-    private long    leaf2value(long id) { return id - (1L << logCapacity); }
+    private long    value2leaf(long  x) { return capacity + x; }
+    private long    leaf2value(long id) { return id - capacity; }
     private boolean isRoot    (long id) { return id==1; }
-    private boolean isLeaf    (long id) { return id >= 1L << logCapacity; }
+    private boolean isLeaf    (long id) { return id >= capacity; }
     private long    sibling   (long id) { return (id%2 == 0) ? (id+1) : (id-1); }
     private long    parent    (long id) { return id/2; }
     private long    leftChild (long id) { return 2*id; }
@@ -58,12 +58,8 @@ public class QDigest implements IQuantileEstimator {
     @Override
     public void offer(long value) {
 	// Rebuild if the value is too large for the current tree height
-	if(value >= 1L << logCapacity) {
-	    int newLogCapacity = logCapacity;
-	    while(value >= 1L << newLogCapacity)
-		newLogCapacity++;
-
-	    rebuildToLogCapacity(newLogCapacity);
+	if(value >= capacity) {
+	    rebuildToCapacity(Long.highestOneBit(value) << 1);
 	}
 
 	long leaf = value2leaf(value);
@@ -86,16 +82,16 @@ public class QDigest implements IQuantileEstimator {
 		    "left is " + a.compressionFactor + ", " +
 		    "right is " + b.compressionFactor);
 	}
-	if(a.logCapacity > b.logCapacity)
+	if(a.capacity > b.capacity)
 	    return unionOf(b,a);
 
 	QDigest res = new QDigest(a.compressionFactor);
-	res.logCapacity = a.logCapacity;
+	res.capacity = a.capacity;
 	for(long k : a.node2count.keySet())
 	    res.node2count.put(k, a.node2count.get(k));
 
-	if(b.logCapacity > res.logCapacity)
-	    res.rebuildToLogCapacity(b.logCapacity);
+	if(b.capacity > res.capacity)
+	    res.rebuildToCapacity(b.capacity);
 
 	for(long k : b.node2count.keySet())
 	    res.node2count.put(k, b.get(k) + res.get(k));
@@ -105,7 +101,7 @@ public class QDigest implements IQuantileEstimator {
 	return res;
     }
 
-    private void rebuildToLogCapacity(int newLogCapacity) {
+    private void rebuildToCapacity(long newCapacity) {
 	Map<Long,Long> newNode2count = new HashMap<Long,Long>();
 	// rebuild to newLogCapacity.
 	// This means that our current tree becomes a leftmost subtree
@@ -117,7 +113,7 @@ public class QDigest implements IQuantileEstimator {
 	// nodes 4..7 => 32..35 (+= 28 = 2^2*(2^3-1))
 	// This is easy to see if you draw it on paper.
 	// Process the keys by "layers" in the original tree.
-	long scaleR = (1L << (newLogCapacity - logCapacity)) - 1;
+	long scaleR = newCapacity/capacity - 1;
 	Long[] keys = node2count.keySet().toArray(new Long[node2count.size()]);
 	Arrays.sort(keys);
 	long scaleL = 1;
@@ -126,7 +122,7 @@ public class QDigest implements IQuantileEstimator {
 	    newNode2count.put(k + scaleL*scaleR, node2count.get(k));
 	}
 	node2count = newNode2count;
-	logCapacity = newLogCapacity;
+	capacity = newCapacity;
 	compressFully();
     }
 
