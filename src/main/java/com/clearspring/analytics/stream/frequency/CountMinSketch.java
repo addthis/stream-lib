@@ -1,5 +1,6 @@
 package com.clearspring.analytics.stream.frequency;
 
+import java.io.*;
 import java.util.Random;
 
 /**
@@ -9,13 +10,15 @@ import java.util.Random;
  */
 public class CountMinSketch implements IFrequency {
     public static final long PRIME_MODULUS = (1L << 31) - 1;
-    private final int depth;
-    private final int width;
+    private int depth;
+    private int width;
     private long[][] table;
     private long[] hashA;
     private long size;
     private double eps;
     private double confidence;
+
+    private CountMinSketch() {}
 
     public CountMinSketch(int depth, int width, int seed) {
         this.depth = depth;
@@ -30,7 +33,7 @@ public class CountMinSketch implements IFrequency {
         // 1/2^depth <= 1-confidence ; depth >= -log2 (1-confidence)
         this.eps = epsOfTotalCount;
         this.confidence = confidence;
-        this.width = (int)(2 / epsOfTotalCount);
+        this.width = (int)Math.ceil(2 / epsOfTotalCount);
         this.depth = (int)Math.ceil(-Math.log(1-confidence)/Math.log(2));
         initTablesWith(depth, width, seed);
     }
@@ -44,7 +47,6 @@ public class CountMinSketch implements IFrequency {
         // a,b are chosen independently for each hash function.
         // However they MUST be coprime with p, and it seems that we can set b=0.
         // See http://www.reddit.com/r/compsci/comments/t9iel/what_happens_when_you_use_a_linear_random_number/
-        // It seems that we can set b=0.
         for(int i = 0; i < depth; ++i) {
             hashA[i] = generateRandomCoprime(r, width);
         }
@@ -83,6 +85,13 @@ public class CountMinSketch implements IFrequency {
 
     @Override
     public void add(long item, long count) {
+        if(count < 0) {
+            // Actually for negative increments we'll need to use the median
+            // instead of minimum, and accuracy will suffer somewhat.
+            // Probably makes sense to add an "allow negative increments"
+            // parameter to constructor.
+            throw new IllegalArgumentException("Negative increments not implemented");
+        }
         for(int i = 0; i < depth; ++i) {
             table[i][hash(item, i)] += count;
         }
@@ -105,5 +114,50 @@ public class CountMinSketch implements IFrequency {
             res = Math.min(res, table[i][hash(item, i)]);
         }
         return res;
+    }
+
+    public static byte[] serialize(CountMinSketch sketch) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream s = new DataOutputStream(bos);
+        try {
+            s.writeLong(sketch.size);
+            s.writeInt(sketch.depth);
+            s.writeInt(sketch.width);
+            for(int i = 0; i < sketch.depth; ++i) {
+                s.writeLong(sketch.hashA[i]);
+                for(int j = 0; j < sketch.width; ++j) {
+                    s.writeLong(sketch.table[i][j]);
+                }
+            }
+            return bos.toByteArray();
+        } catch(IOException e) {
+            // Shouldn't happen
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static CountMinSketch deserialize(byte[] data) {
+        ByteArrayInputStream bis = new ByteArrayInputStream(data);
+        DataInputStream s = new DataInputStream(bis);
+        try {
+            CountMinSketch sketch = new CountMinSketch();
+            sketch.size = s.readLong();
+            sketch.depth = s.readInt();
+            sketch.width = s.readInt();
+            sketch.eps = 2.0/sketch.width;
+            sketch.confidence = 1-1/Math.pow(2, sketch.depth);
+            sketch.hashA = new long[sketch.depth];
+            sketch.table = new long[sketch.depth][sketch.width];
+            for(int i = 0; i < sketch.depth; ++i) {
+                sketch.hashA[i] = s.readLong();
+                for(int j = 0; j < sketch.width; ++j) {
+                    sketch.table[i][j] = s.readLong();
+                }
+            }
+            return sketch;
+        } catch(IOException e) {
+            // Shouldn't happen
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -28,6 +28,8 @@ public class CountMinSketchTest {
         int[] actualFreq = new int[1 << maxScale];
         for(int x : xs) actualFreq[x]++;
 
+        sketch = CountMinSketch.deserialize(CountMinSketch.serialize(sketch));
+
         int numErrors = 0;
         for(int i = 0; i < actualFreq.length; ++i) {
             double ratio = 1.0 * (sketch.estimateCount(i) - actualFreq[i])/xs.length;
