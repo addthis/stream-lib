@@ -17,6 +17,9 @@ public class QDigestTest {
 		digest.offer(i*i);
 	    }
 	}
+
+	digest = QDigest.deserialize(QDigest.serialize(digest));
+
 	int logCapacity = 1;
 	for(long scale = 1; scale < max; scale *= 2, logCapacity++)
 	    ;

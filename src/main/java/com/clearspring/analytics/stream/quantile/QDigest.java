@@ -1,5 +1,6 @@
 package com.clearspring.analytics.stream.quantile;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -221,4 +222,44 @@ public class QDigest implements IQuantileEstimator {
 	return ranges;
     }
 
+    public static byte[] serialize(QDigest d) {
+	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	DataOutputStream s = new DataOutputStream(bos);
+	try {
+	    s.writeLong(d.size);
+	    s.writeDouble(d.compressionFactor);
+	    s.writeLong(d.capacity);
+	    s.writeInt(d.node2count.size());
+	    for(long k : d.node2count.keySet()) {
+		s.writeLong(k);
+		s.writeLong(d.node2count.get(k));
+	    }
+	    return bos.toByteArray();
+	} catch(IOException e) {
+	    // Should never happen
+	    throw new RuntimeException(e);
+	}
+    }
+
+    public static QDigest deserialize(byte[] b) {
+	ByteArrayInputStream bis = new ByteArrayInputStream(b);
+	DataInputStream s = new DataInputStream(bis);
+	try {
+	    long size = s.readLong();
+	    double compressionFactor = s.readLong();
+	    long capacity = s.readLong();
+	    int count = s.readInt();
+	    QDigest d = new QDigest(compressionFactor);
+	    d.size = size;
+	    d.capacity = capacity;
+	    for(int i = 0; i < count; ++i) {
+		long k = s.readLong();
+		long n = s.readLong();
+		d.node2count.put(k, n);
+	    }
+	    return d;
+	} catch(IOException e) {
+	    throw new RuntimeException(e);
+	}
+    }
 }
