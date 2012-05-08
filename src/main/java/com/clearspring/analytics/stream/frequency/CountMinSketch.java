@@ -45,28 +45,11 @@ public class CountMinSketch implements IFrequency {
         // We're using a linear hash functions
         // of the form (a*x+b) mod p.
         // a,b are chosen independently for each hash function.
-        // However they MUST be coprime with p, and it seems that we can set b=0.
-        // See http://www.reddit.com/r/compsci/comments/t9iel/what_happens_when_you_use_a_linear_random_number/
+        // However we can set b = 0 as all it does is shift the results
+        // without compromising their uniformity or independence with
+        // the other hashes.
         for(int i = 0; i < depth; ++i) {
-            hashA[i] = generateRandomCoprime(r, width);
-        }
-    }
-
-    private static int gcd(int a, int b) {
-        if(a<0) a=-a;
-        if(b<0) b=-b;
-        while(a != 0 && b != 0) {
-            if(a>b) a%=b;
-            else b%=a;
-        }
-        return a+b;
-    }
-
-    private static int generateRandomCoprime(Random r, int other) {
-        while(true) {
-            int x = r.nextInt(Integer.MAX_VALUE);
-            if(gcd(x,other) == 1)
-                return x;
+            hashA[i] = r.nextInt(Integer.MAX_VALUE);
         }
     }
 
@@ -79,8 +62,14 @@ public class CountMinSketch implements IFrequency {
     }
 
     private int hash(long item, int i) {
-        long res = ((hashA[i] * item) % PRIME_MODULUS) % width;
-        return (int) res;
+        long hash = hashA[i] * item;
+        // A super fast way of computing x mod 2^p-1
+        // See http://www.cs.princeton.edu/courses/archive/fall09/cos521/Handouts/universalclasses.pdf
+        // page 149, right after Proposition 7.
+        hash += hash>>32;
+        hash &= PRIME_MODULUS;
+        // Doing "%" after (int) conversion is ~2x faster than %'ing longs.
+        return ((int) hash) % width;
     }
 
     @Override
