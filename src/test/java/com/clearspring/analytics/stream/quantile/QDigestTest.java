@@ -25,7 +25,10 @@ public class QDigestTest
         digest = QDigest.deserialize(QDigest.serialize(digest));
 
         int logCapacity = 1;
-
+        for (long scale = 1; scale < max; scale *= 2, logCapacity++)
+        {
+            ;
+        }
         double eps = logCapacity / compressionFactor;
 
         for (double i = 0; i < 1; i += 0.1)
