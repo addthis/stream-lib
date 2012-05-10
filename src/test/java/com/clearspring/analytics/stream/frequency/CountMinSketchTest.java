@@ -6,15 +6,18 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
-public class CountMinSketchTest {
+public class CountMinSketchTest
+{
     @Test
-    public void testAccuracy() {
+    public void testAccuracy()
+    {
         int seed = 7364181;
         Random r = new Random(seed);
         int numItems = 1000000;
         int[] xs = new int[numItems];
         int maxScale = 20;
-        for(int i = 0; i < xs.length; ++i) {
+        for (int i = 0; i < xs.length; ++i)
+        {
             int scale = r.nextInt(maxScale);
             xs[i] = r.nextInt(1 << scale);
         }
@@ -23,17 +26,25 @@ public class CountMinSketchTest {
         double confidence = 0.99;
 
         CountMinSketch sketch = new CountMinSketch(epsOfTotalCount, confidence, seed);
-        for(int x : xs) sketch.add(x, 1);
+        for (int x : xs)
+        {
+            sketch.add(x, 1);
+        }
 
         int[] actualFreq = new int[1 << maxScale];
-        for(int x : xs) actualFreq[x]++;
+        for (int x : xs)
+        {
+            actualFreq[x]++;
+        }
 
         sketch = CountMinSketch.deserialize(CountMinSketch.serialize(sketch));
 
         int numErrors = 0;
-        for(int i = 0; i < actualFreq.length; ++i) {
-            double ratio = 1.0 * (sketch.estimateCount(i) - actualFreq[i])/xs.length;
-            if(ratio > 1.0001) {
+        for (int i = 0; i < actualFreq.length; ++i)
+        {
+            double ratio = 1.0 * (sketch.estimateCount(i) - actualFreq[i]) / xs.length;
+            if (ratio > 1.0001)
+            {
                 numErrors++;
             }
         }
