@@ -43,6 +43,10 @@ and configured:
    
 And you should be all set.
 
+## Where People Hang Out
+
+Mailing list: http://groups.google.com/group/stream-lib-user
+
 
 ## Sources
 
