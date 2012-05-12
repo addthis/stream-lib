@@ -18,22 +18,11 @@
 
 package com.clearspring.analytics.stream.membership;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.BitSet;
-
-import com.clearspring.analytics.stream.membership.ICompactSerializer;
 
 public class BloomFilter extends Filter
 {
-    static ICompactSerializer<BloomFilter> serializer_ = new BloomFilterSerializer();
-
-    public static ICompactSerializer<BloomFilter> serializer()
-    {
-        return serializer_;
-    }
-
     private BitSet filter_;
 
     public BloomFilter(int numElements, int bucketsPerElement)
@@ -123,11 +112,6 @@ public class BloomFilter extends Filter
         return filter_.toString();
     }
 
-    ICompactSerializer tserializer()
-    {
-        return serializer_;
-    }
-
     int emptyBuckets()
     {
         int n = 0;
@@ -149,48 +133,30 @@ public class BloomFilter extends Filter
         return new BloomFilter(1, set);
     }
     
-    public static byte[] serialize(BloomFilter filter)
+    public static byte[] serialize(BloomFilter filter) throws IOException
     {
-        DataOutputBuffer out = new DataOutputBuffer();
-        try
-        {
-            BloomFilter.serializer().serialize(filter, out);
-            out.close();
-        }
-        catch (IOException e) { e.printStackTrace(); }
-        
-        return out.getData();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        dos.writeInt(filter.getHashCount());
+        ObjectOutputStream oos = new ObjectOutputStream(dos);
+        oos.writeObject(filter.filter());
+        oos.flush();
+        return baos.toByteArray();
     }
     
-    public static BloomFilter deserialize(byte[] bytes)
+    public static BloomFilter deserialize(byte[] bytes) throws IOException
     {
-        BloomFilter filter = null;
-        DataInputBuffer in = new DataInputBuffer();
-        in.reset(bytes, bytes.length);
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        DataInputStream dis = new DataInputStream(bais);
+        int hashes = dis.readInt();
+        ObjectInputStream ois = new ObjectInputStream(dis);
         try
         {
-            filter = BloomFilter.serializer().deserialize(in);
-            in.close();
+            return new BloomFilter(hashes, (BitSet) ois.readObject());
         }
-        catch (IOException e) { e.printStackTrace(); }
-
-        return filter;
-    }    
-}
-
-class BloomFilterSerializer implements ICompactSerializer<BloomFilter>
-{
-    public void serialize(BloomFilter bf, DataOutputStream dos)
-            throws IOException
-    {
-        dos.writeInt(bf.getHashCount());
-        BitSetSerializer.serialize(bf.filter(), dos);
-    }
-
-    public BloomFilter deserialize(DataInputStream dis) throws IOException
-    {
-        int hashes = dis.readInt();
-        BitSet bs = BitSetSerializer.deserialize(dis);
-        return new BloomFilter(hashes, bs);
+        catch (ClassNotFoundException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }

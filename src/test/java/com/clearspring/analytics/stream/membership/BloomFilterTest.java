@@ -93,7 +93,10 @@ public class BloomFilterTest
     @Test
     public void testSerialize() throws IOException
     {
-        FilterTest.testSerialize(bf);
+        bf.add("a");
+        BloomFilter f2 = BloomFilter.deserialize(BloomFilter.serialize(bf));
+        assertTrue(f2.isPresent("a"));
+        assertFalse(f2.isPresent("b"));
     }
 
     @Test
@@ -219,7 +222,7 @@ public class BloomFilterTest
         BloomFilter f = null;
         
         assertEquals(128, (f = new BloomFilter(10, 0.05)).buckets());
-        assertEquals(93, serialize(f).length);
+        assertEquals(93, BloomFilter.serialize(f).length);
         
         assertEquals(768, new BloomFilter(100, 0.05).buckets());
         assertEquals(7040, new BloomFilter(1000, 0.05).buckets());
@@ -230,21 +233,21 @@ public class BloomFilterTest
         assertEquals(128, new BloomFilter(10, 0.01).buckets());
         assertEquals(1024, new BloomFilter(100, 0.01).buckets());
         assertEquals(10048, (f = new BloomFilter(1000, 0.01)).buckets());
-        assertEquals(1333, serialize(f).length);
+        assertEquals(1333, BloomFilter.serialize(f).length);
         
         assertEquals(100032, (f = new BloomFilter(10000, 0.01)).buckets());
-        assertEquals(12581, serialize(f).length);
+        assertEquals(12581, BloomFilter.serialize(f).length);
         
         assertEquals(1000064, (f = new BloomFilter(100000, 0.01)).buckets());
-        assertEquals(125085, serialize(f).length);
+        assertEquals(125085, BloomFilter.serialize(f).length);
         
         assertEquals(10000064, (f = new BloomFilter(1000000, 0.01)).buckets());
-        assertEquals(1250085, serialize(f).length);
+        assertEquals(1250085, BloomFilter.serialize(f).length);
         
         for(String s : new RandomStringGenerator(new Random().nextInt(), 1000000))
             f.add(s);
         assertEquals(10000064, f.buckets());
-        assertEquals(1250085, serialize(f).length);
+        assertEquals(1250085, BloomFilter.serialize(f).length);
             
     }
     
@@ -254,19 +257,11 @@ public class BloomFilterTest
     {
         for(int i = 0; i<1000; i++)
         {
-        BloomFilter f = new BloomFilter(1000000, 0.01);
-        serialize(f);
+            BloomFilter f = new BloomFilter(1000000, 0.01);
+            BloomFilter.serialize(f);
         }
     }
-    
-    private byte[] serialize(BloomFilter f) throws IOException
-    {
-        DataOutputBuffer out = new DataOutputBuffer();
-        f.getSerializer().serialize(f, out);
-        out.close();
-        return out.getData();
-    }
-    
+
     /* TODO move these into a nightly suite (they take 5-10 minutes each) */
     @Ignore
     @Test

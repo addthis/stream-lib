@@ -28,9 +28,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.clearspring.analytics.stream.membership.DataInputBuffer;
-import com.clearspring.analytics.stream.membership.DataOutputBuffer;
-
 public class FilterTest
 {
     public void testManyHashes(Iterator<String> keys)
@@ -97,21 +94,6 @@ public class FilterTest
 
         double fp_ratio = fp / (keys.size() * BloomCalculations.probs[spec.bucketsPerElement][spec.K]);
         assertTrue("FP ratio: "+fp_ratio, fp_ratio < 1.03);
-    }
-
-    public static Filter testSerialize(Filter f) throws IOException
-    {
-        f.add("a");
-        DataOutputBuffer out = new DataOutputBuffer();
-        f.getSerializer().serialize(f, out);
-
-        DataInputBuffer in = new DataInputBuffer();
-        in.reset(out.getData(), out.getLength());
-        Filter f2 = f.getSerializer().deserialize(in);
-
-        assertTrue(f2.isPresent("a"));
-        assertFalse(f2.isPresent("b"));
-        return f2;
     }
 
 }

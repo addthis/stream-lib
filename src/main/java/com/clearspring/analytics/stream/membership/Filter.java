@@ -52,21 +52,6 @@ public abstract class Filter
     // for testing
     abstract int emptyBuckets();
 
-    @SuppressWarnings("unchecked")
-    ICompactSerializer<Filter> getSerializer()
-    {
-        Method method = null;
-        try
-        {
-            method = getClass().getMethod("serializer");
-            return (ICompactSerializer<Filter>) method.invoke(null);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     // Murmur is faster than an SHA-based approach and provides as-good collision
     // resistance.  The combinatorial generation approach described in
     // http://www.eecs.harvard.edu/~kirsch/pubs/bbbf/esa06.pdf
