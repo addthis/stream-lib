@@ -17,18 +17,14 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import com.clearspring.analytics.util.ExternalizableUtil;
 import com.clearspring.analytics.util.IBuilder;
 
 /**
@@ -47,7 +43,8 @@ public class CountThenEstimate implements ICardinality, Externalizable
     protected final static byte LC = 1;
     protected final static byte AC = 2;
 	protected final static byte HLC = 3;
-    
+	protected final static byte LLC = 4;
+
     /**
      * Cardinality after which exact counting gives way to estimation
      */
@@ -105,15 +102,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
      */
     public CountThenEstimate(byte[] bytes) throws IOException, ClassNotFoundException
     {
-        ObjectInput in = null;
-        try
-        {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            in = new ObjectInputStream(bais);
-            readExternal(in);
-        }
-        finally { if(in != null) in.close(); }
-        
+        readExternal(new ObjectInputStream(new ByteArrayInputStream(bytes)));
         if(!tipped && builder.sizeof() <= bytes.length) tip();
     }
     
@@ -172,7 +161,6 @@ public class CountThenEstimate implements ICardinality, Externalizable
         }
         
         counter = null;
-        builder = null;
         tipped = true;
     }
     
@@ -181,25 +169,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
     @Override
     public byte[] getBytes() throws IOException 
     {
-        byte[] bytes = null;
-        ObjectOutput out = null;
-        ByteArrayOutputStream baos = null;
-        
-        try
-        {
-            baos = new ByteArrayOutputStream();            
-            out = new ObjectOutputStream(baos);
-            this.writeExternal(out);
-        }
-        finally { if(out != null) out.close(); }
-        
-        try
-        {
-            bytes = baos.toByteArray();
-        } 
-        catch (Exception e) { throw new IOException(e); }       
-                
-        return bytes;
+        return ExternalizableUtil.toBytes(this);
     }
     
     @SuppressWarnings("unchecked")
@@ -224,6 +194,9 @@ public class CountThenEstimate implements ICardinality, Externalizable
 			case HLC:
 				estimator = HyperLogLog.fromBytes(bytes);
 				break;
+			case LLC:
+				estimator = new LogLog(bytes);
+				break;
             default:
                 throw new IOException("Unrecognized estimator type: "+type);
             }
@@ -232,16 +205,10 @@ public class CountThenEstimate implements ICardinality, Externalizable
         {
             tippingPoint = in.readInt();
             builder = (IBuilder)in.readObject();
-            int count = in.readInt();
-            
-            assert (count <= tippingPoint) : String.format("Invalid serialization: count (%d) > tippingPoint (%d)", count, tippingPoint);
-            
-            counter = new HashSet<Object>(count);
-            for(int i=0; i<count; i++)
-            {
-                counter.add(in.readObject());
-            }
-        }        
+            counter = (Set<Object>)in.readObject();
+            assert (counter.size() <= tippingPoint) :
+                    String.format("Invalid serialization: count (%d) > tippingPoint (%d)", counter.size(), tippingPoint);
+        }
     }
 
     @Override
@@ -262,6 +229,10 @@ public class CountThenEstimate implements ICardinality, Externalizable
 			{
 				out.writeByte(HLC);
 			}
+            else if(estimator instanceof LogLog)
+            {
+                out.writeByte(LLC);
+            }
             else throw new IOException("Estimator unsupported for serialization: "+estimator.getClass().getName());
             
             byte[] bytes = estimator.getBytes();
@@ -272,41 +243,25 @@ public class CountThenEstimate implements ICardinality, Externalizable
         {
             out.writeInt(tippingPoint);
             out.writeObject(builder);
-            out.writeInt(counter.size());
-            for(Object o : counter)
-            {
-                out.writeObject(o);
-            }
+            out.writeObject(counter);
         }
     }
 
     @Override
-    public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException 
+    public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        CountThenEstimate[] ces = new CountThenEstimate[numEstimators+1];
-        if(numEstimators > 0)
+        if(estimators == null || estimators.length == 0)
         {
-            for(int i=0; i<numEstimators; i++)
-            {
-                if(estimators[i] instanceof CountThenEstimate)
-                {
-                    ces[i] = (CountThenEstimate)estimators[i];
-                }
-                else
-                {
-                    throw new CountThenEstimateMergeException("Unable to merge CountThenEstimate with "+estimators[i].getClass().getName());
-                }
-            }
+            return this;
         }
-        ces[numEstimators] = this;
-        return CountThenEstimate.mergeEstimators(ces);
-    }    
-    
+        CountThenEstimate[] all = Arrays.copyOf(estimators, estimators.length+1, CountThenEstimate[].class);
+        all[all.length-1] = this;
+        return mergeEstimators(all);
+    }
+
     /**
      * Merges estimators to produce an estimator for their combined streams
-     * 
-     * @param estimators
+     *
      * @return merged estimator or null if no estimators were provided
      * @throws CountThenEstimateMergeException if estimators are not mergeable (all must be CountThenEstimate made with the same builder)
      */
@@ -315,10 +270,10 @@ public class CountThenEstimate implements ICardinality, Externalizable
         CountThenEstimate merged = null;
         int numEstimators = (estimators == null) ? 0 : estimators.length;
         if (numEstimators > 0)
-        {           
+        {
             List<ICardinality> tipped = new ArrayList<ICardinality>(numEstimators);
-            List<CountThenEstimate> untipped = new ArrayList<CountThenEstimate>(numEstimators);            
-            
+            List<CountThenEstimate> untipped = new ArrayList<CountThenEstimate>(numEstimators);
+
             for(CountThenEstimate estimator : estimators)
             {
                 if(estimator.tipped)
@@ -330,12 +285,12 @@ public class CountThenEstimate implements ICardinality, Externalizable
                     untipped.add(estimator);
                 }
             }
-            
+
             if(untipped.size() > 0)
             {
                 merged = new CountThenEstimate(0, untipped.get(0).builder);
                 merged.tip();
-            
+
                 for(CountThenEstimate cte : untipped)
                 {
                     for(Object o : cte.counter)
@@ -350,10 +305,10 @@ public class CountThenEstimate implements ICardinality, Externalizable
                 merged.tip();
                 merged.estimator = tipped.remove(0);
             }
-            
+
             merged.estimator = merged.estimator.merge(tipped.toArray(new ICardinality[tipped.size()]));
-                    
-        }        
+
+        }
         return merged;
     }
     
