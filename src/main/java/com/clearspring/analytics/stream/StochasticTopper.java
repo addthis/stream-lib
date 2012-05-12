@@ -41,10 +41,6 @@ public class StochasticTopper<T> implements ITopK<T>
         this(sampleSize, null);
     }
     
-    /**
-     * 
-     * 
-     */
     public StochasticTopper(int sampleSize, Long seed)
     {
         this.sample = new SampleSet<T>(sampleSize);
@@ -56,21 +52,16 @@ public class StochasticTopper<T> implements ITopK<T>
             random = new Random();
     }
     
-    /**
-     * 
-     * @param item
-     * @return
-     */
     public boolean offer(T item)
     {
         count++;
         boolean taken = false;
-        if(sample.count() < sampleSize)
+        if (sample.count() < sampleSize)
         {
             sample.put(item);
             taken = true;
         }
-        else if(random.nextDouble() < sampleSize/(double)count)
+        else if (random.nextDouble() < sampleSize/(double)count)
         {
             sample.removeRandom();
             sample.put(item);
@@ -82,8 +73,6 @@ public class StochasticTopper<T> implements ITopK<T>
     
     /**
      * Retrieve top k items 
-     * @param k
-     * @return
      */
     public List<T> peek(int k)
     {
