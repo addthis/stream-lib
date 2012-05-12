@@ -52,7 +52,7 @@ public class TestHyperLogLog
         hll.offer("d");
         hll.offer("e");
 
-        HyperLogLog hll2 = HyperLogLog.Builder.build(hll.getBytes());
+        HyperLogLog hll2 = HyperLogLog.fromBytes(hll.getBytes());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
