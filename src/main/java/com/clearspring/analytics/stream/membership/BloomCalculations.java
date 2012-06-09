@@ -18,8 +18,6 @@
 
 package com.clearspring.analytics.stream.membership;
 
-import java.util.Arrays;
-
 /**
  * The following calculations are taken from:
  * http://www.cs.wisc.edu/~cao/papers/summary-cache/node8.html
