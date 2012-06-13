@@ -333,14 +333,13 @@ public class CountThenEstimate implements ICardinality, Externalizable
             
             if(untipped.size() > 0)
             {
-                merged = new CountThenEstimate(0, untipped.get(0).builder);
-                merged.tip();
+                merged = new CountThenEstimate(untipped.get(0).tippingPoint, untipped.get(0).builder);
             
                 for(CountThenEstimate cte : untipped)
                 {
                     for(Object o : cte.counter)
                     {
-                        merged.estimator.offer(o);
+                        merged.offer(o);
                     }
                 }
             }
@@ -351,8 +350,15 @@ public class CountThenEstimate implements ICardinality, Externalizable
                 merged.estimator = tipped.remove(0);
             }
             
-            merged.estimator = merged.estimator.merge(tipped.toArray(new ICardinality[tipped.size()]));
-                    
+            if (!tipped.isEmpty())
+            {
+                if (!merged.tipped)
+                {
+                    merged.tip();
+                }
+                merged.estimator = merged.estimator.merge(tipped.toArray(new ICardinality[tipped.size()]));
+            }
+            
         }        
         return merged;
     }

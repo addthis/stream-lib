@@ -79,6 +79,55 @@ public class TestCountThenEstimate
 
 
     }
+    
+    @Test
+    public void testSmallMerge() throws CardinalityMergeException
+    {
+        
+        // Untipped test case
+        int numToMerge = 1000;
+        int cardinalityPer = 5;
+
+        CountThenEstimate[] ctes = new CountThenEstimate[numToMerge];
+
+        for (int i = 0; i < numToMerge; i++)
+        {
+            ctes[i] = new CountThenEstimate(10000, AdaptiveCounting.Builder.obyCount(100000));
+            for (int j = 0; j < cardinalityPer; j++)
+            {
+                ctes[i].offer(Math.random());
+            }
+        }
+
+        int expectedCardinality = numToMerge * cardinalityPer;
+        CountThenEstimate merged = CountThenEstimate.mergeEstimators(ctes);
+        long mergedEstimate = merged.cardinality();
+        assertEquals(expectedCardinality, mergedEstimate);
+        assertFalse(merged.tipped);
+        
+        // Tipped test case
+        numToMerge = 10;
+        cardinalityPer = 100;
+
+        ctes = new CountThenEstimate[numToMerge];
+
+        for (int i = 0; i < numToMerge; i++)
+        {
+            ctes[i] = new CountThenEstimate(cardinalityPer + 1, AdaptiveCounting.Builder.obyCount(100000));
+            for (int j = 0; j < cardinalityPer; j++)
+            {
+                ctes[i].offer(Math.random());
+            }
+        }
+
+        expectedCardinality = numToMerge * cardinalityPer;
+        merged = CountThenEstimate.mergeEstimators(ctes);
+        mergedEstimate = merged.cardinality();
+        double error = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
+        assertEquals(0.01, error, 0.01);
+        assertTrue(merged.tipped);
+
+    }
 
     @Test
     public void testTip() throws IOException, ClassNotFoundException
