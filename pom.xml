@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
 
   <groupId>com.clearspring.analytics</groupId>
   <artifactId>stream</artifactId>
   <version>2.2.0-SNAPSHOT</version>
-  <name>Analytics Stream Library</name>
+  <name>stream-lib</name>
+  <description>A library for summarizing data in streams for which it is infeasible to store all events</description>
+  <url>https://github.com/clearspring/stream-lib</url>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -75,6 +82,19 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.11</version>
         <configuration>
@@ -116,20 +136,49 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+          <!-- Make signing prompt for passphrase properly http://jira.codehaus.org/browse/MGPG-9 -->
+          <mavenExecutorId>forked-path</mavenExecutorId>
+          <stagingRepository>sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2</stagingRepository>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>        
   </build>
 
-  <!--
-  <distributionManagement>
-      <repository>
-          <id>buildspring.releases</id>
-          <url>http://buildspring/nexus/content/repositories/releases</url>
-      </repository>
-      <snapshotRepository>
-          <id>buildspring.snapshots</id>
-          <url>http://buildspring/nexus/content/repositories/snapshots</url>
-      </snapshotRepository>
-  </distributionManagement>
-  -->
+  <developers>
+    <developer>
+      <name>Matt Abrams</name>
+      <email>abramsm@addthis.com</email>
+    </developer>
+    <developer>
+      <name>Chris Burroughs</name>
+      <email>christopher@addthis.com</email>
+    </developer>
+  </developers>
 
+  <scm>
+    <connection>scm:git:git://github.com/clearspring/stream-lib.git</connection>
+    <developerConnection>scm:git:git://github.com/clearspring/stream-lib.git</developerConnection>
+    <url>https://github.com/clearspring/stream-lib</url>
+  </scm>
 </project>
