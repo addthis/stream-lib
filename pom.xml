@@ -139,11 +139,12 @@
 
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.0-beta-8</version>
+        <version>2.2</version>
         <configuration>
           <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
           <!-- Make signing prompt for passphrase properly http://jira.codehaus.org/browse/MGPG-9 -->
           <mavenExecutorId>forked-path</mavenExecutorId>
+          <stagingRepository>sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2</stagingRepository>
         </configuration>
       </plugin>
 
