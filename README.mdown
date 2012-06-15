@@ -4,7 +4,7 @@
 A Java library for summarizing data in streams for which it is
 infeasible to store all events. More specifically, there are classes
 for estimating: cardinality (i.e. counting things); set membership;
-and the top-k elements.  One particularly useful feature is that
+top-k elements and frequency.  One particularly useful feature is that
 cardinality estimators with compatible configurations may be safely
 merged.
 
@@ -111,4 +111,9 @@ NY, USA, 2003. ACM.
  * Ahmed Metwally, Divyakant Agrawal, and Amr Abbadi. Efficient
 computation of frequent and top-k elements in data streams. pages
 398–412. 2005.
+
+#### Frequency
+
+ * Graham Cormode and S. Muthukrishnan. An improved data stream
+summary: The Count-Min sketch and its applications. 2004.
 
