@@ -241,6 +241,10 @@ public class HyperLogLog implements ICardinality
         return HyperLogLog.mergeEstimators(prepMerge(estimators));
     }
 
+    public void mergeWith(HyperLogLog other) {
+        this.registerSet.mergeWith(other.registerSet);
+    }
+
     protected HyperLogLog[] prepMerge(ICardinality... estimators)
     {
         int numEstimators = (estimators == null) ? 0 : estimators.length;
@@ -273,23 +277,11 @@ public class HyperLogLog implements ICardinality
         int numEstimators = (estimators == null) ? 0 : estimators.length;
         if (numEstimators > 0)
         {
-            int size = estimators[0].sizeof();
             mergedSet = new RegisterSet((int) Math.pow(2, estimators[0].log2m));
 
             for (int e = 0; e < numEstimators; e++)
             {
-                if (estimators[e].sizeof() != size)
-                {
-                    throw new RuntimeException("Cannot merge estimators of different sizes");
-                }
-                HyperLogLog estimator = estimators[e];
-                for (int b = 0; b < mergedSet.count; b++)
-                {
-                    if (estimator.registerSet.get(b) > mergedSet.get(b))
-                    {
-                        mergedSet.set(b, estimator.registerSet.get(b));
-                    }
-                }
+                mergedSet.mergeWith(estimators[e].registerSet);
             }
         }
         return mergedSet;
@@ -349,15 +341,20 @@ public class HyperLogLog implements ICardinality
             return RegisterSet.getBits(k) * 4;
         }
 
-        public static HyperLogLog build(byte[] bytes) throws IOException
+        public static HyperLogLog build(byte[] buffer, int offset, int length) throws IOException
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            ByteArrayInputStream bais = new ByteArrayInputStream(buffer, offset, length);
             DataInputStream oi = new DataInputStream(bais);
             int log2m = oi.readInt();
             int size = oi.readInt();
             byte[] longArrayBytes = new byte[size];
             oi.readFully(longArrayBytes);
             return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), getBits(longArrayBytes)));
+        }
+
+        public static HyperLogLog build(byte[] bytes) throws IOException
+        {
+            return build(bytes, 0, bytes.length);
         }
     }
 }

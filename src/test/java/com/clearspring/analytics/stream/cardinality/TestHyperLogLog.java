@@ -52,8 +52,14 @@ public class TestHyperLogLog
         hll.offer("d");
         hll.offer("e");
 
-        HyperLogLog hll2 = HyperLogLog.Builder.build(hll.getBytes());
+        byte[] bytes = hll.getBytes();
+        HyperLogLog hll2 = HyperLogLog.Builder.build(bytes);
         assertEquals(hll.cardinality(), hll2.cardinality());
+
+        byte[] largerBuffer = new byte[bytes.length * 2];
+        System.arraycopy(bytes, 0, largerBuffer, bytes.length, bytes.length);
+        HyperLogLog hll3 = HyperLogLog.Builder.build(largerBuffer, bytes.length, bytes.length);
+        assertEquals(hll.cardinality(), hll3.cardinality());
     }
 
     @Test

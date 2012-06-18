@@ -83,4 +83,16 @@ public class RegisterSet
         System.arraycopy(M, 0, copy, 0, M.length);
         return copy;
     }
+
+    public void mergeWith(RegisterSet other) {
+        if (this.size != other.size) {
+            throw new RuntimeException("Cannot merge register sets of different sizes");
+        }
+        for (int i = 0; i < this.count; i++) {
+            int otherValue = other.get(i);
+            if (otherValue > this.get(i)) {
+                this.set(i, otherValue);
+            }
+        }
+    }
 }
