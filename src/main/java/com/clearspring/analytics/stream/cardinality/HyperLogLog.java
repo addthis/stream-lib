@@ -55,7 +55,7 @@ import java.io.Serializable;
 public class HyperLogLog implements ICardinality
 {
     private final static double POW_2_32 = Math.pow(2, 32);
-    private final static double NEGATIVE_POW_2_32 = - -4294967296.0;
+    private final static double NEGATIVE_POW_2_32 = -4294967296.0;
 
     private final RegisterSet registerSet;
     private final int log2m;
