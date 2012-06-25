@@ -122,4 +122,26 @@ public class TestHyperLogLog
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
     }
+
+    @Test
+    public void testPrecise_disableLongRangeCorrection() throws CardinalityMergeException
+    {
+        int cardinality = 150000000;
+
+        HyperLogLog baseline = new HyperLogLog(20);
+        for (int j = 0; j < cardinality; j++)
+        {
+            double val = Math.random();
+            baseline.offer(val);
+        }
+
+
+        long mergedEstimate = baseline.cardinality(false);
+        double se = cardinality * (1.04 / Math.sqrt(Math.pow(2, 20)));
+
+        System.out.println("Expect estimate: " + mergedEstimate + " is between " + (cardinality - (3 * se)) + " and " + (cardinality + (3 * se)));
+
+        assertTrue(mergedEstimate >= cardinality - (3 * se));
+        assertTrue(mergedEstimate <= cardinality + (3 * se));
+    }
 }

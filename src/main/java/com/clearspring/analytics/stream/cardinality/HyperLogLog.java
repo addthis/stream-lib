@@ -54,8 +54,8 @@ import java.io.Serializable;
  */
 public class HyperLogLog implements ICardinality
 {
-    private final static int POW_2_32 = (int) Math.pow(2, 32);
-    private final static int NEGATIVE_POW_2_32 = (int) Math.pow(-2, 32);
+    private final static double POW_2_32 = Math.pow(2, 32);
+    private final static double NEGATIVE_POW_2_32 = - -4294967296.0;
 
     private final RegisterSet registerSet;
     private final int log2m;
@@ -181,6 +181,11 @@ public class HyperLogLog implements ICardinality
     @Override
     public long cardinality()
     {
+        return cardinality(true);
+    }
+
+    public long cardinality(boolean enableLongRangeCorrection)
+    {
         double registerSum = 0;
         int count = registerSet.count;
         for (int j = 0; j < registerSet.count; j++)
@@ -211,7 +216,14 @@ public class HyperLogLog implements ICardinality
         else if (estimate > (1.0 / 30.0) * POW_2_32)
         {
             // Large Range Estimate
-            return Math.round((NEGATIVE_POW_2_32 * Math.log(1 - (estimate / POW_2_32))));
+            if (enableLongRangeCorrection)
+            {
+                return Math.round((NEGATIVE_POW_2_32 * Math.log(1.0 - (estimate / POW_2_32))));
+            }
+            else
+            {
+                return Math.round(estimate);
+            }
         }
         return 0;
     }
