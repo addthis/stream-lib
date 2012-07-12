@@ -16,20 +16,14 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
+import com.clearspring.analytics.util.ExternalizableUtil;
+import com.clearspring.analytics.util.IBuilder;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import com.clearspring.analytics.util.IBuilder;
 
 /**
  * Exact -> Estimator cardinality counting
@@ -105,14 +99,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
      */
     public CountThenEstimate(byte[] bytes) throws IOException, ClassNotFoundException
     {
-        ObjectInput in = null;
-        try
-        {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            in = new ObjectInputStream(bais);
-            readExternal(in);
-        }
-        finally { if(in != null) in.close(); }
+        readExternal(new ObjectInputStream(new ByteArrayInputStream(bytes)));
         
         if(!tipped && builder.sizeof() <= bytes.length) tip();
     }
@@ -181,25 +168,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
     @Override
     public byte[] getBytes() throws IOException 
     {
-        byte[] bytes = null;
-        ObjectOutput out = null;
-        ByteArrayOutputStream baos = null;
-        
-        try
-        {
-            baos = new ByteArrayOutputStream();            
-            out = new ObjectOutputStream(baos);
-            this.writeExternal(out);
-        }
-        finally { if(out != null) out.close(); }
-        
-        try
-        {
-            bytes = baos.toByteArray();
-        } 
-        catch (Exception e) { throw new IOException(e); }       
-                
-        return bytes;
+        return ExternalizableUtil.toBytes(this);
     }
     
     @SuppressWarnings("unchecked")
