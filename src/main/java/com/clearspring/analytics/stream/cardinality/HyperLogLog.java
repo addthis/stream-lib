@@ -59,7 +59,6 @@ public class HyperLogLog implements ICardinality
 
     private final RegisterSet registerSet;
     private final int log2m;
-    private final int m;
     private final double alphaMM;
 
 
@@ -71,25 +70,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(double rsd)
     {
-        this.log2m = log2m(rsd);
-        this.m = (int) Math.pow(2, this.log2m);
-        this.registerSet = new RegisterSet(m);
-
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this(log2m(rsd));
     }
 
     private static int log2m(double rsd)
@@ -107,25 +88,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(int log2m)
     {
-        this.log2m = log2m;
-        this.m = (int) Math.pow(2, this.log2m);
-        this.registerSet = new RegisterSet(m);
-
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this(log2m, new RegisterSet((int) Math.pow(2, log2m)));
     }
 
     /**
@@ -138,7 +101,7 @@ public class HyperLogLog implements ICardinality
     {
         this.registerSet = registerSet;
         this.log2m = log2m;
-        this.m = (int) Math.pow(2, this.log2m);
+        int m = (int) Math.pow(2, this.log2m);
 
         // See the paper.
         switch (log2m)
