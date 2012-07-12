@@ -215,82 +215,32 @@ public class HyperLogLog implements ICardinality
     }
 
     @Override
-    public ICardinality merge(ICardinality... estimators)
+    public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        return HyperLogLog.mergeEstimators(prepMerge(estimators));
-    }
-
-    protected HyperLogLog[] prepMerge(ICardinality... estimators)
-    {
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        HyperLogLog[] lls = new HyperLogLog[numEstimators + 1];
-        if (numEstimators > 0)
+        if(estimators == null || estimators.length == 0)
         {
-            for (int i = 0; i < numEstimators; i++)
+            return this;
+        }
+        RegisterSet mergedSet;
+        int size = this.sizeof();
+        mergedSet = new RegisterSet((int) Math.pow(2, this.log2m), this.registerSet.bits());
+        for (ICardinality estimator : estimators)
+        {
+            if(!(estimator instanceof HyperLogLog))
             {
-                if (estimators[i] instanceof HyperLogLog)
-                {
-                    lls[i] = (HyperLogLog) estimators[i];
-                }
-                else
-                {
-                    throw new RuntimeException("Unable to merge HyperLogLog with " + estimators[i].getClass().getName());
-                }
+                throw new HyperLogLogMergeException("Cannot merge estimators of different class");
+            }
+            if (estimator.sizeof() != size)
+            {
+                throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
+            }
+            HyperLogLog hll = (HyperLogLog) estimator;
+            for (int b = 0; b < mergedSet.count; b++)
+            {
+                mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
             }
         }
-        lls[numEstimators] = this;
-        return lls;
-    }
-
-    /**
-     * @param estimators
-     * @return null if no estimators are provided
-     */
-    protected static RegisterSet mergeRegisters(HyperLogLog... estimators)
-    {
-        RegisterSet mergedSet = null;
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        if (numEstimators > 0)
-        {
-            int size = estimators[0].sizeof();
-            mergedSet = new RegisterSet((int) Math.pow(2, estimators[0].log2m));
-
-            for (int e = 0; e < numEstimators; e++)
-            {
-                if (estimators[e].sizeof() != size)
-                {
-                    throw new RuntimeException("Cannot merge estimators of different sizes");
-                }
-                HyperLogLog estimator = estimators[e];
-                for (int b = 0; b < mergedSet.count; b++)
-                {
-                    if (estimator.registerSet.get(b) > mergedSet.get(b))
-                    {
-                        mergedSet.set(b, estimator.registerSet.get(b));
-                    }
-                }
-            }
-        }
-        return mergedSet;
-    }
-
-    /**
-     * Merges estimators to produce an estimator for their combined streams
-     *
-     * @param estimators
-     * @return merged estimator or null if no estimators were provided
-     */
-    public static HyperLogLog mergeEstimators(HyperLogLog... estimators)
-    {
-        HyperLogLog merged = null;
-
-        RegisterSet mergedSet = mergeRegisters(estimators);
-        if (mergedSet != null)
-        {
-            merged = new HyperLogLog(estimators[0].log2m, mergedSet);
-        }
-
-        return merged;
+        return new HyperLogLog(this.log2m, mergedSet);
     }
 
     public static int[] getBits(byte[] mBytes) throws IOException
@@ -337,6 +287,15 @@ public class HyperLogLog implements ICardinality
             byte[] longArrayBytes = new byte[size];
             oi.readFully(longArrayBytes);
             return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), getBits(longArrayBytes)));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    protected static class HyperLogLogMergeException extends CardinalityMergeException
+    {
+        public HyperLogLogMergeException(String message)
+        {
+            super(message);
         }
     }
 }
