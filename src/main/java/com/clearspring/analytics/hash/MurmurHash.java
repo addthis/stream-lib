@@ -28,6 +28,23 @@ package com.clearspring.analytics.hash;
  */
 public class MurmurHash
 {
+    public static int hash(Object o)
+    {
+        if (o == null)
+            return 0;
+        if(o instanceof Long)
+            return hashLong((Long)o);
+        if(o instanceof Integer)
+            return hashLong((Integer)o);
+        if(o instanceof Double)
+            return hashLong(Double.doubleToRawLongBits((Double)o));
+        if(o instanceof Float)
+            return hashLong(Float.floatToRawIntBits((Float)o));
+        if(o instanceof String)
+            return hash(((String)o).getBytes());
+        return hash(o.toString());
+    }
+
     public static int hash(byte[] data)
     {
         return hash(data, data.length, -1);
@@ -85,6 +102,29 @@ public class MurmurHash
 
             h *= m;
         }
+
+        h ^= h >>> 13;
+        h *= m;
+        h ^= h >>> 15;
+
+        return h;
+    }
+
+    public static int hashLong(long data)
+    {
+        int m = 0x5bd1e995;
+        int r = 24;
+
+        int h = 0;
+
+        int k = (int)data * m;
+        k ^= k >>> r;
+        h ^= k*m;
+
+        k = (int)(data>>32) * m;
+        k ^= k >>> r;
+        h *= m;
+        h ^= k*m;
 
         h ^= h >>> 13;
         h *= m;

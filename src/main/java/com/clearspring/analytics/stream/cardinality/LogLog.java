@@ -118,7 +118,7 @@ public class LogLog implements ICardinality
     {
         boolean modified = false;
 
-        int x = MurmurHash.hash(o.toString().getBytes());
+        int x = MurmurHash.hash(o);
         int j = x >>> (Integer.SIZE - k);
         byte r = (byte)(Integer.numberOfLeadingZeros( (x << k) | (1<<(k-1)) )+1);
         if(M[j] < r)
