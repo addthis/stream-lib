@@ -17,11 +17,12 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bytes;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -200,14 +201,17 @@ public class HyperLogLog implements ICardinality
     @Override
     public byte[] getBytes() throws IOException
     {
-        int bytes = registerSet.size * 4;
-        byte[] bArray = new byte[bytes + 8];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
 
-        Bytes.addByteArray(bArray, 0, log2m);
-        Bytes.addByteArray(bArray, 4, bytes);
-        Bytes.addByteArray(bArray, 8, registerSet.bits());
+        dos.writeInt(log2m);
+        dos.writeInt(registerSet.size * 4);
+        for(int x : registerSet.bits())
+        {
+            dos.writeInt(x);
+        }
 
-        return bArray;
+        return baos.toByteArray();
     }
 
     @Override
