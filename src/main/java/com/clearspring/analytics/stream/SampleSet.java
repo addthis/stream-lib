@@ -24,7 +24,7 @@ import java.util.Random;
 
 public class SampleSet<T> implements ISampleSet<T>
 {
-    private Map<T,Node<T>> sampleMap;
+    private Map<T, Node<T>> sampleMap;
     private int size;
     private long count;
     private Random random;
@@ -51,45 +51,45 @@ public class SampleSet<T> implements ISampleSet<T>
 
     public SampleSet(int capacity, Random random)
     {
-        sampleMap = new HashMap<T,Node<T>>(capacity);
+        sampleMap = new HashMap<T, Node<T>>(capacity);
         this.random = random;
     }
 
     public T peek()
-    {return (head != null) ? head.element : null;}
+    {
+        return (head != null) ? head.element : null;
+    }
 
     public List<T> peek(int k)
     {
         List<T> topK = new ArrayList<T>(k);
-        Node<T> itr = head;
-        int i=0;
-        while(i++<k && itr != null)
+        for (Node<T> itr = head; itr != null && topK.size() < k; itr = itr.next)
         {
             topK.add(itr.element);
-            itr = itr.next;
-       } 
+        }
         return topK;
     }
 
     public long put(T element)
     {
         Node<T> node = sampleMap.get(element);
-        if(node != null)
+        if (node != null)
         {
             node.count++;
             promote(node);
         }
         else
         {
-            node = new Node<T>(element);
+            node = new Node<T>();
+            node.element = element;
             node.count = 1;
             node.prev = tail;
-            if(tail != null)
+            if (tail != null)
             {
                 tail.next = node;
             }
             tail = node;
-            if(head == null)
+            if (head == null)
             {
                 head = node;
             }
@@ -103,123 +103,106 @@ public class SampleSet<T> implements ISampleSet<T>
     public T removeRandom()
     {
         double p = random.nextDouble();
-        Node<T> itr = head;
         long weight = 0;
-        while(itr != null)
+        for (Node<T> itr = head; itr != null; itr = itr.next)
         {
             weight += itr.count;
-            if(p < weight/(double)count)
+            if (p >= weight / (double) count)
             {
-                break;
-            }
-            itr = itr.next;
-        }
-
-        T removed = null;
-        if(itr != null)
-        {
-            removed = itr.element;
-            itr.count--;
-            count--;
-            demote(itr);
-            if(itr.count == 0)
-            {
-                removeMin();
+                itr.count--;
+                count--;
+                demote(itr);
+                if (itr.count == 0)
+                {
+                    removeMin();
+                }
+                return itr.element;
             }
         }
-
-        return removed;
+        return null;
     }
 
     protected T removeMin()
     {
-        T minElement = null;
-        if(tail != null)
+        if (tail == null)
         {
-            size--;
-            count -= tail.count;
-            minElement = tail.element;
-            tail = tail.prev;
-            if(tail != null)
-            {
-                tail.next = null;
-            }
-            sampleMap.remove(minElement);
+            return null;
         }
+        size--;
+        count -= tail.count;
+        T minElement = tail.element;
+        tail = tail.prev;
+        if (tail != null)
+        {
+            tail.next = null;
+        }
+        sampleMap.remove(minElement);
         return minElement;
     }
 
     public int size()
-    {return size;}
-
-    public long count()
-    {return count;}
-
-    protected T peekMin()
-    {return tail.element;}
-
-    protected int promote(Node<T> node)
     {
-        int promotion = 0;
-        while(node.prev != null && node.count > node.prev.count)
-        {
-            node.prev.next = node.next;
-            node.next = node.prev;
-            node.prev = node.next.prev;
-            node.next.prev = node;
-            if(node.prev != null)
-            {
-                node.prev.next = node;
-            }
-            else
-            {
-                head = node;
-            }
-            if(node.next.next != null)
-            {
-                node.next.next.prev = node.next;
-            }
-            else
-            {
-                tail = node.next;
-            }
-
-            promotion++;
-        }
-        return promotion;
+        return size;
     }
 
-    protected int demote(Node<T> node)
+    public long count()
     {
-        int demotion = 0;
+        return count;
+    }
 
-        while(node.next != null && node.count < node.next.count)
+    protected T peekMin()
+    {
+        return tail.element;
+    }
+
+    protected void promote(Node<T> node)
+    {
+        // Bring node closer to the head as necessary
+        while (node.prev != null && node.count > node.prev.count)
         {
-            node.next.prev = node.prev;
-            node.prev = node.next;
-            node.next = node.prev.next;
-            node.prev.next = node;
-            if(node.next != null)
-            {
-                node.next.prev = node;
-            }
-            else
-            {
-                tail = node;
-            }
-            if(node.prev.prev != null)
-            {
-                node.prev.prev.next = node.prev;
-            }
-            else
-            {
-                head = node.prev;
-            }
+            // BEFORE head... [A]node.prev.prev --> [B]node.prev --> [C]node --> [D]node.next ...tail
+            // AFTER  head... [A]node.prev.prev --> [C]node --> [B]node.prev --> [D]node.next ...tail
+            Node<T> b = node.prev, c = node, d = node.next, a = (b == null) ? null : b.prev;
 
-            demotion++;
+            // Re-link each of 3 neighboring pairs
+            if (a != null) a.next = c;
+            c.prev = a;
+
+            c.next = b;
+            b.prev = c;
+
+            b.next = d;
+            if (d != null) d.prev = b;
+
+            // B and C may have switched head/tail roles
+            if (head == b) head = c;
+            if (tail == c) tail = b;
         }
+    }
 
-        return demotion;
+    protected void demote(Node<T> node)
+    {
+        // Bring node closer to the tail as necessary
+        while (node.next != null && node.count < node.next.count)
+        {
+            // BEFORE head... [A]node.prev --> [B]node --> [C]node.next --> [D]node.next.next ...tail
+            // AFTER  head... [A]node.prev --> [C]node.next --> [B]node --> [D]node.next.next ...tail
+            Node<T> a = node.prev, b = node, c = node.next, d = (c == null) ? null : c.next;
+
+            // Re-link each of 3 neighboring pairs
+            if (a != null) a.next = c;
+            c.prev = a;
+
+            c.next = b;
+            b.prev = c;
+
+            if (d != null) d.prev = b;
+            b.next = d;
+
+            // B and C may have switched head/tail roles
+            if (head == b) head = c;
+            if (tail == c) tail = b;
+        }
     }
 
     private class Node<E>
@@ -228,11 +211,5 @@ public class SampleSet<T> implements ISampleSet<T>
         private Node<E> prev;
         private E element;
         private long count;
-
-        public Node(E element)
-        {
-            this.element = element;
-        }
     }
-
 }
