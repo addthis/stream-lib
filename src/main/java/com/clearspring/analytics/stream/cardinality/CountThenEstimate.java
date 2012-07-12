@@ -21,6 +21,7 @@ import com.clearspring.analytics.util.IBuilder;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -252,24 +253,13 @@ public class CountThenEstimate implements ICardinality, Externalizable
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException 
     {
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        CountThenEstimate[] ces = new CountThenEstimate[numEstimators+1];
-        if(numEstimators > 0)
+        if(estimators == null || estimators.length == 0)
         {
-            for(int i=0; i<numEstimators; i++)
-            {
-                if(estimators[i] instanceof CountThenEstimate)
-                {
-                    ces[i] = (CountThenEstimate)estimators[i];
-                }
-                else
-                {
-                    throw new CountThenEstimateMergeException("Unable to merge CountThenEstimate with "+estimators[i].getClass().getName());
-                }
-            }
+            return this;
         }
-        ces[numEstimators] = this;
-        return CountThenEstimate.mergeEstimators(ces);
+        CountThenEstimate[] all = Arrays.copyOf(estimators, estimators.length + 1, CountThenEstimate[].class);
+        all[all.length-1] = this;
+        return mergeEstimators(all);
     }    
     
     /**
