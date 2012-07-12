@@ -47,7 +47,8 @@ public class CountThenEstimate implements ICardinality, Externalizable
     protected final static byte LC = 1;
     protected final static byte AC = 2;
 	protected final static byte HLC = 3;
-    
+	protected final static byte LLC = 4;
+
     /**
      * Cardinality after which exact counting gives way to estimation
      */
@@ -224,6 +225,9 @@ public class CountThenEstimate implements ICardinality, Externalizable
 			case HLC:
 				estimator = HyperLogLog.Builder.build(bytes);
 				break;
+            case LLC:
+                estimator = new LinearCounting(bytes);
+                break;
             default:
                 throw new IOException("Unrecognized estimator type: "+type);
             }
@@ -261,6 +265,10 @@ public class CountThenEstimate implements ICardinality, Externalizable
 			else if(estimator instanceof HyperLogLog)
 			{
 				out.writeByte(HLC);
+			}
+			else if(estimator instanceof LogLog)
+			{
+				out.writeByte(LLC);
 			}
             else throw new IOException("Estimator unsupported for serialization: "+estimator.getClass().getName());
             
