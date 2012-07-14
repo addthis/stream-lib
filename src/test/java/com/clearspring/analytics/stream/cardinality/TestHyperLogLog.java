@@ -18,7 +18,12 @@ package com.clearspring.analytics.stream.cardinality;
 
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -144,4 +149,40 @@ public class TestHyperLogLog
         assertTrue(mergedEstimate >= cardinality - (3 * se));
         assertTrue(mergedEstimate <= cardinality + (3 * se));
     }
+    
+    @Test
+    public void testRoundTripSerialization()
+    		   throws IOException, ClassNotFoundException {
+
+        long start = System.currentTimeMillis();
+        HyperLogLog hyperLogLog = new HyperLogLog(10);
+        int size = 10000000;
+        for (int i = 0; i < size; i++)
+        {
+            hyperLogLog.offer(TestICardinality.streamElement(i));
+        }
+        System.out.println("time: " + (System.currentTimeMillis() - start));
+        long estimate = hyperLogLog.cardinality();
+        double err = Math.abs(estimate - size) / (double) size;
+        System.out.println(err);
+        assertTrue(err < .1);
+
+        // serialize
+	    ByteArrayOutputStream out = new ByteArrayOutputStream();
+	    ObjectOutputStream oos = new ObjectOutputStream(out);
+	    oos.writeObject(hyperLogLog);
+	    oos.close();
+
+	    //deserialize
+	    byte[] pickled = out.toByteArray();
+	    InputStream in = new ByteArrayInputStream(pickled);
+	    ObjectInputStream ois = new ObjectInputStream(in);
+	    Object o = ois.readObject();
+	    HyperLogLog copy = (HyperLogLog) o;
+
+	    // test the result
+	    assertEquals(hyperLogLog.cardinality(), copy.cardinality());
+	    assertEquals(hyperLogLog.getPopulationCount(), copy.getPopulationCount());
+
+	  }    
 }

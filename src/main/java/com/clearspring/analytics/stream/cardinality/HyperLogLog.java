@@ -52,18 +52,55 @@ import java.io.Serializable;
  * <p/>
  * https://github.com/yammer/probablyjs
  */
-public class HyperLogLog implements ICardinality
+public class HyperLogLog implements ICardinality, Serializable
 {
-    private final static double POW_2_32 = Math.pow(2, 32);
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private final static double POW_2_32 = Math.pow(2, 32);
     private final static double NEGATIVE_POW_2_32 = -4294967296.0;
+    final static Integer defaultSize = 5;
 
     private final RegisterSet registerSet;
     private final int log2m;
     private final int m;
     private final double alphaMM;
+    private Long populationCount = 0L;
 
+    // Default constructor, defaults log2m to 5
+    public HyperLogLog()
+    {
+        this.log2m = defaultSize;
+        this.m = (int) Math.pow(2, this.log2m);
+        this.registerSet = new RegisterSet(m);
 
-    /**
+        // See the paper.
+        switch (log2m)
+        {
+            case 4:
+                alphaMM = 0.673 * m * m;
+                break;
+            case 5:
+                alphaMM = 0.697 * m * m;
+                break;
+            case 6:
+                alphaMM = 0.709 * m * m;
+                break;
+            default:
+                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
+        }
+    }
+
+    public void setPopulationCount(Long populationCount) {
+		this.populationCount = populationCount;
+	}
+
+	public Long getPopulationCount() {
+		return populationCount;
+	}
+
+	/**
      * Create a new HyperLogLog instance using the specified standard deviation.
      *
      * @param rsd - the relative standard deviation for the counter.
@@ -161,6 +198,7 @@ public class HyperLogLog implements ICardinality
     @Override
     public boolean offer(Object o)
     {
+    	populationCount++;
         final int x = MurmurHash.hash(o.toString().getBytes());
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
