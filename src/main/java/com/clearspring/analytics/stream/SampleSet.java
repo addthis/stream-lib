@@ -107,7 +107,7 @@ public class SampleSet<T> implements ISampleSet<T>
         for (Node<T> itr = head; itr != null; itr = itr.next)
         {
             weight += itr.count;
-            if (p >= weight / (double) count)
+            if (p < weight / (double) count)
             {
                 itr.count--;
                 count--;
