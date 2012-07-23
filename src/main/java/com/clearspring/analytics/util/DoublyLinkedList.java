@@ -27,33 +27,27 @@ public class DoublyLinkedList<T> implements Iterable<T>
 
     /**
      * Append to head of list
-     *
-     * @param value
-     * @return
      */
     public ListNode2<T> add(T value)
     {
-    ListNode2<T> node = new ListNode2<T>(value);
-    if(size++ == 0)
-    {
-        tail = node;
-    }
-    else
-    {
-        node.prev = head;
-        head.next = node;
-    }
+        ListNode2<T> node = new ListNode2<T>(value);
+        if(size++ == 0)
+        {
+            tail = node;
+        }
+        else
+        {
+            node.prev = head;
+            head.next = node;
+        }
 
-    head = node;
+        head = node;
 
-    return node;
+        return node;
     }
 
     /**
      * Prepend to tail of list
-     *
-     * @param value
-     * @return
      */
     public ListNode2<T> enqueue(T value)
     {

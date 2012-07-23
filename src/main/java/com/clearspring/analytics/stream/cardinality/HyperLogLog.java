@@ -17,11 +17,12 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bytes;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -59,7 +60,6 @@ public class HyperLogLog implements ICardinality
 
     private final RegisterSet registerSet;
     private final int log2m;
-    private final int m;
     private final double alphaMM;
 
 
@@ -71,25 +71,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(double rsd)
     {
-        this.log2m = log2m(rsd);
-        this.m = (int) Math.pow(2, this.log2m);
-        this.registerSet = new RegisterSet(m);
-
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this(log2m(rsd));
     }
 
     private static int log2m(double rsd)
@@ -107,25 +89,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(int log2m)
     {
-        this.log2m = log2m;
-        this.m = (int) Math.pow(2, this.log2m);
-        this.registerSet = new RegisterSet(m);
-
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this(log2m, new RegisterSet((int) Math.pow(2, log2m)));
     }
 
     /**
@@ -138,7 +102,7 @@ public class HyperLogLog implements ICardinality
     {
         this.registerSet = registerSet;
         this.log2m = log2m;
-        this.m = (int) Math.pow(2, this.log2m);
+        int m = (int) Math.pow(2, this.log2m);
 
         // See the paper.
         switch (log2m)
@@ -237,93 +201,46 @@ public class HyperLogLog implements ICardinality
     @Override
     public byte[] getBytes() throws IOException
     {
-        int bytes = registerSet.size * 4;
-        byte[] bArray = new byte[bytes + 8];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
 
-        Bytes.addByteArray(bArray, 0, log2m);
-        Bytes.addByteArray(bArray, 4, bytes);
-        Bytes.addByteArray(bArray, 8, registerSet.bits());
+        dos.writeInt(log2m);
+        dos.writeInt(registerSet.size * 4);
+        for(int x : registerSet.bits())
+        {
+            dos.writeInt(x);
+        }
 
-        return bArray;
+        return baos.toByteArray();
     }
 
     @Override
-    public ICardinality merge(ICardinality... estimators)
+    public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        return HyperLogLog.mergeEstimators(prepMerge(estimators));
-    }
-
-    protected HyperLogLog[] prepMerge(ICardinality... estimators)
-    {
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        HyperLogLog[] lls = new HyperLogLog[numEstimators + 1];
-        if (numEstimators > 0)
+        if(estimators == null || estimators.length == 0)
         {
-            for (int i = 0; i < numEstimators; i++)
+            return this;
+        }
+        RegisterSet mergedSet;
+        int size = this.sizeof();
+        mergedSet = new RegisterSet((int) Math.pow(2, this.log2m), this.registerSet.bits());
+        for (ICardinality estimator : estimators)
+        {
+            if(!(estimator instanceof HyperLogLog))
             {
-                if (estimators[i] instanceof HyperLogLog)
-                {
-                    lls[i] = (HyperLogLog) estimators[i];
-                }
-                else
-                {
-                    throw new RuntimeException("Unable to merge HyperLogLog with " + estimators[i].getClass().getName());
-                }
+                throw new HyperLogLogMergeException("Cannot merge estimators of different class");
+            }
+            if (estimator.sizeof() != size)
+            {
+                throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
+            }
+            HyperLogLog hll = (HyperLogLog) estimator;
+            for (int b = 0; b < mergedSet.count; b++)
+            {
+                mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
             }
         }
-        lls[numEstimators] = this;
-        return lls;
-    }
-
-    /**
-     * @param estimators
-     * @return null if no estimators are provided
-     */
-    protected static RegisterSet mergeRegisters(HyperLogLog... estimators)
-    {
-        RegisterSet mergedSet = null;
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        if (numEstimators > 0)
-        {
-            int size = estimators[0].sizeof();
-            mergedSet = new RegisterSet((int) Math.pow(2, estimators[0].log2m));
-
-            for (int e = 0; e < numEstimators; e++)
-            {
-                if (estimators[e].sizeof() != size)
-                {
-                    throw new RuntimeException("Cannot merge estimators of different sizes");
-                }
-                HyperLogLog estimator = estimators[e];
-                for (int b = 0; b < mergedSet.count; b++)
-                {
-                    if (estimator.registerSet.get(b) > mergedSet.get(b))
-                    {
-                        mergedSet.set(b, estimator.registerSet.get(b));
-                    }
-                }
-            }
-        }
-        return mergedSet;
-    }
-
-    /**
-     * Merges estimators to produce an estimator for their combined streams
-     *
-     * @param estimators
-     * @return merged estimator or null if no estimators were provided
-     */
-    public static HyperLogLog mergeEstimators(HyperLogLog... estimators)
-    {
-        HyperLogLog merged = null;
-
-        RegisterSet mergedSet = mergeRegisters(estimators);
-        if (mergedSet != null)
-        {
-            merged = new HyperLogLog(estimators[0].log2m, mergedSet);
-        }
-
-        return merged;
+        return new HyperLogLog(this.log2m, mergedSet);
     }
 
     public static int[] getBits(byte[] mBytes) throws IOException
@@ -370,6 +287,15 @@ public class HyperLogLog implements ICardinality
             byte[] longArrayBytes = new byte[size];
             oi.readFully(longArrayBytes);
             return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), getBits(longArrayBytes)));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    protected static class HyperLogLogMergeException extends CardinalityMergeException
+    {
+        public HyperLogLogMergeException(String message)
+        {
+            super(message);
         }
     }
 }
