@@ -7,9 +7,9 @@
     <version>7</version>
   </parent>
 
-  <groupId>com.clearspring.analytics</groupId>
+  <groupId>com.centrifuge</groupId>
   <artifactId>stream</artifactId>
-  <version>2.2.0-SNAPSHOT</version>
+  <version>2.2.1</version>
   <name>stream-lib</name>
   <description>A library for summarizing data in streams for which it is infeasible to store all events</description>
   <url>https://github.com/clearspring/stream-lib</url>
@@ -147,21 +147,7 @@
           <stagingRepository>sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2</stagingRepository>
         </configuration>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-gpg-plugin</artifactId>
-        <version>1.0</version>
-        <executions>
-          <execution>
-            <id>sign-artifacts</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>sign</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
+      
     </plugins>        
   </build>
 
