@@ -16,11 +16,13 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import java.io.Serializable;
-import java.util.Arrays;
 
-import com.clearspring.analytics.util.IBuilder;
 import com.clearspring.analytics.hash.MurmurHash;
+import com.clearspring.analytics.util.IBuilder;
+
+import java.io.Serializable;
+
+import java.util.Arrays;
 
 /**
  * See <i>A Linear-Time Probabilistic Counting Algorithm for Database Applications</i>
@@ -81,7 +83,7 @@ public class LinearCounting implements ICardinality
     {
         boolean modified = false;
 
-        long hash = (long)MurmurHash.hash(o.toString().getBytes());
+        long hash = (long)MurmurHash.hash(o);
         int bit = (int)((hash & 0xFFFFFFFFL) % (long)length);
         int i = bit/8;
         byte b = map[i];
