@@ -177,8 +177,8 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/clearspring/stream-lib.git</connection>
-    <developerConnection>scm:git:git://github.com/clearspring/stream-lib.git</developerConnection>
+    <connection>scm:git:git@github.com:clearspring/stream-lib.git</connection>
+    <developerConnection>scm:git:git@github.com:clearspring/stream-lib.git</developerConnection>
     <url>https://github.com/clearspring/stream-lib</url>
   </scm>
 </project>
