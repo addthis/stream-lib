@@ -65,7 +65,20 @@ public class TestStreamSummary
         for(Counter<String> c : topK)
         {           
             assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
-            //System.out.println(c);
+        }
+    }
+
+    @Test
+    public void testTopKWithIncrement()
+    {
+        StreamSummary<String> vs = new StreamSummary<String>(3);
+        String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
+        for(String i : stream)
+            vs.offer(i, 10);
+        List<Counter<String>> topK = vs.topK(3);
+        for(Counter<String> c : topK)
+        {
+            assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
         }
     }
     
@@ -114,6 +127,7 @@ public class TestStreamSummary
             assertEquals(c.getItem(), clone.getItem());
         }
     }
+
     
     @SuppressWarnings("unchecked")
     @Test

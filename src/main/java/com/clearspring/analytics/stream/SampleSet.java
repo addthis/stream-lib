@@ -70,19 +70,24 @@ public class SampleSet<T> implements ISampleSet<T>
         return topK;
     }
 
-    public long put(T element)
+	public long put(T element)
+	{
+		return put(element, 1);
+	}
+
+    public long put(T element, int incrementCount)
     {
         Node<T> node = sampleMap.get(element);
         if (node != null)
         {
-            node.count++;
+            node.count = node.count + incrementCount;
             promote(node);
         }
         else
         {
             node = new Node<T>();
             node.element = element;
-            node.count = 1;
+            node.count = incrementCount;
             node.prev = tail;
             if (tail != null)
             {

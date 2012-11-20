@@ -47,7 +47,7 @@ public class TestSampleSet
     @Test
     public void testPeekK() 
     {
-        set.put(e[0]);       
+        set.put(e[0]);
         for(int i=0; i<2; i++)
             set.put(e[1]);
         
@@ -99,6 +99,15 @@ public class TestSampleSet
     {        
         // Empty set
         assertEquals(1L, set.put(e[0]));
+        assertEquals(e[0], set.peek());
+        assertEquals(e[0], ((SampleSet<String>)set).peekMin());
+    }
+
+	@Test
+    public void testPutWithIncrement()
+    {
+        // Empty set
+        assertEquals(10L, set.put(e[0], 10));
         assertEquals(e[0], set.peek());
         assertEquals(e[0], ((SampleSet<String>)set).peekMin());
 

@@ -80,26 +80,38 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      @Override
      public boolean offer(T item)
      {
-         return offerReturnAll(item).left;
+         return offer(item, 1);
      }
 
-     /**
+	/**
+	 * Algorithm: <i>Space-Saving</i>
+	 *
+	 * @param item stream element (<i>e</i>)
+	 * @return false if item was already in the stream summary, true otherwise
+	 */
+	@Override
+	public boolean offer(T item, int incrementCount)
+	{
+		return offerReturnAll(item,  incrementCount).left;
+	}
+
+	/**
       * @param item stream element (<i>e</i>)
       * @return item dropped from summary if an item was dropped, null otherwise
       */
-     public T offerReturnDropped(T item)
+     public T offerReturnDropped(T item, int incrementCount)
      {
-         return offerReturnAll(item).right;
+         return offerReturnAll(item, incrementCount).right;
      }
 
      /**
       * @param item stream element (<i>e</i>)
       * @return Pair<isNewItem, itemDropped> where isNewItem is the return value of offer() and itemDropped is null if no item was dropped
       */
-     public Pair<Boolean, T> offerReturnAll(T item)
+     public Pair<Boolean, T> offerReturnAll(T item, int incrementCount)
      {
          ListNode2<Counter<T>> counterNode = counterMap.get(item);
-         boolean isNewItem = (counterNode == null);
+		 boolean isNewItem = (counterNode == null);
          T droppedItem = null;
          if(isNewItem)
          {
@@ -121,12 +133,12 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
              counterMap.put(item, counterNode);
          }
 
-         incrementCounter(counterNode);
+         incrementCounter(counterNode, incrementCount);
 
          return new Pair<Boolean, T>(isNewItem, droppedItem);
      }
 
-     protected void incrementCounter(ListNode2<Counter<T>> counterNode)
+     protected void incrementCounter(ListNode2<Counter<T>> counterNode, int incrementCount)
      {
          Counter<T> counter = counterNode.getValue();       // count_i
          ListNode2<Bucket> bucketNode = counter.bucketNode;
@@ -134,7 +146,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
          ListNode2<Bucket> bucketNodeNext = bucketNode.getNext();
          Bucket bucketNext = bucketNodeNext == null ? null : bucketNodeNext.getValue(); // Let Bucket_i^+ be Bucket_i's neighbor of larger value
          bucket.counterList.remove(counterNode);            // Detach count_i from Bucket_i's child-list
-         counter.count++;                   // Increment count_i
+         counter.count = counter.count + incrementCount;
 
          // Finding the right bucket for count_i
          if(bucketNext != null && counter.count == bucketNext.count)

@@ -51,24 +51,29 @@ public class StochasticTopper<T> implements ITopK<T>
         else
             random = new Random();
     }
+
+	public boolean offer(T item, int incrementCount)
+    {
+		count++;
+		boolean taken = false;
+		if (sample.count() < sampleSize)
+		{
+			sample.put(item, incrementCount);
+			taken = true;
+		}
+		else if (random.nextDouble() < sampleSize / (double) count)
+		{
+			sample.removeRandom();
+			sample.put(item, incrementCount);
+			taken = true;
+		}
+
+		return taken;
+	}
     
     public boolean offer(T item)
     {
-        count++;
-        boolean taken = false;
-        if (sample.count() < sampleSize)
-        {
-            sample.put(item);
-            taken = true;
-        }
-        else if (random.nextDouble() < sampleSize/(double)count)
-        {
-            sample.removeRandom();
-            sample.put(item);
-            taken = true;
-        }
-
-        return taken;
+       return offer(item, 1);
     }
     
     /**
