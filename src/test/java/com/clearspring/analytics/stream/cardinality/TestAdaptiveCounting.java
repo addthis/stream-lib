@@ -73,12 +73,15 @@ public class TestAdaptiveCounting
         int cardinality = 10000;     
         
         AdaptiveCounting[] lcs = new AdaptiveCounting[numToMerge];
-
+        AdaptiveCounting baseline = new AdaptiveCounting(16);
         for(int i=0; i<numToMerge; i++)
         {
             lcs[i] = new AdaptiveCounting(16);
-            for(int j=0; j<cardinality; j++)
-                lcs[i].offer(Math.random());
+            for(int j=0; j<cardinality; j++) {
+                double val = Math.random();
+                lcs[i].offer(val);
+                baseline.offer(val);
+            }
         }
         
         int expectedCardinality = numToMerge*cardinality;
@@ -91,6 +94,8 @@ public class TestAdaptiveCounting
         mergedEstimate = lc.merge(lcs).cardinality();
         error = Math.abs(mergedEstimate - expectedCardinality) / (double)expectedCardinality;
         assertEquals(0.01, error, 0.01);
+
+        assertEquals(baseline.cardinality(), mergedEstimate);
     }
     
     @Ignore
