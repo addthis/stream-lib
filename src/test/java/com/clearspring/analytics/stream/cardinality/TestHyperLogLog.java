@@ -115,12 +115,15 @@ public class TestHyperLogLog
         HyperLogLog hll = hyperLogLogs[0];
         hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLog[0]);
         long mergedEstimate = hll.merge(hyperLogLogs).cardinality();
+        long baselineEstimate = baseline.cardinality();
         double se = expectedCardinality * (1.04 / Math.sqrt(Math.pow(2, bits)));
 
+        System.out.println("Baseline estimate: " + baselineEstimate);
         System.out.println("Expect estimate: " + mergedEstimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
 
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
+        assertEquals(mergedEstimate, baselineEstimate);
     }
 
     @Test

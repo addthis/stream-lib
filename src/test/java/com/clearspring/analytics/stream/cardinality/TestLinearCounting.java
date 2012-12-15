@@ -115,15 +115,18 @@ public class TestLinearCounting
     {
         int numToMerge = 5;
         int size = 65536;
-        int cardinality = 1000;     
-        
-        LinearCounting[] lcs = new LinearCounting[numToMerge];
+        int cardinality = 1000;
 
+        LinearCounting[] lcs = new LinearCounting[numToMerge];
+        LinearCounting baseline = new LinearCounting(size);
         for(int i=0; i<numToMerge; i++)
         {
             lcs[i] = new LinearCounting(size);
-            for(int j=0; j<cardinality; j++)
-                lcs[i].offer(Math.random());
+            for(int j=0; j<cardinality; j++) {
+                double val = Math.random();
+                lcs[i].offer(val);
+                baseline.offer(val);
+            }
         }
         
         int expectedCardinality = numToMerge*cardinality;
@@ -136,5 +139,8 @@ public class TestLinearCounting
         mergedEstimate = lc.merge(lcs).cardinality();
         error = Math.abs(mergedEstimate - expectedCardinality) / (double)expectedCardinality;
         assertEquals(0.01, error, 0.01);
+
+        long baselineEstimate = baseline.cardinality();
+        assertEquals(baselineEstimate, mergedEstimate);
     }
 }
