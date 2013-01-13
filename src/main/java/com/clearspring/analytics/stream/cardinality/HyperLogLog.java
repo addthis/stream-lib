@@ -161,7 +161,13 @@ public class HyperLogLog implements ICardinality
     @Override
     public boolean offer(Object o)
     {
-        final int x = MurmurHash.hash(o.toString().getBytes());
+        byte[] bytes = null;
+        if (o instanceof byte[]) {
+            bytes = (byte[])o;
+        } else {
+            bytes = o.toString().getBytes();
+        }
+        final int x = MurmurHash.hash(bytes);
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
         final int j = x >>> (Integer.SIZE - log2m);
