@@ -11,7 +11,7 @@
 
   <groupId>com.clearspring.analytics</groupId>
   <artifactId>stream</artifactId>
-  <version>2.2.1-BV-PRERELEASE-0.1</version>
+  <version>2.2.1-BV-PRERELEASE-0.2-SNAPSHOT</version>
   <name>stream-lib</name>
   <description>A library for summarizing data in streams for which it is infeasible to store all events</description>
   <url>https://github.com/clearspring/stream-lib</url>
