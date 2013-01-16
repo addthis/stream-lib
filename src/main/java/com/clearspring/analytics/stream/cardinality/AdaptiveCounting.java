@@ -17,6 +17,7 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import com.clearspring.analytics.hash.Lookup3Hash;
 import com.clearspring.analytics.util.IBuilder;
@@ -109,7 +110,8 @@ public class AdaptiveCounting extends LogLog
     @Override
     public ICardinality merge(ICardinality... estimators) throws LogLogMergeException
     {
-        return AdaptiveCounting.mergeEstimators(prepMerge(estimators));
+        LogLog res = (LogLog)super.merge(estimators);
+        return new AdaptiveCounting(res.M);
     }
 
     /**
@@ -120,12 +122,11 @@ public class AdaptiveCounting extends LogLog
      */
     public static AdaptiveCounting mergeEstimators(LogLog... estimators) throws LogLogMergeException
     {
-        AdaptiveCounting merged = null;
-
-        byte[] mergedBytes = mergeBytes(estimators);
-        if(mergedBytes != null) merged = new AdaptiveCounting(mergedBytes);
-
-        return merged;
+        if(estimators == null || estimators.length == 0)
+        {
+            return null;
+        }
+        return (AdaptiveCounting)estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable

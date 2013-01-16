@@ -17,9 +17,6 @@
  */
 
 package com.clearspring.analytics.util;
-//package org.apache.cassandra.utils;
-
-//import com.google.common.base.Objects;
 
 public class Pair<T1, T2>
 {
@@ -50,7 +47,8 @@ public class Pair<T1, T2>
     }
 
     // From Apache Licensed guava:
-    private boolean equal(Object a, Object b) {
+    private boolean equal(Object a, Object b)
+    {
         return a == b || (a != null && a.equals(b));
     }
 

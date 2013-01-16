@@ -19,6 +19,8 @@ package com.clearspring.analytics.stream.cardinality;
 import com.clearspring.analytics.util.IBuilder;
 import com.clearspring.analytics.hash.MurmurHash;
 
+import java.util.Arrays;
+
 public class LogLog implements ICardinality
 {
     /**
@@ -118,7 +120,7 @@ public class LogLog implements ICardinality
     {
         boolean modified = false;
 
-        int x = MurmurHash.hash(o.toString().getBytes());
+        int x = MurmurHash.hash(o);
         int j = x >>> (Integer.SIZE - k);
         byte r = (byte)(Integer.numberOfLeadingZeros( (x << k) | (1<<(k-1)) )+1);
         if(M[j] < r)
@@ -148,61 +150,30 @@ public class LogLog implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws LogLogMergeException
     {
-        return LogLog.mergeEstimators(prepMerge(estimators));
-    }
-
-    protected LogLog[] prepMerge(ICardinality... estimators) throws LogLogMergeException
-    {
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        LogLog[] lls = new LogLog[numEstimators+1];
-        if(numEstimators > 0)
+        if(estimators == null || estimators.length == 0)
         {
-            for(int i=0; i<numEstimators; i++)
+            return this;
+        }
+        byte[] mergedBytes = Arrays.copyOf(this.M, this.M.length);
+
+        for(ICardinality estimator : estimators)
+        {
+            if(!(this.getClass().isInstance(estimator)))
             {
-                if(estimators[i] instanceof LogLog)
-                {
-                    lls[i] = (LogLog)estimators[i];
-                }
-                else
-                {
-                    throw new LogLogMergeException("Unable to merge LogLog with "+estimators[i].getClass().getName());
-                }
+                throw new LogLogMergeException("Cannot merge estimators of different class");
+            }
+            if(estimator.sizeof() != this.sizeof())
+            {
+                throw new LogLogMergeException("Cannot merge estimators of different sizes");
+            }
+            LogLog ll = (LogLog) estimator;
+            for(int i = 0; i < mergedBytes.length; ++i)
+            {
+                mergedBytes[i] = (byte)Math.max(mergedBytes[i], ll.M[i]);
             }
         }
-        lls[numEstimators] = this;
-        return lls;
-    }
 
-    /**
-     * @param estimators
-     * @return null if no estimators are provided
-     * @throws LogLogMergeException if estimators are not all the same size
-     */
-    protected static byte[] mergeBytes(LogLog... estimators) throws LogLogMergeException
-    {
-        byte[] mergedBytes = null;
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        if(numEstimators > 0)
-        {
-            int size = estimators[0].sizeof();
-            mergedBytes = new byte[size];
-
-            for(int e=0; e<numEstimators; e++)
-            {
-                if(estimators[e].sizeof() != size)
-                {
-                    throw new LogLogMergeException("Cannot merge estimators of different sizes");
-                }
-
-                for(int b=0; b<size; b++)
-                {
-                    byte mergedByte = mergedBytes[b];
-                    byte estimatorByte = estimators[e].M[b];
-                    mergedBytes[b] = estimatorByte > mergedByte ? estimatorByte : mergedByte;
-                }
-            }
-        }
-        return mergedBytes;
+        return new LogLog(mergedBytes);
     }
 
     /**
@@ -213,12 +184,11 @@ public class LogLog implements ICardinality
      */
     public static LogLog mergeEstimators(LogLog... estimators) throws LogLogMergeException
     {
-        LogLog merged = null;
-
-        byte[] mergedBytes = mergeBytes(estimators);
-        if(mergedBytes != null) merged = new LogLog(mergedBytes);
-
-        return merged;
+        if(estimators == null || estimators.length == 0)
+        {
+            return null;
+        }
+        return (LogLog)estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
     }
 
 

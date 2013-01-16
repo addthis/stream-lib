@@ -16,16 +16,13 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.clearspring.analytics.stream.cardinality.LinearCounting.Builder;
+import com.clearspring.analytics.stream.cardinality.LinearCounting.LinearCountingMergeException;
+import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.junit.Test;
-
-import com.clearspring.analytics.stream.cardinality.LinearCounting.Builder;
-import com.clearspring.analytics.stream.cardinality.LinearCounting.LinearCountingMergeException;
+import static org.junit.Assert.*;
 
 public class TestLinearCounting 
 {
@@ -41,7 +38,7 @@ public class TestLinearCounting
         lc.offer(17);
         lc.offer(18);
         lc.offer(19);
-        assertEquals(24, lc.computeCount());
+        assertEquals(27, lc.computeCount());
     }
     
     @Test

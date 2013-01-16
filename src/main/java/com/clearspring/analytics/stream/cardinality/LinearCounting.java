@@ -16,10 +16,13 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+
+import com.clearspring.analytics.hash.MurmurHash;
+import com.clearspring.analytics.util.IBuilder;
+
 import java.io.Serializable;
 
-import com.clearspring.analytics.util.IBuilder;
-import com.clearspring.analytics.hash.MurmurHash;
+import java.util.Arrays;
 
 /**
  * See <i>A Linear-Time Probabilistic Counting Algorithm for Database Applications</i>
@@ -80,7 +83,7 @@ public class LinearCounting implements ICardinality
     {
         boolean modified = false;
 
-        long hash = (long)MurmurHash.hash(o.toString().getBytes());
+        long hash = (long)MurmurHash.hash(o);
         int bit = (int)((hash & 0xFFFFFFFFL) % (long)length);
         int i = bit/8;
         byte b = map[i];
@@ -137,22 +140,13 @@ public class LinearCounting implements ICardinality
      */
     protected String mapAsBitString()
     {
-        StringBuffer sb = new StringBuffer(length);
+        StringBuilder sb = new StringBuilder();
         for(byte b : map)
         {
             String bits = Integer.toBinaryString(b);
-            int leadingZeros = 8-bits.length();
-            if(leadingZeros > 0)
-            {
-                for(int i=0; i<leadingZeros; i++) sb.append('0');
-                sb.append(bits);
-            }
-            else
-            {
-                sb.append(bits.substring(bits.length()-8, bits.length()));
-            }
+            for(int i = 0; i < 8 - bits.length(); i++) sb.append('0');
+            sb.append(bits);
         }
-
         return sb.toString();
     }
 
@@ -163,24 +157,12 @@ public class LinearCounting implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws LinearCountingMergeException
     {
-        int numEstimators = (estimators == null) ? 0 : estimators.length;
-        LinearCounting[] lcs = new LinearCounting[numEstimators+1];
-        if(numEstimators > 0)
+        if(estimators == null || estimators.length == 0)
         {
-            for(int i=0; i<numEstimators; i++)
-            {
-                if(estimators[i] instanceof LinearCounting)
-                {
-                    lcs[i] = (LinearCounting)estimators[i];
-                }
-                else
-                {
-                    throw new LinearCountingMergeException("Unable to merge LinearCounting with "+estimators[i].getClass().getName());
-                }
-            }
+            return this;
         }
-        lcs[numEstimators] = this;
-
+        LinearCounting[] lcs = Arrays.copyOf(estimators, estimators.length + 1, LinearCounting[].class);
+        lcs[lcs.length - 1] = this;
         return LinearCounting.mergeEstimators(lcs);
     }
 
@@ -198,16 +180,16 @@ public class LinearCounting implements ICardinality
             int size = estimators[0].map.length;
             byte[] mergedBytes = new byte[size];
 
-            for(int e=0; e<estimators.length; e++)
+            for (LinearCounting estimator : estimators)
             {
-                if(estimators[e].map.length != size)
+                if (estimator.map.length != size)
                 {
                     throw new LinearCountingMergeException("Cannot merge estimators of different sizes");
                 }
 
-                for(int b=0; b<size; b++)
+                for (int b = 0; b < size; b++)
                 {
-                    mergedBytes[b] |= estimators[e].map[b];
+                    mergedBytes[b] |= estimator.map[b];
                 }
             }
 

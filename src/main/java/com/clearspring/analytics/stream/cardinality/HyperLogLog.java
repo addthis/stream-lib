@@ -17,11 +17,12 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bytes;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -54,12 +55,11 @@ import java.io.Serializable;
  */
 public class HyperLogLog implements ICardinality
 {
-    private final static int POW_2_32 = (int) Math.pow(2, 32);
-    private final static int NEGATIVE_POW_2_32 = (int) Math.pow(-2, 32);
+    private final static double POW_2_32 = Math.pow(2, 32);
+    private final static double NEGATIVE_POW_2_32 = -4294967296.0;
 
     private final RegisterSet registerSet;
     private final int log2m;
-    private final int m;
     private final double alphaMM;
 
 
@@ -71,25 +71,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(double rsd)
     {
-        this.log2m = log2m(rsd);
-        this.m = (int) Math.pow(2, this.log2m);
-        this.registerSet = new RegisterSet(m);
-
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this(log2m(rsd));
     }
 
     private static int log2m(double rsd)
@@ -107,25 +89,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(int log2m)
     {
-        this.log2m = log2m;
-        this.m = (int) Math.pow(2, this.log2m);
-        this.registerSet = new RegisterSet(m);
-
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this(log2m, new RegisterSet((int) Math.pow(2, log2m)));
     }
 
     /**
@@ -138,7 +102,7 @@ public class HyperLogLog implements ICardinality
     {
         this.registerSet = registerSet;
         this.log2m = log2m;
-        this.m = (int) Math.pow(2, this.log2m);
+        int m = (int) Math.pow(2, this.log2m);
 
         // See the paper.
         switch (log2m)
@@ -161,13 +125,12 @@ public class HyperLogLog implements ICardinality
     @Override
     public boolean offer(Object o)
     {
-        byte[] bytes = null;
+        int x;
         if (o instanceof byte[]) {
-            bytes = (byte[])o;
+            x = MurmurHash.hash((byte[])o);
         } else {
-            bytes = o.toString().getBytes();
+            x = MurmurHash.hash(o);
         }
-        final int x = MurmurHash.hash(bytes);
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
         final int j = x >>> (Integer.SIZE - log2m);
@@ -186,6 +149,11 @@ public class HyperLogLog implements ICardinality
 
     @Override
     public long cardinality()
+    {
+        return cardinality(true);
+    }
+
+    public long cardinality(boolean enableLongRangeCorrection)
     {
         double registerSum = 0;
         int count = registerSet.count;
@@ -217,7 +185,14 @@ public class HyperLogLog implements ICardinality
         else if (estimate > (1.0 / 30.0) * POW_2_32)
         {
             // Large Range Estimate
-            return Math.round((NEGATIVE_POW_2_32 * Math.log(1 - (estimate / POW_2_32))));
+            if (enableLongRangeCorrection)
+            {
+                return Math.round((NEGATIVE_POW_2_32 * Math.log(1.0 - (estimate / POW_2_32))));
+            }
+            else
+            {
+                return Math.round(estimate);
+            }
         }
         return 0;
     }
@@ -231,18 +206,21 @@ public class HyperLogLog implements ICardinality
     @Override
     public byte[] getBytes() throws IOException
     {
-        int bytes = registerSet.size * 4;
-        byte[] bArray = new byte[bytes + 8];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
 
-        Bytes.addByteArray(bArray, 0, log2m);
-        Bytes.addByteArray(bArray, 4, bytes);
-        Bytes.addByteArray(bArray, 8, registerSet.bits());
+        dos.writeInt(log2m);
+        dos.writeInt(registerSet.size * 4);
+        for(int x : registerSet.bits())
+        {
+            dos.writeInt(x);
+        }
 
-        return bArray;
+        return baos.toByteArray();
     }
 
     @Override
-    public ICardinality merge(ICardinality... estimators)
+    public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
         return HyperLogLog.mergeEstimators(prepMerge(estimators));
     }
@@ -251,7 +229,7 @@ public class HyperLogLog implements ICardinality
         this.registerSet.mergeWith(other.registerSet);
     }
 
-    protected HyperLogLog[] prepMerge(ICardinality... estimators)
+    protected HyperLogLog[] prepMerge(ICardinality... estimators) throws CardinalityMergeException
     {
         int numEstimators = (estimators == null) ? 0 : estimators.length;
         HyperLogLog[] lls = new HyperLogLog[numEstimators + 1];
@@ -265,7 +243,7 @@ public class HyperLogLog implements ICardinality
                 }
                 else
                 {
-                    throw new RuntimeException("Unable to merge HyperLogLog with " + estimators[i].getClass().getName());
+                    throw new HyperLogLogMergeException("Cannot merge estimators of different class");
                 }
             }
         }
@@ -361,6 +339,15 @@ public class HyperLogLog implements ICardinality
         public static HyperLogLog build(byte[] bytes) throws IOException
         {
             return build(bytes, 0, bytes.length);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    protected static class HyperLogLogMergeException extends CardinalityMergeException
+    {
+        public HyperLogLogMergeException(String message)
+        {
+            super(message);
         }
     }
 }

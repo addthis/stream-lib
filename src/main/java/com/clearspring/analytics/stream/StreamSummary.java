@@ -17,18 +17,17 @@
 package com.clearspring.analytics.stream;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import com.clearspring.analytics.util.DoublyLinkedList;
+import com.clearspring.analytics.util.ExternalizableUtil;
 import com.clearspring.analytics.util.ListNode2;
 import com.clearspring.analytics.util.Pair;
 
@@ -54,52 +53,6 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
             this.counterList = new DoublyLinkedList<Counter<T>>();
         }
     }
-
-    /*
-    public class Counter implements Externalizable
-    {
-        private ListNode2<Bucket> bucketNode;
-
-        private T item;
-        private long count;
-        private long error;
-
-        public Counter(ListNode2<Bucket> bucket, T item)
-        {
-            this.bucketNode = bucket;
-            this.count = 0;
-            this.error = 0;
-            this.item = item;
-        }
-
-        public T getItem() { return item; }
-        public long getCount() { return count; }
-        public long getError() { return error; }
-
-        @Override
-        public String toString()
-        {
-            return item+":"+count+':'+error;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
-        {
-            item = (T)in.readObject();
-            count = in.readLong();
-            error = in.readLong();
-        }
-
-        @Override
-        public void writeExternal(ObjectOutput out) throws IOException
-        {
-            out.writeObject(item);
-            out.writeLong(count);
-            out.writeLong(error);
-        }
-    }
-    */
 
     protected int capacity;
     private HashMap<T, ListNode2<Counter<T>>> counterMap;
@@ -334,36 +287,11 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
 
     public void fromBytes(byte[] bytes) throws IOException, ClassNotFoundException
     {
-        ObjectInput oi = null;
-        try
-        {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            oi = new ObjectInputStream(bais);
-            readExternal(oi);
-        }
-        finally { if(oi != null) oi.close(); }
+        readExternal(new ObjectInputStream(new ByteArrayInputStream(bytes)));
     }
 
     public byte[] toBytes() throws IOException
     {
-        byte[] bytes = null;
-        ObjectOutput oo = null;
-        ByteArrayOutputStream baos = null;
-
-        try
-        {
-            baos = new ByteArrayOutputStream();
-            oo = new ObjectOutputStream(baos);
-            this.writeExternal(oo);
-        }
-        finally { if(oo != null) oo.close(); }
-
-        try
-        {
-            bytes = baos.toByteArray();
-        }
-        catch (Exception e) { throw new IOException(e); }
-
-        return bytes;
+        return ExternalizableUtil.toBytes(this);
     }
 }
