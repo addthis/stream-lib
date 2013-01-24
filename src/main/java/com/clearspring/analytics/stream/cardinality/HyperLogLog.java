@@ -44,7 +44,7 @@ import java.io.Serializable;
  * <p/>
  * http://dsiutils.dsi.unimi.it/
  * <p/>
- * It has a more complex implmentation of HLL that supports multiple counters
+ * It has a more complex implementation of HLL that supports multiple counters
  * in a single object, drastically reducing the java overhead from creating
  * a large number of objects.
  * <p/>
