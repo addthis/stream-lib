@@ -17,6 +17,7 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
+import com.clearspring.analytics.util.Bits;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.ByteArrayInputStream;
@@ -243,18 +244,6 @@ public class HyperLogLog implements ICardinality
         return new HyperLogLog(this.log2m, mergedSet);
     }
 
-    public static int[] getBits(byte[] mBytes) throws IOException
-    {
-        int bitSize = mBytes.length / 4;
-        int[] bits = new int[bitSize];
-        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(mBytes));
-        for (int i = 0; i < bitSize; i++)
-        {
-            bits[i] = dis.readInt();
-        }
-        return bits;
-    }
-
     public static class Builder implements IBuilder<ICardinality>, Serializable
     {
         private double rsd;
@@ -286,7 +275,7 @@ public class HyperLogLog implements ICardinality
             int size = oi.readInt();
             byte[] longArrayBytes = new byte[size];
             oi.readFully(longArrayBytes);
-            return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), getBits(longArrayBytes)));
+            return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), Bits.getBits(longArrayBytes)));
         }
     }
 

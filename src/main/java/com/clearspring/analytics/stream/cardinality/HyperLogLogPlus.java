@@ -1,8 +1,23 @@
+/*
+ * Copyright (C) 2011 Clearspring Technologies, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.UnsignedIntComparator;
-import com.clearspring.analytics.util.Varint;
+import com.clearspring.analytics.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -112,11 +127,16 @@ public class HyperLogLogPlus implements ICardinality
 
 	public HyperLogLogPlus(int p, int sp)
 	{
+		this(p, sp, new RegisterSet((int)Math.pow(2, p)));
+	}
+
+	public HyperLogLogPlus(int p, int sp, RegisterSet registerSet)
+	{
 		this.p = p;
 		this.sp = sp;
 		this.m = (int) Math.pow(2, p);
 		this.sm = (int) Math.pow(2, sp);
-		registerSet = new RegisterSet(m);
+		this.registerSet = registerSet;
 		// See the paper.
 		int bitSize = 6;
 		switch (bitSize)
@@ -450,18 +470,98 @@ public class HyperLogLogPlus implements ICardinality
 	@Override
 	public int sizeof()
 	{
-		return 0;  //To change body of implemented methods use File | Settings | File Templates.
+		return registerSet.size * 4;
 	}
 
 	@Override
 	public byte[] getBytes() throws IOException
 	{
-		return new byte[0];  //To change body of implemented methods use File | Settings | File Templates.
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+
+		dos.writeInt(p);
+		dos.writeInt(sp);
+		dos.writeInt(registerSet.size * 4);
+		for(int x : registerSet.bits())
+		{
+			dos.writeInt(x);
+		}
+
+		return baos.toByteArray();
 	}
 
 	@Override
 	public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
 	{
-		return null;  //To change body of implemented methods use File | Settings | File Templates.
+		if(estimators == null || estimators.length == 0)
+		{
+			return this;
+		}
+		RegisterSet mergedSet;
+		int size = this.sizeof();
+		mergedSet = new RegisterSet((int) Math.pow(2, p), this.registerSet.bits());
+		for (ICardinality estimator : estimators)
+		{
+			if(!(estimator instanceof HyperLogLogPlus))
+			{
+				throw new HyperLogLogPlusMergeException("Cannot merge estimators of different class");
+			}
+			if (estimator.sizeof() != size)
+			{
+				throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
+			}
+			HyperLogLogPlus hll = (HyperLogLogPlus) estimator;
+			for (int b = 0; b < mergedSet.count; b++)
+			{
+				mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
+			}
+		}
+		return new HyperLogLogPlus(p, sp, mergedSet);
+	}
+
+	public static class Builder implements IBuilder<ICardinality>, Serializable
+	{
+		private int p;
+		private int sp;
+
+		public Builder(int p, int sp)
+		{
+			this.p = p;
+			this.sp = sp;
+		}
+
+		@Override
+		public HyperLogLogPlus build()
+		{
+			return new HyperLogLogPlus(p, sp);
+		}
+
+		@Override
+		public int sizeof()
+		{
+			int k = (int)Math.pow(2, p);
+			return RegisterSet.getBits(k) * 5;
+		}
+
+		public static HyperLogLogPlus build(byte[] bytes) throws IOException
+		{
+			ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+			DataInputStream oi = new DataInputStream(bais);
+			int p = oi.readInt();
+			int sp = oi.readInt();
+			int size = oi.readInt();
+			byte[] longArrayBytes = new byte[size];
+			oi.readFully(longArrayBytes);
+			return new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+		}
+	}
+
+	@SuppressWarnings("serial")
+	protected static class HyperLogLogPlusMergeException extends CardinalityMergeException
+	{
+		public HyperLogLogPlusMergeException(String message)
+		{
+			super(message);
+		}
 	}
 }
