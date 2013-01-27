@@ -121,7 +121,6 @@ public class HyperLogLogPlus implements ICardinality
 
 	private Set<byte[]> tmpSet = new HashSet<byte[]>();
 	private List<byte[]> sparseList = new ArrayList<byte[]>();
-	private int firstSparseValue = -1;
 	private final int sparseSortThreshold = 50000;
 
 
@@ -138,8 +137,7 @@ public class HyperLogLogPlus implements ICardinality
 		this.sm = (int) Math.pow(2, sp);
 		this.registerSet = registerSet;
 		// See the paper.
-		int bitSize = 6;
-		switch (bitSize)
+		switch (p)
 		{
 			case 4:
 				alphaMM = 0.673 * m * m;
@@ -445,7 +443,7 @@ public class HyperLogLogPlus implements ICardinality
 		}
 		else
 		{
-			return (k >>> 1 & ((1 << p) - 1));
+			return (k >>> 1 & ((1 << (p+1)) - 1));
 		}
 	}
 

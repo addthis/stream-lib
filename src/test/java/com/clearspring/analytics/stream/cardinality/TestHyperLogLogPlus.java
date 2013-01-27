@@ -60,14 +60,14 @@ public class TestHyperLogLogPlus
     public void testHighCardinality()
     {
         long start = System.currentTimeMillis();
-        HyperLogLogPlus hyperLogLog = new HyperLogLogPlus(14, 25);
-        int size = 100000000;
+        HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(18, 25);
+		int size = 10000000;
         for (int i = 0; i < size; i++)
         {
-            hyperLogLog.offer(TestICardinality.streamElement(i));
-        }
-        System.out.println("time: " + (System.currentTimeMillis() - start));
-        long estimate = hyperLogLog.cardinality();
+            hyperLogLogPlus.offer(TestICardinality.streamElement(i));
+		}
+        System.out.println("expected: " + size + ", estimate: " + hyperLogLogPlus.cardinality() + ", time: " + (System.currentTimeMillis() - start));
+		long estimate = hyperLogLogPlus.cardinality();
         double err = Math.abs(estimate - size) / (double) size;
         System.out.println(err);
         assertTrue(err < .1);
@@ -76,8 +76,8 @@ public class TestHyperLogLogPlus
     @Test
     public void testMerge() throws CardinalityMergeException
     {
-        int numToMerge = 1;
-        int bits = 14;
+        int numToMerge = 4;
+        int bits = 18;
         int cardinality = 1000000;
 
         HyperLogLogPlus[] hyperLogLogs = new HyperLogLogPlus[numToMerge];
