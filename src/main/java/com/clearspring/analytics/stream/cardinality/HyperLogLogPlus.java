@@ -108,7 +108,7 @@ public class HyperLogLogPlus implements ICardinality
 			{189083, 185696.913, 182348.774, 179035.946, 175762.762, 172526.444, 169329.754, 166166.099, 163043.269, 159958.91, 156907.912, 153906.845, 150924.199, 147996.568, 145093.457, 142239.233, 139421.475, 136632.27, 133889.588, 131174.2, 128511.619, 125868.621, 123265.385, 120721.061, 118181.769, 115709.456, 113252.446, 110840.198, 108465.099, 106126.164, 103823.469, 101556.618, 99308.004, 97124.508, 94937.803, 92833.731, 90745.061, 88677.627, 86617.47, 84650.442, 82697.833, 80769.132, 78879.629, 77014.432, 75215.626, 73384.587, 71652.482, 69895.93, 68209.301, 66553.669, 64921.981, 63310.323, 61742.115, 60205.018, 58698.658, 57190.657, 55760.865, 54331.169, 52908.167, 51550.273, 50225.254, 48922.421, 47614.533, 46362.049, 45098.569, 43926.083, 42736.03, 41593.473, 40425.26, 39316.237, 38243.651, 37170.617, 36114.609, 35084.19, 34117.233, 33206.509, 32231.505, 31318.728, 30403.404, 29540.0550000001, 28679.236, 27825.862, 26965.216, 26179.148, 25462.08, 24645.952, 23922.523, 23198.144, 22529.128, 21762.4179999999, 21134.779, 20459.117, 19840.818, 19187.04, 18636.3689999999, 17982.831, 17439.7389999999, 16874.547, 16358.2169999999, 15835.684, 15352.914, 14823.681, 14329.313, 13816.897, 13342.874, 12880.882, 12491.648, 12021.254, 11625.392, 11293.7610000001, 10813.697, 10456.209, 10099.074, 9755.39000000001, 9393.18500000006, 9047.57900000003, 8657.98499999999, 8395.85900000005, 8033, 7736.95900000003, 7430.59699999995, 7258.47699999996, 6924.58200000005, 6691.29399999999, 6357.92500000005, 6202.05700000003, 5921.19700000004, 5628.28399999999, 5404.96799999999, 5226.71100000001, 4990.75600000005, 4799.77399999998, 4622.93099999998, 4472.478, 4171.78700000001, 3957.46299999999, 3868.95200000005, 3691.14300000004, 3474.63100000005, 3341.67200000002, 3109.14000000001, 3071.97400000005, 2796.40399999998, 2756.17799999996, 2611.46999999997, 2471.93000000005, 2382.26399999997, 2209.22400000005, 2142.28399999999, 2013.96100000001, 1911.18999999994, 1818.27099999995, 1668.47900000005, 1519.65800000005, 1469.67599999998, 1367.13800000004, 1248.52899999998, 1181.23600000003, 1022.71900000004, 1088.20700000005, 959.03600000008, 876.095999999903, 791.183999999892, 703.337000000058, 731.949999999953, 586.86400000006, 526.024999999907, 323.004999999888, 320.448000000091, 340.672999999952, 309.638999999966, 216.601999999955, 102.922999999952, 19.2399999999907, -0.114000000059605, -32.6240000000689, -89.3179999999702, -153.497999999905, -64.2970000000205, -143.695999999996, -259.497999999905, -253.017999999924, -213.948000000091, -397.590000000084, -434.006000000052, -403.475000000093, -297.958000000101, -404.317000000039, -528.898999999976, -506.621000000043, -513.205000000075, -479.351000000024, -596.139999999898, -527.016999999993, -664.681000000099, -680.306000000099, -704.050000000047, -850.486000000034, -757.43200000003, -713.308999999892,}
 	};
 
-	private Format format = Format.NORMAL;
+	private Format format = Format.SPARCE;
 	private final RegisterSet registerSet;
 	private final int m;
 	private final int sm;
@@ -119,23 +119,35 @@ public class HyperLogLogPlus implements ICardinality
 	ByteArrayOutputStream rawOutput = new ByteArrayOutputStream();
 	DataOutput dataOutput = new DataOutputStream(rawOutput);
 
-	private Set<byte[]> tmpSet = new HashSet<byte[]>();
-	private List<byte[]> sparseList = new ArrayList<byte[]>();
+	private final Set<byte[]> tmpSet = new TreeSet<byte[]>(new UnsignedIntComparator());
+	private List<byte[]> sparseSet;
 	private final int sparseSortThreshold = 50000;
+	private final int sparseMaxThreshold = 100000;
 
 
 	public HyperLogLogPlus(int p, int sp)
 	{
-		this(p, sp, new RegisterSet((int)Math.pow(2, p)));
+		this(p, sp, new ArrayList<byte[]>(), new RegisterSet((int)Math.pow(2, p)));
+	}
+
+	public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet)
+	{
+		this(p, sp, sparseSet, new RegisterSet((int)Math.pow(2, p)));
 	}
 
 	public HyperLogLogPlus(int p, int sp, RegisterSet registerSet)
+	{
+		this(p, sp, new ArrayList<byte[]>(), registerSet);
+	}
+
+	public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet, RegisterSet registerSet)
 	{
 		this.p = p;
 		this.sp = sp;
 		this.m = (int) Math.pow(2, p);
 		this.sm = (int) Math.pow(2, sp);
 		this.registerSet = registerSet;
+		this.sparseSet = sparseSet;
 		// See the paper.
 		switch (p)
 		{
@@ -177,14 +189,15 @@ public class HyperLogLogPlus implements ICardinality
 				int k = encodeHash(x, p, sp);
 				try
 				{
-					Varint.writeSignedVarInt(k, dataOutput);
+					Varint.writeUnsignedVarInt(k, dataOutput);
 					boolean ret = tmpSet.add(rawOutput.toByteArray());
 					rawOutput.reset();
 					if (tmpSet.size() > sparseSortThreshold)
 					{
-						sparseList = merge(sparseList, sort(tmpSet));
+						sparseSet = merge(sparseSet, sort(tmpSet));
 						tmpSet.clear();
-						if (sparseList.size() > (m * 6))
+						System.out.println("sss:" + sparseSet.size() + " max:" + (m*6));
+						if (sparseSet.size() > sparseMaxThreshold)
 						{
 							format = Format.NORMAL;
 							convertToNormal();
@@ -206,7 +219,7 @@ public class HyperLogLogPlus implements ICardinality
 
 	private void convertToNormal()
 	{
-		for (byte[] bytes : sparseList)
+		for (byte[] bytes : sparseSet)
 		{
 			DataInput dataInput = new DataInputStream(new ByteArrayInputStream(bytes));
 			try
@@ -219,7 +232,8 @@ public class HyperLogLogPlus implements ICardinality
 				{
 					registerSet.set(idx, runLength);
 				}
-
+				tmpSet.clear();
+				sparseSet = null;
 			}
 			catch (IOException e)
 			{
@@ -293,8 +307,9 @@ public class HyperLogLogPlus implements ICardinality
 					return Math.round(estimatePrime);
 				}
 			case SPARCE:
-				sparseList = merge(sparseList, sort(tmpSet));
-				return linearCounting(sm, (sm - sparseList.size()));
+				sparseSet = merge(sparseSet, sort(tmpSet));
+				tmpSet.clear();
+				return linearCounting(sm, (sm - sparseSet.size()));
 			default:
 				//TODO
 				break;
@@ -420,8 +435,7 @@ public class HyperLogLogPlus implements ICardinality
 	private boolean conditionalAdd(Map<Integer, Integer> tmpElementMap, Iterator<byte[]> iter, List<byte[]> newSet) throws IOException
 	{
 		byte[] k = iter.next();
-		DataInput dataInput = new DataInputStream(new ByteArrayInputStream(k));
-		int kint = Varint.readUnsignedVarInt(dataInput);
+		int kint = Varint.readUnsignedVarInt(k);
 		int idx = getIndex(kint, p);
 		int r = decodeRunLength(kint);
 		if (tmpElementMap.containsKey(idx) && tmpElementMap.get(idx) > r)
@@ -437,13 +451,13 @@ public class HyperLogLogPlus implements ICardinality
 	private int getIndex(int k, int p)
 	{
 
-		if ((k & 1L) != 0)
+		if ((k & 1) != 0)
 		{
 			return (k >>> 6 & ((1 << p) - 1));
 		}
 		else
 		{
-			return (k >>> 1 & ((1 << (p+1)) - 1));
+			return (k >>> 1 & ((1 << p) - 1));
 		}
 	}
 
@@ -479,10 +493,27 @@ public class HyperLogLogPlus implements ICardinality
 
 		dos.writeInt(p);
 		dos.writeInt(sp);
-		dos.writeInt(registerSet.size * 4);
-		for(int x : registerSet.bits())
+		switch (format)
 		{
-			dos.writeInt(x);
+			case NORMAL:
+				dos.writeInt(0);
+				dos.writeInt(registerSet.size * 4);
+				for(int x : registerSet.bits())
+				{
+					dos.writeInt(x);
+				}
+				break;
+			case SPARCE:
+				dos.writeInt(1);
+				sparseSet = merge(sparseSet, sort(tmpSet));
+				tmpSet.clear();
+				for (byte[] bytes : sparseSet)
+				{
+					dos.writeInt(bytes.length);
+					dos.write(bytes);
+				}
+				dos.writeInt(-1);
+				break;
 		}
 
 		return baos.toByteArray();
@@ -547,10 +578,30 @@ public class HyperLogLogPlus implements ICardinality
 			DataInputStream oi = new DataInputStream(bais);
 			int p = oi.readInt();
 			int sp = oi.readInt();
-			int size = oi.readInt();
-			byte[] longArrayBytes = new byte[size];
-			oi.readFully(longArrayBytes);
-			return new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+			int formatType = oi.readInt();
+			if (formatType == 0)
+			{
+				int size = oi.readInt();
+				byte[] longArrayBytes = new byte[size];
+				oi.readFully(longArrayBytes);
+				HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+				hyperLogLogPlus.format = Format.NORMAL;
+				return hyperLogLogPlus;
+			}
+			else
+			{
+				int l;
+				List<byte[]> rehydratedSparseSet = new ArrayList<byte[]>();
+				while ((l = oi.readInt()) > 0)
+				{
+					byte[] longArrayBytes = new byte[l];
+					oi.read(longArrayBytes, 0, l);
+					rehydratedSparseSet.add(longArrayBytes);
+				}
+				HyperLogLogPlus hyperLogLogPlus =  new HyperLogLogPlus(p, sp, rehydratedSparseSet);
+				hyperLogLogPlus.format = Format.SPARCE;
+				return hyperLogLogPlus;
+			}
 		}
 	}
 

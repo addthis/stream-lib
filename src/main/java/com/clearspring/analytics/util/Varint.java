@@ -21,6 +21,8 @@ package com.clearspring.analytics.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -168,6 +170,27 @@ public final class Varint {
 			}
 		}
 		return value | (b << i);
+	}
+
+	public static int readUnsignedVarInt(byte[] bytes) throws IOException {
+		int value = 0;
+		int i = 0;
+		byte rb = Byte.MIN_VALUE;
+		for (byte b : bytes)
+		{
+			rb = b;
+			if ((b & 0x80) == 0)
+			{
+				break;
+			}
+			value |= (b & 0x7f) << i;
+			i += 7;
+			if (i > 35)
+			{
+				throw new IllegalArgumentException("Variable length quantity is too long");
+			}
+		}
+		return value | (rb << i);
 	}
 
 }
