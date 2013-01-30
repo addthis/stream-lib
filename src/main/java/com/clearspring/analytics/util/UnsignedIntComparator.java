@@ -12,26 +12,8 @@ public class UnsignedIntComparator implements Comparator<byte[]>
 	@Override
 	public int compare(byte[] left, byte[] right)
 	{
-		// we know that these are unsigned var ints
-		try
-		{
-			int minLength = Math.min(left.length, right.length);
-			for (int i = 0; i < minLength; i++)
-			{
-				int l = Varint.readUnsignedVarInt(left);
-				int r = Varint.readUnsignedVarInt(right);
-				int result = l - r;
-				if (result != 0)
-				{
-					return result;
-				}
-			}
-			return left.length - right.length;
-		}
-		catch (IOException e)
-		{
-			//TODO
-		}
-		return 0;
+		int l = Varint.readUnsignedVarInt(left);
+		int r = Varint.readUnsignedVarInt(right);
+		return l - r;
 	}
 }

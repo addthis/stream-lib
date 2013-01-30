@@ -116,13 +116,10 @@ public class HyperLogLogPlus implements ICardinality
 	private final int sp;
 	private final double alphaMM;
 
-	ByteArrayOutputStream rawOutput = new ByteArrayOutputStream();
-	DataOutput dataOutput = new DataOutputStream(rawOutput);
-
 	private final Set<byte[]> tmpSet = new TreeSet<byte[]>(new UnsignedIntComparator());
 	private List<byte[]> sparseSet;
-	private final int sparseSortThreshold = 50000;
-	private final int sparseMaxThreshold = 100000;
+	private final int SortThreshold = 50000;
+	private final int MaxThreshold = 100000;
 
 
 	public HyperLogLogPlus(int p, int sp)
@@ -130,9 +127,9 @@ public class HyperLogLogPlus implements ICardinality
 		this(p, sp, new ArrayList<byte[]>(), new RegisterSet((int)Math.pow(2, p)));
 	}
 
-	public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet)
+	public HyperLogLogPlus(int p, int sp, List<byte[]> Set)
 	{
-		this(p, sp, sparseSet, new RegisterSet((int)Math.pow(2, p)));
+		this(p, sp, Set, new RegisterSet((int)Math.pow(2, p)));
 	}
 
 	public HyperLogLogPlus(int p, int sp, RegisterSet registerSet)
@@ -140,14 +137,14 @@ public class HyperLogLogPlus implements ICardinality
 		this(p, sp, new ArrayList<byte[]>(), registerSet);
 	}
 
-	public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet, RegisterSet registerSet)
+	public HyperLogLogPlus(int p, int sp, List<byte[]> Set, RegisterSet registerSet)
 	{
 		this.p = p;
 		this.sp = sp;
 		this.m = (int) Math.pow(2, p);
 		this.sm = (int) Math.pow(2, sp);
 		this.registerSet = registerSet;
-		this.sparseSet = sparseSet;
+		this.sparseSet = Set;
 		// See the paper.
 		switch (p)
 		{
@@ -175,7 +172,7 @@ public class HyperLogLogPlus implements ICardinality
 			case NORMAL:
 				// find first p bits of x
 				final long idx = x >>> (64 - p);
-				final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1)) + 1) + 1;
+				final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
 				if (registerSet.get((int) idx) < runLength)
 				{
 					registerSet.set((int) idx, runLength);
@@ -187,28 +184,17 @@ public class HyperLogLogPlus implements ICardinality
 				}
 			case SPARSE:
 				int k = encodeHash(x, p, sp);
-				try
+				boolean ret = tmpSet.add(zipInt(k));
+				if (tmpSet.size() > SortThreshold)
 				{
-					Varint.writeUnsignedVarInt(k, dataOutput);
-					boolean ret = tmpSet.add(rawOutput.toByteArray());
-					rawOutput.reset();
-					if (tmpSet.size() > sparseSortThreshold)
+					sparseSet = merge(sparseSet, sort(tmpSet));
+					tmpSet.clear();
+					if (sparseSet.size() > MaxThreshold)
 					{
-						sparseSet = merge(sparseSet, sort(tmpSet));
-						tmpSet.clear();
-						if (sparseSet.size() > sparseMaxThreshold)
-						{
-							convertToNormal();
-						}
+						convertToNormal();
 					}
-					return ret;
 				}
-				catch (IOException e)
-				{
-					// TODO
-					e.printStackTrace();
-				}
-				break;
+				return ret;
 			default:
 				break;
 		}
@@ -219,45 +205,52 @@ public class HyperLogLogPlus implements ICardinality
 	{
 		for (byte[] bytes : sparseSet)
 		{
-			DataInput dataInput = new DataInputStream(new ByteArrayInputStream(bytes));
-			try
+			int k = unzipInt(bytes);
+			int idx = getIndex(k, p);
+			int r = decodeRunLength(k);
+			if (registerSet.get(idx) < r)
 			{
-				int k = Varint.readUnsignedVarInt(dataInput);
-				int idx = getIndex(k, p);
-				int r = decodeRunLength(k);
-				if (registerSet.get(idx) < r)
-				{
-					registerSet.set(idx, r);
-				}
-			}
-			catch (IOException e)
-			{
-				// TODO
-				e.printStackTrace();
+				registerSet.set(idx, r);
 			}
 		}
 		format = Format.NORMAL;
 		tmpSet.clear();
 		sparseSet = null;
-
 	}
 
 	private int encodeHash(long x, int p, int sp)
 	{
-		long idx = x >>> (64 - sp);
-		int testBits = (63 - p) - (64 - sp);
-		long zeroTest = idx & ((1 << testBits) - 1);
-		if (zeroTest == 0)//(x >>> (64 - sp) >>> p == 0)
+		int idx = (int) (x >>> (64 - sp));
+		int zeroTest = idx << (7 + p);
+		if (zeroTest == 0)
 		{
-			long rho = x & ((1l << (63 - sp)) - 1);
+			long rho = x & ((1l << (31 - sp)) - 1);
 			return (int) (idx << 6 | (Long.numberOfLeadingZeros(rho)) << 1 | 1l);
 		}
 		else
 		{
-			return (int) (idx << 1l);
+            return idx << 7;
 		}
 	}
 
+    static public byte[] zipInt (int x)
+    {
+        if ((x & 1) == 0)
+        {
+            x = x >>> 6;
+        }
+        return Varint.writeUnsignedVarInt(x);
+    }
+
+    static public int unzipInt (byte[] x)
+    {
+        int out = Varint.readUnsignedVarInt(x);
+        if ((out & 1) == 0)
+        {
+            out = out << 6;
+        }
+        return out;
+    }
 
 	@Override
 	public long cardinality()
@@ -312,7 +305,6 @@ public class HyperLogLogPlus implements ICardinality
 				//TODO
 				break;
 		}
-
 		return 0;
 	}
 
@@ -372,102 +364,91 @@ public class HyperLogLogPlus implements ICardinality
 
 	private UnsignedIntComparator unsignedIntComparator = new UnsignedIntComparator();
 
-	private List<byte[]> merge(List<byte[]> sparseList, List<byte[]> sortedTmpSet)
+	private List<byte[]> merge(List<byte[]> List, List<byte[]> sortedTmpSet)
 	{
 
-		List<byte[]> newSparseSet = new ArrayList<byte[]>();
+		List<byte[]> newSet = new ArrayList<byte[]>();
 		Map<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
 
 		// iterate over each set and merge the result values
-		Iterator<byte[]> sparseIter = sparseList.iterator();
-		Iterator<byte[]> tmpSetIter = sortedTmpSet.iterator();
 
-		int sparseIndex = 0;
+		int Index = 0;
 		int tmpSetIndex = 0;
-		try
+		while (Index < List.size() || tmpSetIndex < sortedTmpSet.size())
 		{
-			while (sparseIter.hasNext() || tmpSetIter.hasNext())
+			if (Index >= List.size())
 			{
-				if (!sparseIter.hasNext())
+                int right = unzipInt(sortedTmpSet.get(tmpSetIndex));
+                conditionalAdd(indexMap, right, newSet);
+                tmpSetIndex++;
+			}
+			else if (tmpSetIndex >= sortedTmpSet.size())
+			{
+                int left = unzipInt(List.get(Index));
+                conditionalAdd(indexMap, left, newSet);
+                Index++;
+			}
+			else
+			{
+				int left = unzipInt(List.get(Index));
+				int right = unzipInt(sortedTmpSet.get(tmpSetIndex));
+
+				if (getSparseIndex(left) == getSparseIndex(right))
 				{
-					conditionalAdd(indexMap, tmpSetIter, newSparseSet);
+                    int max = Math.max(left, right);
+					conditionalAdd(indexMap, max, newSet);
+					tmpSetIndex++;
+					Index++;
 				}
-				else if (!tmpSetIter.hasNext())
+				else if (left < right)
 				{
-					conditionalAdd(indexMap, sparseIter, newSparseSet);
+					conditionalAdd(indexMap, left, newSet);
+					Index++;
 				}
 				else
 				{
-					byte[] left = sparseList.get(sparseIndex);
-					byte[] right = sortedTmpSet.get(tmpSetIndex);
-
-					if (left == right)
-					{
-						conditionalAdd(indexMap, sparseIter, newSparseSet);
-						tmpSetIter.next();
-						tmpSetIndex++;
-						sparseIndex++;
-					}
-					else if (unsignedIntComparator.compare(left, right) < 0)
-					{
-						conditionalAdd(indexMap, sparseIter, newSparseSet);
-						sparseIndex++;
-					}
-					else
-					{
-						conditionalAdd(indexMap, tmpSetIter, newSparseSet);
-						tmpSetIndex++;
-					}
+					conditionalAdd(indexMap, right, newSet);
+					tmpSetIndex++;
 				}
 			}
 		}
-		catch (Exception e)
-		{
-			//TODO
-
-		}
-		return newSparseSet;
+		return newSet;
 	}
 
 
-	private boolean conditionalAdd(Map<Integer, Integer> tmpElementMap, Iterator<byte[]> iter, List<byte[]> newSet) throws IOException
+	private boolean conditionalAdd(Map<Integer, Integer> tmpElementMap, int next, List<byte[]> newSet)
 	{
-		byte[] k = iter.next();
-		int kint = Varint.readUnsignedVarInt(k);
-		int idx = getIndex(kint, p);
-		int r = decodeRunLength(kint);
-		if (tmpElementMap.containsKey(idx) && tmpElementMap.get(idx) > r)
+		int idx = getSparseIndex(next);
+		int r = decodeRunLength(next);
+		if (tmpElementMap.containsKey(idx) && tmpElementMap.get(idx) >= r)
 		{
 			// skip elements with same index but smaller run length
 			return false;
 		}
 		tmpElementMap.put(idx, r);
-		newSet.add(k);
+		newSet.add(zipInt(next));
 		return true;
 	}
 
+    private int getSparseIndex(int k)
+    {
+        return k >>> 7;
+    }
+
 	private int getIndex(int k, int p)
 	{
-
-		if ((k & 1) != 0)
-		{
-			return (k >>> 6 & ((1 << p) - 1));
-		}
-		else
-		{
-			return (k >>> (1 + (sp-p)));
-		}
+		return (k >>> (7 + (sp-p)));
 	}
 
 	private int decodeRunLength(int k)
 	{
-		if ((k & (1L)) != 0)
+		if ((k & 1) != 0)
 		{
-			return ((k >>> 1) & ((1 << 7) - 1)) + (sp - p);
+			return ((k & 127) + (sp - p));
 		}
 		else
 		{
-			return Integer.numberOfLeadingZeros((k >>> 1) & ((1 << (sp - p )) - 1)) + 1;
+			return Integer.numberOfLeadingZeros(k << p) + 1;
 		}
 	}
 
@@ -517,6 +498,15 @@ public class HyperLogLogPlus implements ICardinality
 		return baos.toByteArray();
 	}
 
+    public void mergeTmp ()
+    {
+        if (tmpSet.size() != 0)
+        {
+            sparseSet = merge(sparseSet, sort(tmpSet));
+            tmpSet.clear();
+        }
+    }
+
 	@Override
 	public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
 	{
@@ -538,12 +528,42 @@ public class HyperLogLogPlus implements ICardinality
 				throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
 			}
 			HyperLogLogPlus hll = (HyperLogLogPlus) estimator;
-			for (int b = 0; b < mergedSet.count; b++)
-			{
-				mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
-			}
+            if (format == Format.SPARSE)
+            {
+                if (hll.format == Format.SPARSE)
+                {
+                    mergeTmp();
+                    hll.mergeTmp();
+                    sparseSet = merge(sparseSet, hll.sparseSet);
+                }
+                else
+                {
+                    convertToNormal();
+                }
+            }
+            else
+            {
+                if (hll.format == Format.SPARSE)
+                {
+                    hll.convertToNormal();
+                }
+            }
+            if (format != Format.SPARSE)
+            {
+                for (int b = 0; b < mergedSet.count; b++)
+                {
+                    mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
+                }
+            }
+
 		}
-		return new HyperLogLogPlus(p, sp, mergedSet);
+        if (format == Format.SPARSE)
+        {
+            return new HyperLogLogPlus(p, sp, sparseSet);
+        }
+        HyperLogLogPlus outEst = new HyperLogLogPlus(p, sp, mergedSet);
+        outEst.format = Format.NORMAL;
+        return outEst;
 	}
 
 	public static class Builder implements IBuilder<ICardinality>, Serializable
@@ -589,14 +609,14 @@ public class HyperLogLogPlus implements ICardinality
 			else
 			{
 				int l;
-				List<byte[]> rehydratedSparseSet = new ArrayList<byte[]>();
+				List<byte[]> rehydratedSet = new ArrayList<byte[]>();
 				while ((l = oi.readInt()) > 0)
 				{
 					byte[] longArrayBytes = new byte[l];
 					oi.read(longArrayBytes, 0, l);
-					rehydratedSparseSet.add(longArrayBytes);
+					rehydratedSet.add(longArrayBytes);
 				}
-				HyperLogLogPlus hyperLogLogPlus =  new HyperLogLogPlus(p, sp, rehydratedSparseSet);
+				HyperLogLogPlus hyperLogLogPlus =  new HyperLogLogPlus(p, sp, rehydratedSet);
 				hyperLogLogPlus.format = Format.SPARSE;
 				return hyperLogLogPlus;
 			}
@@ -611,4 +631,15 @@ public class HyperLogLogPlus implements ICardinality
 			super(message);
 		}
 	}
+}
+
+class UnsignedIntComparator implements Comparator<byte[]>
+{
+    @Override
+    public int compare(byte[] left, byte[] right)
+    {
+        int l = HyperLogLogPlus.unzipInt(left);
+        int r = HyperLogLogPlus.unzipInt(right);
+        return l - r;
+    }
 }

@@ -94,6 +94,25 @@ public final class Varint {
 		out.writeByte(value & 0x7F);
 	}
 
+    /**
+     * @see #writeUnsignedVarLong(long, DataOutput)
+     */
+    static byte[] byteArrayList = new byte[10];
+    public static byte[] writeUnsignedVarInt(int value) {
+        int i = 0;
+        while ((value & 0xFFFFFF80) != 0L) {
+            byteArrayList[i++] = ((byte) ((value & 0x7F) | 0x80));
+            value >>>= 7;
+        }
+        byteArrayList[i] = ((byte) (value & 0x7F));
+        byte[] out = new byte[i+1];
+        for (; i >= 0; i--)
+        {
+            out[i] = byteArrayList[i];
+        }
+        return out;
+    }
+
 	/**
 	 * @param in to read bytes from
 	 * @return decode value
@@ -172,7 +191,7 @@ public final class Varint {
 		return value | (b << i);
 	}
 
-	public static int readUnsignedVarInt(byte[] bytes) throws IOException {
+	public static int readUnsignedVarInt(byte[] bytes) {
 		int value = 0;
 		int i = 0;
 		byte rb = Byte.MIN_VALUE;
