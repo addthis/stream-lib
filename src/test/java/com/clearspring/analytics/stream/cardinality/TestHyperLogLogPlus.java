@@ -157,4 +157,37 @@ public class TestHyperLogLogPlus
 		assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
 		assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
 	}
+
+    @Test
+    public void testMerge_ManySparse() throws CardinalityMergeException
+    {
+        int numToMerge = 20;
+        int bits = 18;
+        int cardinality = 10000;
+
+        HyperLogLogPlus[] hyperLogLogs = new HyperLogLogPlus[numToMerge];
+        HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
+        for (int i = 0; i < numToMerge; i++)
+        {
+            hyperLogLogs[i] = new HyperLogLogPlus(bits, 25);
+            for (int j = 0; j < cardinality; j++)
+            {
+                double val = Math.random();
+                hyperLogLogs[i].offer(val);
+                baseline.offer(val);
+            }
+        }
+
+
+        long expectedCardinality = numToMerge * cardinality;
+        HyperLogLogPlus hll = hyperLogLogs[0];
+        hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLogPlus[0]);
+        long mergedEstimate = hll.merge(hyperLogLogs).cardinality();
+        double se = expectedCardinality * (1.04 / Math.sqrt(Math.pow(2, bits)));
+
+        System.out.println("Expect estimate: " + mergedEstimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
+
+        assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
+        assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
+    }
 }

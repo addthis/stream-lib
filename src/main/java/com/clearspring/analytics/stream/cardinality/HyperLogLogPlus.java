@@ -203,6 +203,7 @@ public class HyperLogLogPlus implements ICardinality
 
 	private void convertToNormal()
 	{
+        mergeTmp();
 		for (byte[] bytes : sparseSet)
 		{
 			int k = unzipInt(bytes);
@@ -364,7 +365,7 @@ public class HyperLogLogPlus implements ICardinality
 
 	private UnsignedIntComparator unsignedIntComparator = new UnsignedIntComparator();
 
-	private List<byte[]> merge(List<byte[]> List, List<byte[]> sortedTmpSet)
+	private List<byte[]> merge(List<byte[]> set, List<byte[]> tmp)
 	{
 
 		List<byte[]> newSet = new ArrayList<byte[]>();
@@ -372,43 +373,43 @@ public class HyperLogLogPlus implements ICardinality
 
 		// iterate over each set and merge the result values
 
-		int Index = 0;
-		int tmpSetIndex = 0;
-		while (Index < List.size() || tmpSetIndex < sortedTmpSet.size())
+		int seti = 0;
+		int tmpi = 0;
+		while (seti < set.size() || tmpi < tmp.size())
 		{
-			if (Index >= List.size())
+			if (seti >= set.size())
 			{
-                int right = unzipInt(sortedTmpSet.get(tmpSetIndex));
-                conditionalAdd(indexMap, right, newSet);
-                tmpSetIndex++;
+                int tmpVal = unzipInt(tmp.get(tmpi));
+                conditionalAdd(indexMap, tmpVal, newSet);
+                tmpi++;
 			}
-			else if (tmpSetIndex >= sortedTmpSet.size())
+			else if (tmpi >= tmp.size())
 			{
-                int left = unzipInt(List.get(Index));
-                conditionalAdd(indexMap, left, newSet);
-                Index++;
+                int setVal = unzipInt(set.get(seti));
+                conditionalAdd(indexMap, setVal, newSet);
+                seti++;
 			}
 			else
 			{
-				int left = unzipInt(List.get(Index));
-				int right = unzipInt(sortedTmpSet.get(tmpSetIndex));
+				int setVal = unzipInt(set.get(seti));
+				int tmpVal = unzipInt(tmp.get(tmpi));
 
-				if (getSparseIndex(left) == getSparseIndex(right))
+				if (getSparseIndex(setVal) == getSparseIndex(tmpVal))
 				{
-                    int max = Math.max(left, right);
+                    int max = Math.max(setVal, tmpVal);
 					conditionalAdd(indexMap, max, newSet);
-					tmpSetIndex++;
-					Index++;
+					tmpi++;
+					seti++;
 				}
-				else if (left < right)
+				else if (setVal < tmpVal)
 				{
-					conditionalAdd(indexMap, left, newSet);
-					Index++;
+					conditionalAdd(indexMap, setVal, newSet);
+					seti++;
 				}
 				else
 				{
-					conditionalAdd(indexMap, right, newSet);
-					tmpSetIndex++;
+					conditionalAdd(indexMap, tmpVal, newSet);
+					tmpi++;
 				}
 			}
 		}
@@ -514,9 +515,7 @@ public class HyperLogLogPlus implements ICardinality
 		{
 			return this;
 		}
-		RegisterSet mergedSet;
 		int size = this.sizeof();
-		mergedSet = new RegisterSet((int) Math.pow(2, p), this.registerSet.bits());
 		for (ICardinality estimator : estimators)
 		{
 			if(!(estimator instanceof HyperLogLogPlus))
@@ -532,9 +531,17 @@ public class HyperLogLogPlus implements ICardinality
             {
                 if (hll.format == Format.SPARSE)
                 {
-                    mergeTmp();
-                    hll.mergeTmp();
-                    sparseSet = merge(sparseSet, hll.sparseSet);
+                    if (sparseSet.size() + hll.sparseSet.size() > MaxThreshold)
+                    {
+                        convertToNormal();
+                        hll.convertToNormal();
+                    }
+                    else
+                    {
+                        mergeTmp();
+                        hll.mergeTmp();
+                        sparseSet = merge(sparseSet, hll.sparseSet);
+                    }
                 }
                 else
                 {
@@ -550,9 +557,9 @@ public class HyperLogLogPlus implements ICardinality
             }
             if (format != Format.SPARSE)
             {
-                for (int b = 0; b < mergedSet.count; b++)
+                for (int b = 0; b < registerSet.count; b++)
                 {
-                    mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
+                    registerSet.set(b, Math.max(registerSet.get(b), hll.registerSet.get(b)));
                 }
             }
 
@@ -561,7 +568,7 @@ public class HyperLogLogPlus implements ICardinality
         {
             return new HyperLogLogPlus(p, sp, sparseSet);
         }
-        HyperLogLogPlus outEst = new HyperLogLogPlus(p, sp, mergedSet);
+        HyperLogLogPlus outEst = new HyperLogLogPlus(p, sp, registerSet);
         outEst.format = Format.NORMAL;
         return outEst;
 	}
