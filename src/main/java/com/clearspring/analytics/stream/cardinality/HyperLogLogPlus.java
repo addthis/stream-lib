@@ -196,10 +196,8 @@ public class HyperLogLogPlus implements ICardinality
 					{
 						sparseSet = merge(sparseSet, sort(tmpSet));
 						tmpSet.clear();
-						System.out.println("sss:" + sparseSet.size() + " max:" + (m*6));
 						if (sparseSet.size() > sparseMaxThreshold)
 						{
-							format = Format.NORMAL;
 							convertToNormal();
 						}
 					}
@@ -227,13 +225,10 @@ public class HyperLogLogPlus implements ICardinality
 				int k = Varint.readUnsignedVarInt(dataInput);
 				int idx = getIndex(k, p);
 				int r = decodeRunLength(k);
-				final int runLength = Long.numberOfLeadingZeros((idx << this.p) | (1 << (this.p - 1)) + 1) + 1;
 				if (registerSet.get(idx) < r)
 				{
-					registerSet.set(idx, runLength);
+					registerSet.set(idx, r);
 				}
-				tmpSet.clear();
-				sparseSet = null;
 			}
 			catch (IOException e)
 			{
@@ -241,6 +236,9 @@ public class HyperLogLogPlus implements ICardinality
 				e.printStackTrace();
 			}
 		}
+		format = Format.NORMAL;
+		tmpSet.clear();
+		sparseSet = null;
 
 	}
 
@@ -457,7 +455,7 @@ public class HyperLogLogPlus implements ICardinality
 		}
 		else
 		{
-			return (k >>> 1 & ((1 << p) - 1));
+			return (k >>> (1 + (sp-p)));
 		}
 	}
 
@@ -469,7 +467,7 @@ public class HyperLogLogPlus implements ICardinality
 		}
 		else
 		{
-			return Integer.numberOfLeadingZeros((k >>> 1) & ((1 << (sp - p - 1)) - 1)) + 1;
+			return Integer.numberOfLeadingZeros((k >>> 1) & ((1 << (sp - p )) - 1)) + 1;
 		}
 	}
 
