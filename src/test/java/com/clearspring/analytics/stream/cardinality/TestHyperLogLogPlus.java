@@ -30,16 +30,12 @@ public class TestHyperLogLogPlus
     public void testComputeCount()
     {
         HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
-        hyperLogLogPlus.offer(0);
-        hyperLogLogPlus.offer(1);
-        hyperLogLogPlus.offer(2);
-        hyperLogLogPlus.offer(3);
-        hyperLogLogPlus.offer(16);
-        hyperLogLogPlus.offer(17);
-        hyperLogLogPlus.offer(18);
-        hyperLogLogPlus.offer(19);
-        hyperLogLogPlus.offer(19);
-        assertEquals(8, hyperLogLogPlus.cardinality());
+		int count = 70000;
+        for (int i = 0; i < count; i++)
+		{
+			hyperLogLogPlus.offer("i" + i);
+		}
+        assertEquals(70000, hyperLogLogPlus.cardinality());
     }
 
     @Test
