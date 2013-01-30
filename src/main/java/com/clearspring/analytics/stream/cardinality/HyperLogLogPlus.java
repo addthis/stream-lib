@@ -116,7 +116,7 @@ public class HyperLogLogPlus implements ICardinality
 	private final int sp;
 	private final double alphaMM;
 
-	private final Set<byte[]> tmpSet = new TreeSet<byte[]>(new UnsignedIntComparator());
+	private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
 	private List<byte[]> sparseSet;
 	private final int SortThreshold = 50000;
 	private final int MaxThreshold = 100000;
@@ -184,11 +184,10 @@ public class HyperLogLogPlus implements ICardinality
 				}
 			case SPARSE:
 				int k = encodeHash(x, p, sp);
-				boolean ret = tmpSet.add(zipInt(k));
+				boolean ret = tmpSet.add(k);
 				if (tmpSet.size() > SortThreshold)
 				{
-					sparseSet = merge(sparseSet, sort(tmpSet));
-					tmpSet.clear();
+					mergeTmp();
 					if (sparseSet.size() > MaxThreshold)
 					{
 						convertToNormal();
@@ -234,18 +233,20 @@ public class HyperLogLogPlus implements ICardinality
 		}
 	}
 
-    static public byte[] zipInt (int x)
+    public byte[] zipInt (int x)
     {
         if ((x & 1) == 0)
         {
             x = x >>> 6;
         }
+        x -= delta;
         return Varint.writeUnsignedVarInt(x);
     }
 
-    static public int unzipInt (byte[] x)
+    public int unzipInt (byte[] x)
     {
         int out = Varint.readUnsignedVarInt(x);
+        out += old_delta;
         if ((out & 1) == 0)
         {
             out = out << 6;
@@ -299,8 +300,7 @@ public class HyperLogLogPlus implements ICardinality
 					return Math.round(estimatePrime);
 				}
 			case SPARSE:
-				sparseSet = merge(sparseSet, sort(tmpSet));
-				tmpSet.clear();
+				mergeTmp();
 				return linearCounting(sm, (sm - sparseSet.size()));
 			default:
 				//TODO
@@ -365,7 +365,9 @@ public class HyperLogLogPlus implements ICardinality
 
 	private UnsignedIntComparator unsignedIntComparator = new UnsignedIntComparator();
 
-	private List<byte[]> merge(List<byte[]> set, List<byte[]> tmp)
+    int delta = 0;
+    int old_delta = 0;
+	private List<byte[]> merge(List<byte[]> set, List<Integer> tmp)
 	{
 
 		List<byte[]> newSet = new ArrayList<byte[]>();
@@ -379,7 +381,7 @@ public class HyperLogLogPlus implements ICardinality
 		{
 			if (seti >= set.size())
 			{
-                int tmpVal = unzipInt(tmp.get(tmpi));
+                int tmpVal = tmp.get(tmpi);
                 conditionalAdd(indexMap, tmpVal, newSet);
                 tmpi++;
 			}
@@ -392,7 +394,7 @@ public class HyperLogLogPlus implements ICardinality
 			else
 			{
 				int setVal = unzipInt(set.get(seti));
-				int tmpVal = unzipInt(tmp.get(tmpi));
+				int tmpVal = tmp.get(tmpi);
 
 				if (getSparseIndex(setVal) == getSparseIndex(tmpVal))
 				{
@@ -413,12 +415,65 @@ public class HyperLogLogPlus implements ICardinality
 				}
 			}
 		}
+        old_delta = delta;
 		return newSet;
 	}
 
+    private List<byte[]> mergeEstimators(List<byte[]> set, HyperLogLogPlus other)
+    {
+        List<byte[]> tmp = other.sparseSet;
+        List<byte[]> newSet = new ArrayList<byte[]>();
+        Map<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
+
+        // iterate over each set and merge the result values
+
+        int seti = 0;
+        int tmpi = 0;
+        while (seti < set.size() || tmpi < tmp.size())
+        {
+            if (seti >= set.size())
+            {
+                int tmpVal = other.unzipInt(tmp.get(tmpi));
+                conditionalAdd(indexMap, tmpVal, newSet);
+                tmpi++;
+            }
+            else if (tmpi >= tmp.size())
+            {
+                int setVal = unzipInt(set.get(seti));
+                conditionalAdd(indexMap, setVal, newSet);
+                seti++;
+            }
+            else
+            {
+                int setVal = unzipInt(set.get(seti));
+                int tmpVal = other.unzipInt(tmp.get(tmpi));
+
+                if (getSparseIndex(setVal) == getSparseIndex(tmpVal))
+                {
+                    int max = Math.max(setVal, tmpVal);
+                    conditionalAdd(indexMap, max, newSet);
+                    tmpi++;
+                    seti++;
+                }
+                else if (setVal < tmpVal)
+                {
+                    conditionalAdd(indexMap, setVal, newSet);
+                    seti++;
+                }
+                else
+                {
+                    conditionalAdd(indexMap, tmpVal, newSet);
+                    tmpi++;
+                }
+            }
+        }
+        old_delta = delta;
+        return newSet;
+    }
 
 	private boolean conditionalAdd(Map<Integer, Integer> tmpElementMap, int next, List<byte[]> newSet)
 	{
+
 		int idx = getSparseIndex(next);
 		int r = decodeRunLength(next);
 		if (tmpElementMap.containsKey(idx) && tmpElementMap.get(idx) >= r)
@@ -427,6 +482,10 @@ public class HyperLogLogPlus implements ICardinality
 			return false;
 		}
 		tmpElementMap.put(idx, r);
+        if (newSet.size() == 0)
+        {
+            delta = next;
+        }
 		newSet.add(zipInt(next));
 		return true;
 	}
@@ -485,8 +544,7 @@ public class HyperLogLogPlus implements ICardinality
 				break;
 			case SPARSE:
 				dos.writeInt(1);
-				sparseSet = merge(sparseSet, sort(tmpSet));
-				tmpSet.clear();
+                mergeTmp();
 				for (byte[] bytes : sparseSet)
 				{
 					dos.writeInt(bytes.length);
@@ -503,7 +561,8 @@ public class HyperLogLogPlus implements ICardinality
     {
         if (tmpSet.size() != 0)
         {
-            sparseSet = merge(sparseSet, sort(tmpSet));
+            Collections.sort(tmpSet);
+            sparseSet = merge(sparseSet, tmpSet);
             tmpSet.clear();
         }
     }
@@ -540,7 +599,7 @@ public class HyperLogLogPlus implements ICardinality
                     {
                         mergeTmp();
                         hll.mergeTmp();
-                        sparseSet = merge(sparseSet, hll.sparseSet);
+                        sparseSet = mergeEstimators(sparseSet, hll);
                     }
                 }
                 else
@@ -638,15 +697,5 @@ public class HyperLogLogPlus implements ICardinality
 			super(message);
 		}
 	}
-}
 
-class UnsignedIntComparator implements Comparator<byte[]>
-{
-    @Override
-    public int compare(byte[] left, byte[] right)
-    {
-        int l = HyperLogLogPlus.unzipInt(left);
-        int r = HyperLogLogPlus.unzipInt(right);
-        return l - r;
-    }
 }
