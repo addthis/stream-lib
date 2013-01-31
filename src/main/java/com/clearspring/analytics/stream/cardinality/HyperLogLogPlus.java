@@ -373,6 +373,14 @@ public class HyperLogLogPlus implements ICardinality
         }
     }
 
+    /**
+     * Get the idx' from an encoding
+     *
+     *
+     * @param k encoded data
+     * @return idx'
+     */
+
     private int getSparseIndex(int k)
     {
         if ((k & 1) == 1)
@@ -385,12 +393,27 @@ public class HyperLogLogPlus implements ICardinality
         }
     }
 
+    /**
+     * Gets the idx from an encoding (note this is idx and not idx prime)
+     *
+     * @param k encoded data
+     * @param p 'normal' precision
+     * @return
+     */
+
     private int getIndex(int k, int p)
     {
         k = getSparseIndex(k);
         return (k >>> (sp-p));
     }
 
+    /**
+     * Gather the cardinality estimate from this estimator.
+     *
+     * Has two procedures based on current mode. 'Normal' mode works similar to HLL but has some
+     * new bias corrections. 'Sparse' mode is linear counting.
+     * @return
+     */
 	@Override
 	public long cardinality()
 	{
@@ -493,12 +516,35 @@ public class HyperLogLogPlus implements ICardinality
 		return distances;
 	}
 
+    /**
+     * Adds an element to a sorted, compressed list. It does the compression here,
+     * the sorting is on you. And by you, I mean the merge function.
+     *
+     * In general, the delta encoding just uses the difference from the new element
+     * and the last element added.
+     *
+     * This is also where the variable length int compression is called. See the Varint class
+     * for details, but smaller int values lead to fewer bytes being returned is the
+     * general idea.
+     *
+     * @param list the new list to add to
+     * @param next the encoded value to compress and add
+     */
     private void deltaAdd (List<byte[]> list, int next)
     {
         list.add(Varint.writeUnsignedVarInt(next- prevMergedDelta));
         prevMergedDelta = next;
     }
 
+    /**
+     * Read from a delta encoded and varint compressed list. Since we are using
+     * delta encoding, you probably want to start from 0 and work your way up the list one
+     * at a time. One old value is kept around for a bit of convenience so you can say
+     * deltaRead(list, 4); and then deltaRead(list,4) again but not deltaRead(list,3);
+     * @param list list to be read from
+     * @param i index
+     * @return uncompressed list entry
+     */
     private int deltaRead (List<byte[]> list, int i)
     {
         int out = Varint.readUnsignedVarInt(list.get(i));
@@ -520,6 +566,9 @@ public class HyperLogLogPlus implements ICardinality
         return out;
     }
 
+    /**
+     * Initializes the delta compression system. (or reinitializes)
+     */
     private void resetDelta()
     {
         prevDeltaRead = 0;
@@ -528,21 +577,27 @@ public class HyperLogLogPlus implements ICardinality
         backupDeltaRead = 0;
     }
 
-    private int consumeDuplicates (List<Integer> tmp, int tmpIdx, int tmpi)
-    {
-        while (tmpi < tmp.size())
-        {
-            int nextTmp = tmp.get(tmpi);
-            int nextTmpIdx = getSparseIndex(nextTmp);
-            if (tmpIdx != nextTmpIdx)
-            {
-                return tmpi;
-            }
-            tmpi++;
-        }
-        return tmpi;
-    }
-
+    /**
+     * Batch merges the sparse set with the temporary list. Usually called when the temporary
+     * list fills up, but may also be needed when suddenly converting to normal or producing a
+     * cardinality estimate.
+     *
+     * It works very similarly to the merge part of merge sort with some key differences:
+     *      We don't care about the kind of order the idxs appear in, only that they are in SOME order.
+     *      This is because we only need to be sure that we detect when they are the same. So if idx: '001' appears
+     *      first and idx: '002' appears last, that is fine as long as that behavior is the same for both lists.
+     *
+     *      We do not allow duplicate entries (we are making a set after all), and collisions are resolved by run
+     *      length. However, most of the time the run length will be the same if two idx' are the same. Only in the
+     *      1 in ~128 chance case of 'all 0s?' will they differ. Because the rest of the encoding is the same we can
+     *      do comparisons without extracting the run length and because of our earlier inversion trick, the highest
+     *      run length duplicates will appear first. So we take those and ignore any that follow with the same idx'.
+     *
+     *
+     * @param set sparse set
+     * @param tmp list to be merged
+     * @return the new sparse set
+     */
 	private List<byte[]> merge(List<byte[]> set, List<Integer> tmp)
 	{
         resetDelta();
@@ -595,6 +650,42 @@ public class HyperLogLogPlus implements ICardinality
 		}
         return newSet;
 	}
+
+    /**
+     * Eats up the inferior duplicates from the temp list
+     *
+     * @param tmp tmp list
+     * @param tmpIdx the idx' we want to consume
+     * @param tmpi the current tmp list index
+     * @return the new tmp list index
+     */
+
+    private int consumeDuplicates (List<Integer> tmp, int tmpIdx, int tmpi)
+    {
+        while (tmpi < tmp.size())
+        {
+            int nextTmp = tmp.get(tmpi);
+            int nextTmpIdx = getSparseIndex(nextTmp);
+            if (tmpIdx != nextTmpIdx)
+            {
+                return tmpi;
+            }
+            tmpi++;
+        }
+        return tmpi;
+    }
+
+    /**
+     * Merge this HLL++ instance with another! The power of friends!
+     *
+     * This works very similarly to the merge with temp list function.
+     *
+     * However, in this case, both lists will need their own delta decoding and neither will
+     * have to worry about consuming duplicates.
+     *
+     * @param other
+     * @return the new sparse set
+     */
 
     private List<byte[]> mergeEstimators(HyperLogLogPlus other)
     {
@@ -695,6 +786,13 @@ public class HyperLogLogPlus implements ICardinality
 		return baos.toByteArray();
 	}
 
+    /**
+     * Script-esque function that handles preparing to and executing merging the sparse set
+     * and the temp list.
+     *
+     * Set up the delta encoding, sort the temp list, merge the lists, blow up the temp list.
+     */
+
     public void mergeTempList()
     {
         if (tmpSet.size() != 0)
@@ -705,6 +803,21 @@ public class HyperLogLogPlus implements ICardinality
             tmpSet.clear();
         }
     }
+
+    /**
+     * Merge this HLL++ with a bunch of others! The power of minions!
+     *
+     * Most of the logic consists of case analysis about the state of this HLL++ and each one it wants to merge
+     * with. If either of them is 'normal' mode then the other converts to 'normal' as well. A touching sacrifice.
+     * 'Normal's combine just like regular HLL estimators do.
+     *
+     * If they happen to be both sparse, then it checks if their combined size would be too large and if so, they get
+     * relegated to normal mode anyway. Otherwise, the mergeEstimators function is called, and a new sparse HLL++ is born.
+     *
+     * @param estimators the estimators to merge with this one
+     * @return a new estimator with their combined knowledge
+     * @throws CardinalityMergeException
+     */
 
 	@Override
 	public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException

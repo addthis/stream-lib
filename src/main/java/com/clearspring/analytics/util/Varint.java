@@ -101,6 +101,10 @@ public final class Varint {
 
     /**
      * @see #writeUnsignedVarLong(long, DataOutput)
+     *
+     * This one does not use streams and is much faster.
+     * Makes a single object each time, and that object is a primitive array.
+     *
      */
     static byte[] byteArrayList = new byte[10];
     public static byte[] writeUnsignedVarInt(int value) {
