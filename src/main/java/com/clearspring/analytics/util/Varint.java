@@ -94,6 +94,11 @@ public final class Varint {
 		out.writeByte(value & 0x7F);
 	}
 
+    public static byte[] writeSignedVarInt(int value) {
+        // Great trick from http://code.google.com/apis/protocolbuffers/docs/encoding.html#types
+        return writeUnsignedVarInt((value << 1) ^ (value >> 31));
+    }
+
     /**
      * @see #writeUnsignedVarLong(long, DataOutput)
      */
@@ -190,6 +195,16 @@ public final class Varint {
 		}
 		return value | (b << i);
 	}
+
+    public static int readSignedVarInt(byte[] bytes) {
+        int raw = readUnsignedVarInt(bytes);
+        // This undoes the trick in writeSignedVarInt()
+        int temp = (((raw << 31) >> 31) ^ raw) >> 1;
+        // This extra step lets us deal with the largest signed values by treating
+        // negative results from read unsigned methods as like unsigned values.
+        // Must re-flip the top bit if the original read value had it set.
+        return temp ^ (raw & (1 << 31));
+    }
 
 	public static int readUnsignedVarInt(byte[] bytes) {
 		int value = 0;

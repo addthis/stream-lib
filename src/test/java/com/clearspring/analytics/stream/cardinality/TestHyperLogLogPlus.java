@@ -19,10 +19,13 @@ package com.clearspring.analytics.stream.cardinality;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import com.clearspring.analytics.util.*;
+
 
 public class TestHyperLogLogPlus
 {
@@ -44,6 +47,21 @@ public class TestHyperLogLogPlus
         assertTrue(estimate >= expectedCardinality - (3 * se));
         assertTrue(estimate <= expectedCardinality + (3 * se));
     }
+
+//    @Test
+//    public void testDelta()
+//    {
+//        HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
+//        ArrayList<byte[]> l = new ArrayList<byte[]>();
+//        for (int i = 0; i < 1000000; i++)
+//        {
+//            hll.deltaAdd(l,i);
+//            int out = hll.deltaRead(l,i);
+//            assert i == out;
+//            int out2 = hll.deltaRead(l,i);
+//            assert i == out2;
+//        }
+//    }
 
     @Test
     public void testSerialization_Normal() throws IOException
@@ -85,7 +103,7 @@ public class TestHyperLogLogPlus
         System.out.println("expected: " + size + ", estimate: " + hyperLogLogPlus.cardinality() + ", time: " + (System.currentTimeMillis() - start));
 		long estimate = hyperLogLogPlus.cardinality();
         double err = Math.abs(estimate - size) / (double) size;
-        System.out.println(err);
+        System.out.println("Percentage error  " + err);
         assertTrue(err < .1);
     }
 
@@ -118,11 +136,11 @@ public class TestHyperLogLogPlus
 
         System.out.println("Expect estimate: " + mergedEstimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
         double err = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
-        System.out.println(err);
+        System.out.println("Percentage error  " + err);
         assertTrue(err < .1);
 
-//        assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
-//        assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
+        assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
+        assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
     }
 
 	@Test
@@ -178,7 +196,6 @@ public class TestHyperLogLogPlus
             }
         }
 
-
         long expectedCardinality = numToMerge * cardinality;
         HyperLogLogPlus hll = hyperLogLogs[0];
         hyperLogLogs = Arrays.asList(hyperLogLogs).subList(1, hyperLogLogs.length).toArray(new HyperLogLogPlus[0]);
@@ -186,9 +203,7 @@ public class TestHyperLogLogPlus
         double se = expectedCardinality * (1.04 / Math.sqrt(Math.pow(2, bits)));
 
         System.out.println("Expect estimate: " + mergedEstimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
-        double err = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
-        System.out.println(err);
-        assertTrue(err < .1);
+
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
     }

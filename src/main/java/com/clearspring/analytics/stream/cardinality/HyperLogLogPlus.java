@@ -31,6 +31,8 @@ import java.util.*;
  * </p>
  *
  *
+ *
+ *
  */
 public class HyperLogLogPlus implements ICardinality
 {
@@ -115,11 +117,16 @@ public class HyperLogLogPlus implements ICardinality
 	private final int p;
 	private final int sp;
 	private final double alphaMM;
+    private int prevDeltaRead = 0;
+    private int reserveDeltaRead = 0;
+    private int prevDeltaReadIndex = -1;
+    private int prevDeltaAdd = 0;
 
-	private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
+
+    private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
 	private List<byte[]> sparseSet;
-	private final int SortThreshold = 50000;
-	private final int MaxThreshold = 100000;
+	static final int SortThreshold = 50000;
+	static final int MaxThreshold = 100000;
 
 
 	public HyperLogLogPlus(int p, int sp)
@@ -203,9 +210,11 @@ public class HyperLogLogPlus implements ICardinality
 	private void convertToNormal()
 	{
         mergeTmp();
-		for (byte[] bytes : sparseSet)
+        resetDelta();
+//		for (byte[] bytes : sparseSet)
+        for (int i = 0; i < sparseSet.size(); i++)
 		{
-			int k = unzipInt(bytes);
+			int k = deltaRead(sparseSet, i);
 			int idx = getIndex(k, p);
 			int r = decodeRunLength(k);
 			if (registerSet.get(idx) < r)
@@ -216,7 +225,7 @@ public class HyperLogLogPlus implements ICardinality
 		format = Format.NORMAL;
 		tmpSet.clear();
 		sparseSet = null;
-	}
+    }
 
 	private int encodeHash(long x, int p, int sp)
 	{
@@ -255,27 +264,6 @@ public class HyperLogLogPlus implements ICardinality
     private int getIndex(int k, int p)
     {
         return (k >>> (7 + (sp-p)));
-    }
-
-    public byte[] zipInt (int x)
-    {
-        if ((x & 1) == 0)
-        {
-            x = x >>> 6;
-        }
-        x -= delta;
-        return Varint.writeUnsignedVarInt(x);
-    }
-
-    public int unzipInt (byte[] x)
-    {
-        int out = Varint.readUnsignedVarInt(x);
-        out += old_delta;
-        if ((out & 1) == 0)
-        {
-            out = out << 6;
-        }
-        return out;
     }
 
 	@Override
@@ -379,14 +367,44 @@ public class HyperLogLogPlus implements ICardinality
 		}
 		return distances;
 	}
+    
+    private void deltaAdd (List<byte[]> list, int next)
+    {
+        list.add(Varint.writeUnsignedVarInt(next-prevDeltaAdd));
+        prevDeltaAdd = next;
+    }
 
-    int delta = 0;
-    int old_delta = 0;
+    private int deltaRead (List<byte[]> list, int i)
+    {
+        int out = Varint.readUnsignedVarInt(list.get(i));
+        if (i == prevDeltaReadIndex + 1)
+        {
+            out += prevDeltaRead;
+            reserveDeltaRead = prevDeltaRead;
+            prevDeltaRead = out;
+            prevDeltaReadIndex++;
+        }
+        else if (i == prevDeltaReadIndex)
+        {
+            out += reserveDeltaRead;
+        }
+        else
+            assert false;
+        return out;
+    }
+
+    private void resetDelta()
+    {
+        prevDeltaRead = 0;
+        prevDeltaReadIndex = -1;
+        prevDeltaAdd = 0;
+        reserveDeltaRead = 0;
+    }
+
 	private List<byte[]> merge(List<byte[]> set, List<Integer> tmp)
 	{
-
+        resetDelta();
 		List<byte[]> newSet = new ArrayList<byte[]>();
-		Map<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
 
 		// iterate over each set and merge the result values
 
@@ -397,74 +415,51 @@ public class HyperLogLogPlus implements ICardinality
 			if (seti >= set.size())
 			{
                 int tmpVal = tmp.get(tmpi);
-                conditionalAdd(indexMap, tmpVal, newSet);
-                tmpi++;
+                deltaAdd(newSet, tmpVal);
+                while (++tmpi < tmp.size() && getSparseIndex(tmpVal) == getSparseIndex(tmp.get(tmpi)));
 			}
 			else if (tmpi >= tmp.size())
 			{
-                int setVal = unzipInt(set.get(seti));
-                conditionalAdd(indexMap, setVal, newSet);
+                int setVal = deltaRead(set, seti);
+                deltaAdd(newSet, setVal);
                 seti++;
 			}
 			else
 			{
-				int setVal = unzipInt(set.get(seti));
+				int setVal = deltaRead(set, seti);
 				int tmpVal = tmp.get(tmpi);
 
 				if (getSparseIndex(setVal) == getSparseIndex(tmpVal))
 				{
                     int min = Math.min(setVal, tmpVal);
-					conditionalAdd(indexMap, min, newSet);
-					tmpi++;
+                    deltaAdd(newSet, min);
+                    while (++tmpi < tmp.size() && getSparseIndex(tmpVal) == getSparseIndex(tmp.get(tmpi)));
 					seti++;
 				}
 				else if (setVal < tmpVal)
 				{
-					conditionalAdd(indexMap, setVal, newSet);
-					seti++;
+                    deltaAdd(newSet, setVal);
+                    seti++;
 				}
 				else
 				{
-					conditionalAdd(indexMap, tmpVal, newSet);
-					tmpi++;
+                    deltaAdd(newSet, tmpVal);
+                    while (++tmpi < tmp.size() && getSparseIndex(tmpVal) == getSparseIndex(tmp.get(tmpi)));
 				}
 			}
 		}
-        old_delta = delta;
-		return newSet;
+        return newSet;
 	}
-
-    private boolean conditionalAdd(Map<Integer, Integer> tmpElementMap, int next, List<byte[]> newSet)
-    {
-
-        int idx = getSparseIndex(next);
-        int r = decodeRunLength(next);
-        if (tmpElementMap.containsKey(idx))
-        {
-            if (tmpElementMap.get(idx) < r)
-            {
-                assert false;
-            }
-            // skip elements with same index but smaller run length
-            return false;
-        }
-        tmpElementMap.put(idx, r);
-        if (newSet.size() == 0)
-        {
-            delta = next;
-        }
-        newSet.add(zipInt(next));
-        return true;
-    }
 
     private List<byte[]> mergeEstimators(HyperLogLogPlus other)
     {
         other.mergeTmp();
         mergeTmp();
+        resetDelta();
+        other.resetDelta();
         List<byte[]> set = sparseSet;
         List<byte[]> tmp = other.sparseSet;
         List<byte[]> newSet = new ArrayList<byte[]>();
-        Map<Integer, Integer> indexMap = new HashMap<Integer, Integer>();
 
         // iterate over each set and merge the result values
 
@@ -474,41 +469,40 @@ public class HyperLogLogPlus implements ICardinality
         {
             if (seti >= set.size())
             {
-                int tmpVal = other.unzipInt(tmp.get(tmpi));
-                conditionalAdd(indexMap, tmpVal, newSet);
+                int tmpVal = other.deltaRead(tmp, tmpi);
+                deltaAdd(newSet, tmpVal);
                 tmpi++;
             }
             else if (tmpi >= tmp.size())
             {
-                int setVal = unzipInt(set.get(seti));
-                conditionalAdd(indexMap, setVal, newSet);
+                int setVal = deltaRead(set, seti);
+                deltaAdd(newSet, setVal);
                 seti++;
             }
             else
             {
-                int setVal = unzipInt(set.get(seti));
-                int tmpVal = other.unzipInt(tmp.get(tmpi));
+                int setVal = deltaRead(set, seti);
+                int tmpVal = other.deltaRead(tmp, tmpi);
 
                 if (getSparseIndex(setVal) == getSparseIndex(tmpVal))
                 {
                     int min = Math.min(setVal, tmpVal);
-                    conditionalAdd(indexMap , min, newSet);
+                    deltaAdd(newSet, min);
                     tmpi++;
                     seti++;
                 }
                 else if (setVal < tmpVal)
                 {
-                    conditionalAdd(indexMap, setVal, newSet);
+                    deltaAdd(newSet, setVal);
                     seti++;
                 }
                 else
                 {
-                    conditionalAdd(indexMap, tmpVal, newSet);
+                    deltaAdd(newSet, tmpVal);
                     tmpi++;
                 }
             }
         }
-        old_delta = delta;
         return newSet;
     }
 
@@ -544,7 +538,7 @@ public class HyperLogLogPlus implements ICardinality
 			case SPARSE:
 				dos.writeInt(1);
                 mergeTmp();
-				for (byte[] bytes : sparseSet)
+                for (byte[] bytes : sparseSet)
 				{
 					dos.writeInt(bytes.length);
 					dos.write(bytes);
@@ -560,6 +554,7 @@ public class HyperLogLogPlus implements ICardinality
     {
         if (tmpSet.size() != 0)
         {
+            resetDelta();
             Collections.sort(tmpSet);
             sparseSet = merge(sparseSet, tmpSet);
             tmpSet.clear();
