@@ -30,7 +30,16 @@ import java.util.*;
  * http://static.googleusercontent.com/external_content/untrusted_dlcp/research.google.com/en/us/pubs/archive/40671.pdf
  * </p>
  *
+ * Brief HyperLogLog++ Overview
  *
+ * Uses 64 bit hashing instead of 32
+ * Has two representation modes: sparse and normal
+ *
+ *      'normal' is approximately the same as regular hyperloglog (still uses 64 bits)
+ *
+ *      'sparse' handles lower cardinality values with a highly accurate but poorly scaling
+ *       strategy and leverages data compression to compete with 'normal' for as long as possible
+ *       (sparse has the advantage on accuracy per unit of memory at low cardinality but quickly falls behind).
  *
  *
  */
@@ -113,20 +122,29 @@ public class HyperLogLogPlus implements ICardinality
 	private Format format = Format.SPARSE;
 	private final RegisterSet registerSet;
 	private final int m;
-	private final int sm;
-	private final int p;
+    private final int p;
+
+    //Sparse versions of m and p
+    private final int sm;
 	private final int sp;
+
 	private final double alphaMM;
+
+    //Variables used by the delta encoding
     private int prevDeltaRead = 0;
-    private int reserveDeltaRead = 0;
+    private int backupDeltaRead = 0;
     private int prevDeltaReadIndex = -1;
-    private int prevDeltaAdd = 0;
+    private int prevMergedDelta = 0;
 
 
     private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
 	private List<byte[]> sparseSet;
-	static final int SortThreshold = 50000;
-	static final int MaxThreshold = 100000;
+
+    //How big the temp list is allowed to get before we batch merge it into the sparse set
+	static final int SORT_THRESHOLD = 50000;
+
+    //How big the sparse set is allowed to get before we convert to 'normal'
+	static final int MAX_THRESHOLD = 100000;
 
 
 	public HyperLogLogPlus(int p, int sp)
@@ -169,6 +187,13 @@ public class HyperLogLogPlus implements ICardinality
 		}
 	}
 
+    /**
+     * Add data to estimator based on the mode it is in
+     *
+     * @param o stream element
+     * @return Will almost always return true for sparse mode because the additions are batched in
+     */
+
 	@Override
 	public boolean offer(Object o)
 	{
@@ -179,6 +204,9 @@ public class HyperLogLogPlus implements ICardinality
 			case NORMAL:
 				// find first p bits of x
 				final long idx = x >>> (64 - p);
+                //Ignore the first p bits (the idx), and then find the number of leading zeros
+                //Push a 1 to where the bit string would have ended if we didnt just push the idx out of the way
+                //A one is always added to runLength for estimation calculation purposes
 				final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
 				if (registerSet.get((int) idx) < runLength)
 				{
@@ -190,12 +218,14 @@ public class HyperLogLogPlus implements ICardinality
 					return false;
 				}
 			case SPARSE:
+                //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
 				int k = encodeHash(x, p, sp);
+                //Put the encoded data into the temp set
 				boolean ret = tmpSet.add(k);
-				if (tmpSet.size() > SortThreshold)
+				if (tmpSet.size() > SORT_THRESHOLD)
 				{
-					mergeTmp();
-					if (sparseSet.size() > MaxThreshold)
+					mergeTempList();
+					if (sparseSet.size() > MAX_THRESHOLD)
 					{
 						convertToNormal();
 					}
@@ -207,11 +237,18 @@ public class HyperLogLogPlus implements ICardinality
 		return false;
 	}
 
-	private void convertToNormal()
+    /**
+     * Converts the mode of this estimator from 'sparse' to 'normal'.
+     *
+     * Each member of the set has its longer 'sparse precision (sp)' length idx
+     * truncated to length p and the associated run length is placed into a register.
+     * Collisions are resolved by merely taking the max.
+     */
+
+    private void convertToNormal()
 	{
-        mergeTmp();
+        mergeTempList();
         resetDelta();
-//		for (byte[] bytes : sparseSet)
         for (int i = 0; i < sparseSet.size(); i++)
 		{
 			int k = deltaRead(sparseSet, i);
@@ -227,43 +264,131 @@ public class HyperLogLogPlus implements ICardinality
 		sparseSet = null;
     }
 
+    /**
+     * Encode the sp length idx and, if necessary, the run length.
+     *
+     * Start with the 64 bit hash as x.
+     *
+     * Find all the bits that belong in the first sp (roughly 25) bits. (This is idx')
+     * Get rid of the first p (roughly 18) bits of those. (Those were idx (not prime))
+     *
+     * If all the remaining bits are zero then we are going to need to find and encode the
+     * full run length of leading zeros, but this only happens once in 2 ^ (sp - p) or roughly
+     * 2 ^ 7 times.
+     *
+     * If at least one of them is not zero, then since the run length is determined by bits
+     * after p and the idx' contains the first (sp - p) bits of those, then just by putting idx'
+     * in the encoding, we will also be giving it all the information it needs to find the run length.
+     *
+     * The relationship looks like this:
+     *
+     *  *******************************************************   <- hashed length of bits
+     *  | p bits = idx ||     look for leading zeros here     |
+     *  |      sp bits = idx'     |
+     *                  | all 0s? |
+     *
+     * If we have idx', we could theoretically scan it (as per zeroTest) when unencoding and therefore know whether
+     * to look for the extra run length information. However, for now we have followed the authors of
+     * the paper and put this information in a flag bit at the end of the encoding.
+     *
+     * Based on this flag, we know whether to adjust for the missing run length bits. We could also
+     * use this flag to compress all the zeros in "| all 0s? |", but saving a byte or so once in 128
+     * times is less than the 120 bits spent on the flag elsewhere. Of course, after compression, the losses
+     * are not quite so large either way.
+     *
+     * The encoding scheme now looks like:
+     *
+     * ********************************* <- smaller length of bits (half, but not to scale)
+     * | empty ||       sp bits     ||F|
+     *          |  p bits  || has 1 ||0|
+     *
+     *
+     * or if the run length was needed (ie 'all 0s?' was indeed all 0s):
+     *
+     * *********************************
+     * |      sp bits    || run len ||F|
+     * |  p bits ||  0s  |           |1|
+     *
+     *
+     * The other notable encoding feature is the inversion of the run length, which just lets the lists
+     * be sorted in a convenient way. (Could alternatively sort in reverse, and use descending deltas).
+     *
+     * @param x the hash bits
+     * @param p the 'normal' mode precision
+     * @param sp the 'sparse' mode precision
+     * @return the encoded data as an integer
+     */
 	private int encodeHash(long x, int p, int sp)
 	{
-        //assumes sp = 25
+        //Get the idx' (the first sp bits) by pushing the rest to the right (into oblivion >:D)
 		int idx = (int) (x >>> (64 - sp));
-		int zeroTest = idx << (7 + p);
+        //Push to the left for all the spaces you know are between the start of your bits and the left 'wall'
+        //then push p bits off as well so we have just our friend "all 0s?"
+		int zeroTest = idx << ((32 - sp) + p);
 		if (zeroTest == 0)
 		{
+            //See offer
             final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
+            //Invert run length by xoring it with a bunch of 1s
             int invrl = runLength ^ 63;
-			return (((idx << 6) | invrl) << 1) | 1;
+			return  idx
+                    << 6       //push the idx left 6 times to make room to put in the run length
+                    | invrl    //then merge in the run length
+                    << 1       //move left again to make room for the flag bit
+                    | 1;       //merge in the flag bit (set to one because we needed the run length)
 		}
 		else
 		{
-            return idx << 7;
+            //Just push left once. A zero will appear by default and that's the flag we want.
+            return idx << 1;
 		}
 	}
 
+    /**
+     * More of less the opposite of the encoding function but just for getting out run lengths.
+     *
+     *
+     * @param k encoded int
+     * @return run length
+     */
     private int decodeRunLength(int k)
     {
-        if ((k & 1) != 0)
+        if ((k & 1) == 1) //checking the flag bit
         {
+            //Smoosh the flag bit; it has served its purpose
+            //Then & with 63 to delete everything but the run length
+            //Then invert again to undo the inversion from before
             return ((k >>> 1) & 63) ^ 63;
         }
         else
         {
-            return Integer.numberOfLeadingZeros(k << p) + 1;
+            //In one of the encode diagrams there is a substring of bits
+            //labeled 'has 1'. This is where we find that one!
+
+            //First push left to clear out the empty space (that is 31-sp places)
+            //Then push left some more cause bits in precision p don't count for run length
+            //That is, push left p times.
+            //Lastly we add one because we love adding one to run lengths. Its our JAM
+            return Integer.numberOfLeadingZeros(k << p + (31 - sp)) + 1;
         }
     }
 
     private int getSparseIndex(int k)
     {
-        return k >>> 7;
+        if ((k & 1) == 1)
+        {
+            return k >>> 7;
+        }
+        else
+        {
+            return k >>> 1;
+        }
     }
 
     private int getIndex(int k, int p)
     {
-        return (k >>> (7 + (sp-p)));
+        k = getSparseIndex(k);
+        return (k >>> (sp-p));
     }
 
 	@Override
@@ -312,7 +437,7 @@ public class HyperLogLogPlus implements ICardinality
 					return Math.round(estimatePrime);
 				}
 			case SPARSE:
-				mergeTmp();
+				mergeTempList();
 				return linearCounting(sm, (sm - sparseSet.size()));
 			default:
 				//TODO
@@ -367,11 +492,11 @@ public class HyperLogLogPlus implements ICardinality
 		}
 		return distances;
 	}
-    
+
     private void deltaAdd (List<byte[]> list, int next)
     {
-        list.add(Varint.writeUnsignedVarInt(next-prevDeltaAdd));
-        prevDeltaAdd = next;
+        list.add(Varint.writeUnsignedVarInt(next- prevMergedDelta));
+        prevMergedDelta = next;
     }
 
     private int deltaRead (List<byte[]> list, int i)
@@ -380,16 +505,18 @@ public class HyperLogLogPlus implements ICardinality
         if (i == prevDeltaReadIndex + 1)
         {
             out += prevDeltaRead;
-            reserveDeltaRead = prevDeltaRead;
+            backupDeltaRead = prevDeltaRead;
             prevDeltaRead = out;
             prevDeltaReadIndex++;
         }
         else if (i == prevDeltaReadIndex)
         {
-            out += reserveDeltaRead;
+            out += backupDeltaRead;
         }
         else
-            assert false;
+        {
+            throw new IndexOutOfBoundsException();
+        }
         return out;
     }
 
@@ -397,8 +524,23 @@ public class HyperLogLogPlus implements ICardinality
     {
         prevDeltaRead = 0;
         prevDeltaReadIndex = -1;
-        prevDeltaAdd = 0;
-        reserveDeltaRead = 0;
+        prevMergedDelta = 0;
+        backupDeltaRead = 0;
+    }
+
+    private int consumeDuplicates (List<Integer> tmp, int tmpIdx, int tmpi)
+    {
+        while (tmpi < tmp.size())
+        {
+            int nextTmp = tmp.get(tmpi);
+            int nextTmpIdx = getSparseIndex(nextTmp);
+            if (tmpIdx != nextTmpIdx)
+            {
+                return tmpi;
+            }
+            tmpi++;
+        }
+        return tmpi;
     }
 
 	private List<byte[]> merge(List<byte[]> set, List<Integer> tmp)
@@ -416,8 +558,9 @@ public class HyperLogLogPlus implements ICardinality
 			{
                 int tmpVal = tmp.get(tmpi);
                 deltaAdd(newSet, tmpVal);
-                while (++tmpi < tmp.size() && getSparseIndex(tmpVal) == getSparseIndex(tmp.get(tmpi)));
-			}
+                tmpi++;
+                tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
+            }
 			else if (tmpi >= tmp.size())
 			{
                 int setVal = deltaRead(set, seti);
@@ -433,7 +576,8 @@ public class HyperLogLogPlus implements ICardinality
 				{
                     int min = Math.min(setVal, tmpVal);
                     deltaAdd(newSet, min);
-                    while (++tmpi < tmp.size() && getSparseIndex(tmpVal) == getSparseIndex(tmp.get(tmpi)));
+                    tmpi++;
+                    tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
 					seti++;
 				}
 				else if (setVal < tmpVal)
@@ -444,7 +588,8 @@ public class HyperLogLogPlus implements ICardinality
 				else
 				{
                     deltaAdd(newSet, tmpVal);
-                    while (++tmpi < tmp.size() && getSparseIndex(tmpVal) == getSparseIndex(tmp.get(tmpi)));
+                    tmpi++;
+                    tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
 				}
 			}
 		}
@@ -453,8 +598,8 @@ public class HyperLogLogPlus implements ICardinality
 
     private List<byte[]> mergeEstimators(HyperLogLogPlus other)
     {
-        other.mergeTmp();
-        mergeTmp();
+        other.mergeTempList();
+        mergeTempList();
         resetDelta();
         other.resetDelta();
         List<byte[]> set = sparseSet;
@@ -537,7 +682,7 @@ public class HyperLogLogPlus implements ICardinality
 				break;
 			case SPARSE:
 				dos.writeInt(1);
-                mergeTmp();
+                mergeTempList();
                 for (byte[] bytes : sparseSet)
 				{
 					dos.writeInt(bytes.length);
@@ -550,7 +695,7 @@ public class HyperLogLogPlus implements ICardinality
 		return baos.toByteArray();
 	}
 
-    public void mergeTmp ()
+    public void mergeTempList()
     {
         if (tmpSet.size() != 0)
         {
@@ -584,7 +729,7 @@ public class HyperLogLogPlus implements ICardinality
             {
                 if (hll.format == Format.SPARSE)
                 {
-                    if (sparseSet.size() + hll.sparseSet.size() > MaxThreshold)
+                    if (sparseSet.size() + hll.sparseSet.size() > MAX_THRESHOLD)
                     {
                         convertToNormal();
                         hll.convertToNormal();
