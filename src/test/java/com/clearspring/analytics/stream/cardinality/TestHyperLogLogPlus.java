@@ -186,7 +186,9 @@ public class TestHyperLogLogPlus
         double se = expectedCardinality * (1.04 / Math.sqrt(Math.pow(2, bits)));
 
         System.out.println("Expect estimate: " + mergedEstimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
-
+        double err = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
+        System.out.println(err);
+        assertTrue(err < .1);
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
     }
