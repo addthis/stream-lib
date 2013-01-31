@@ -24,17 +24,31 @@ import org.junit.Test;
  */
 public class TestMurmurHash {
 
-    @Test
-    public void testHashByteArrayOverload() {
-        String input = "hashthis";
-        byte[] inputBytes = input.getBytes();
+	@Test
+	public void testHashByteArrayOverload() {
+		String input = "hashthis";
+		byte[] inputBytes = input.getBytes();
 
-        int hashOfString = MurmurHash.hash(input);
-        Assert.assertEquals("MurmurHash.hash(byte[]) did not match MurmurHash.hash(String)",
-                            hashOfString, MurmurHash.hash(inputBytes));
+		int hashOfString = MurmurHash.hash(input);
+		Assert.assertEquals("MurmurHash.hash(byte[]) did not match MurmurHash.hash(String)",
+				hashOfString, MurmurHash.hash(inputBytes));
 
-        Object bytesAsObject = inputBytes;
-        Assert.assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
-                            hashOfString, MurmurHash.hash(bytesAsObject));
-    }
+		Object bytesAsObject = inputBytes;
+		Assert.assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
+				hashOfString, MurmurHash.hash(bytesAsObject));
+	}
+
+	@Test
+	public void testHash64ByteArrayOverload() {
+		String input = "hashthis";
+		byte[] inputBytes = input.getBytes();
+
+		long hashOfString = MurmurHash.hash64(input);
+		Assert.assertEquals("MurmurHash.hash64(byte[]) did not match MurmurHash.hash64(String)",
+				hashOfString, MurmurHash.hash64(inputBytes));
+
+		Object bytesAsObject = inputBytes;
+		Assert.assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
+				hashOfString, MurmurHash.hash64(bytesAsObject));
+	}
 }
