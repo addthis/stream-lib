@@ -24,7 +24,7 @@ import java.util.*;
 
 
 /**
- * Implmentation of HyperLogLog++ described in
+ * Implementation of HyperLogLog++ described in
  *
  * <p>
  * http://static.googleusercontent.com/external_content/untrusted_dlcp/research.google.com/en/us/pubs/archive/40671.pdf
