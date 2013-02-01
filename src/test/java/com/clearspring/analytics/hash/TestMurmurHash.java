@@ -37,4 +37,18 @@ public class TestMurmurHash {
         Assert.assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
                             hashOfString, MurmurHash.hash(bytesAsObject));
     }
+
+    @Test
+    public void testHash64ByteArrayOverload() {
+        String input = "hashthis";
+        byte[] inputBytes = input.getBytes();
+
+        long hashOfString = MurmurHash.hash64(input);
+        Assert.assertEquals("MurmurHash.hash64(byte[]) did not match MurmurHash.hash64(String)",
+                            hashOfString, MurmurHash.hash64(inputBytes));
+
+        Object bytesAsObject = inputBytes;
+        Assert.assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
+                            hashOfString, MurmurHash.hash64(bytesAsObject));
+    }
 }
