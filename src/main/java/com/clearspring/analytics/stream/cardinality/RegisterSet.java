@@ -16,6 +16,8 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
 public class RegisterSet
 {
     public final static int LOG2_BITS_PER_WORD = 6;
@@ -24,7 +26,7 @@ public class RegisterSet
     public final int count;
     public final int size;
 
-    private final int[] M;
+    private final AtomicIntegerArray M;
 
     public RegisterSet(int count)
     {
@@ -40,22 +42,23 @@ public class RegisterSet
         {
             if (bits == 0)
             {
-                this.M = new int[1];
+                this.M = new AtomicIntegerArray(1);
             }
             else if (bits % Integer.SIZE == 0)
             {
-                this.M = new int[bits];
+                this.M = new AtomicIntegerArray(bits);
             }
             else
             {
-                this.M = new int[bits + 1];
+                this.M = new AtomicIntegerArray(bits + 1);
             }
         }
         else
         {
-            this.M = initialValues;
+            this.M = new AtomicIntegerArray(initialValues);
+
         }
-        this.size = this.M.length;
+        this.size = this.M.length();
     }
 
     public static int getBits(int count)
@@ -67,20 +70,40 @@ public class RegisterSet
     {
         int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
+        while (true) {
+            int oldValue = this.M.get(bucketPos);
+            int newValue = (oldValue & ~(0x1f << shift)) | (value << shift);
+            if (this.M.compareAndSet(bucketPos, oldValue, newValue)) {
+                break;
+            }
+        }
+    }
+
+    public boolean compareAndSet(int position, int expected, int value)
+    {
+        int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
+        int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
+        int oldValue = this.M.get(bucketPos);
+        if ((oldValue & (0x1f << shift)) >>> shift != expected) {
+            return false;
+        }
+        int newValue = (oldValue & ~(0x1f << shift)) | (value << shift);
+        return this.M.compareAndSet(bucketPos, oldValue, newValue);
     }
 
     public int get(int position)
     {
         int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
+        return (this.M.get(bucketPos) & (0x1f << shift)) >>> shift;
     }
 
     public int[] bits()
     {
         int[] copy = new int[size];
-        System.arraycopy(M, 0, copy, 0, M.length);
+        for (int i = 0; i < M.length(); i++) {
+            copy[i] = M.get(i);
+        }
         return copy;
     }
 }

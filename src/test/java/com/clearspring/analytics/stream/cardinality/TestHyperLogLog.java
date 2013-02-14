@@ -43,6 +43,14 @@ public class TestHyperLogLog
     }
 
     @Test
+    public void testOfferResult()
+    {
+        HyperLogLog hyperLogLog = new HyperLogLog(16);
+        assertEquals(true, hyperLogLog.offer(1));
+        assertEquals(false, hyperLogLog.offer(1));
+    }
+
+    @Test
     public void testSerialization() throws IOException
     {
         HyperLogLog hll = new HyperLogLog(8);
