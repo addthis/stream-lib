@@ -70,7 +70,7 @@ public class LogLog implements ICardinality
 
     public LogLog(int k)
     {
-        if (k >= mAlpha.length)
+        if (k >= (mAlpha.length - 1))
         {
             throw new IllegalArgumentException(String.format("Max k (%d) exceeded: k=%d", mAlpha.length - 1, k));
         }
