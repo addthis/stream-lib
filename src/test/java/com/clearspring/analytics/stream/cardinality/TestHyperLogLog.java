@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -137,14 +138,17 @@ public class TestHyperLogLog
     @Test
     public void testPrecise_disableLongRangeCorrection() throws CardinalityMergeException
     {
+        long start = System.currentTimeMillis();
         int cardinality = 150000000;
+        Random random = new Random(42);
 
         HyperLogLog baseline = new HyperLogLog(20);
         for (int j = 0; j < cardinality; j++)
         {
-            double val = Math.random();
+            double val = random.nextDouble();
             baseline.offer(val);
         }
+        System.out.println("time: " + (System.currentTimeMillis() - start));
 
 
         long mergedEstimate = baseline.cardinality(false);
