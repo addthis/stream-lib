@@ -28,7 +28,6 @@ import org.junit.Test;
 import com.google.common.io.Resources;
 
 
-
 public class Base64Test
 {
     @Test

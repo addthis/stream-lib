@@ -15,7 +15,7 @@
  */
 
 /**
- * 
+ *
  */
 package com.clearspring.analytics.stream;
 
@@ -23,11 +23,10 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Estimates most frequently occurring items in a data stream 
- * using a bounded amount of memory. 
- * 
+ * Estimates most frequently occurring items in a data stream
+ * using a bounded amount of memory.
+ * <p/>
  * Warning: this class is not thread safe.
- * 
  */
 public class StochasticTopper<T> implements ITopK<T>
 {
@@ -35,52 +34,56 @@ public class StochasticTopper<T> implements ITopK<T>
     private ISampleSet<T> sample;
     private Random random;
     private long count;
-    
+
     public StochasticTopper(int sampleSize)
     {
         this(sampleSize, null);
     }
-    
+
     public StochasticTopper(int sampleSize, Long seed)
     {
         this.sample = new SampleSet<T>(sampleSize);
         this.sampleSize = sampleSize;
-        
-        if(seed != null)
+
+        if (seed != null)
+        {
             random = new Random(seed);
+        }
         else
+        {
             random = new Random();
+        }
     }
 
-	public boolean offer(T item, int incrementCount)
+    public boolean offer(T item, int incrementCount)
     {
-		count++;
-		boolean taken = false;
-		if (sample.count() < sampleSize)
-		{
-			sample.put(item, incrementCount);
-			taken = true;
-		}
-		else if (random.nextDouble() < sampleSize / (double) count)
-		{
-			sample.removeRandom();
-			sample.put(item, incrementCount);
-			taken = true;
-		}
+        count++;
+        boolean taken = false;
+        if (sample.count() < sampleSize)
+        {
+            sample.put(item, incrementCount);
+            taken = true;
+        }
+        else if (random.nextDouble() < sampleSize / (double) count)
+        {
+            sample.removeRandom();
+            sample.put(item, incrementCount);
+            taken = true;
+        }
 
-		return taken;
-	}
-    
+        return taken;
+    }
+
     public boolean offer(T item)
     {
-       return offer(item, 1);
+        return offer(item, 1);
     }
-    
+
     /**
-     * Retrieve top k items 
+     * Retrieve top k items
      */
     public List<T> peek(int k)
     {
         return sample.peek(k);
-    }   
+    }
 }

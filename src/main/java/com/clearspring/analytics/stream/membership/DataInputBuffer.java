@@ -22,17 +22,17 @@ import java.io.*;
 
 
 /**
- * An implementation of the DataInputStream interface. This instance is completely thread 
+ * An implementation of the DataInputStream interface. This instance is completely thread
  * unsafe.
  */
 
 public final class DataInputBuffer extends DataInputStream
 {
     private static class Buffer extends ByteArrayInputStream
-    {        
+    {
         public Buffer()
         {
-            super(new byte[] {});
+            super(new byte[]{});
         }
 
         public void reset(byte[] input, int start, int length)
@@ -42,16 +42,16 @@ public final class DataInputBuffer extends DataInputStream
             this.mark = start;
             this.pos = start;
         }
-        
+
         public int getPosition()
         {
             return pos;
         }
-        
+
         public void setPosition(int position)
         {
             pos = position;
-        }        
+        }
 
         public int getLength()
         {
@@ -61,7 +61,9 @@ public final class DataInputBuffer extends DataInputStream
 
     private Buffer buffer_;
 
-    /** Constructs a new empty buffer. */
+    /**
+     * Constructs a new empty buffer.
+     */
     public DataInputBuffer()
     {
         this(new Buffer());
@@ -72,20 +74,26 @@ public final class DataInputBuffer extends DataInputStream
         super(buffer);
         this.buffer_ = buffer;
     }
-   
-    /** Resets the data that the buffer reads. */
+
+    /**
+     * Resets the data that the buffer reads.
+     */
     public void reset(byte[] input, int length)
     {
         buffer_.reset(input, 0, length);
     }
 
-    /** Resets the data that the buffer reads. */
+    /**
+     * Resets the data that the buffer reads.
+     */
     public void reset(byte[] input, int start, int length)
     {
         buffer_.reset(input, start, length);
     }
 
-    /** Returns the length of the input. */
+    /**
+     * Returns the length of the input.
+     */
     public int getLength()
     {
         return buffer_.getLength();

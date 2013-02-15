@@ -4,7 +4,7 @@
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
-n * "License"); you may not use this file except in compliance
+ n * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -66,7 +66,9 @@ public class DataOutputBuffer extends DataOutputStream
 
     private Buffer buffer;
 
-    /** Constructs a new empty buffer. */
+    /**
+     * Constructs a new empty buffer.
+     */
     public DataOutputBuffer()
     {
         this(new Buffer());
@@ -87,13 +89,17 @@ public class DataOutputBuffer extends DataOutputStream
         return buffer.getData();
     }
 
-    /** Returns the length of the valid data currently in the buffer. */
+    /**
+     * Returns the length of the valid data currently in the buffer.
+     */
     public int getLength()
     {
         return buffer.getLength();
     }
 
-    /** Resets the buffer to empty. */
+    /**
+     * Resets the buffer to empty.
+     */
     public DataOutputBuffer reset()
     {
         this.written = 0;
@@ -101,7 +107,9 @@ public class DataOutputBuffer extends DataOutputStream
         return this;
     }
 
-    /** Writes bytes from a DataInput directly into the buffer. */
+    /**
+     * Writes bytes from a DataInput directly into the buffer.
+     */
     public void write(DataInput in, int length) throws IOException
     {
         buffer.write(in, length);

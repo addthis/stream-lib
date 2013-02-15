@@ -207,7 +207,7 @@ public class HyperLogLog implements ICardinality
 
         dos.writeInt(log2m);
         dos.writeInt(registerSet.size * 4);
-        for(int x : registerSet.bits())
+        for (int x : registerSet.bits())
         {
             dos.writeInt(x);
         }
@@ -218,7 +218,7 @@ public class HyperLogLog implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        if(estimators == null || estimators.length == 0)
+        if (estimators == null || estimators.length == 0)
         {
             return this;
         }
@@ -227,7 +227,7 @@ public class HyperLogLog implements ICardinality
         mergedSet = new RegisterSet((int) Math.pow(2, this.log2m), this.registerSet.bits());
         for (ICardinality estimator : estimators)
         {
-            if(!(estimator instanceof HyperLogLog))
+            if (!(estimator instanceof HyperLogLog))
             {
                 throw new HyperLogLogMergeException("Cannot merge estimators of different class");
             }
@@ -263,7 +263,7 @@ public class HyperLogLog implements ICardinality
         public int sizeof()
         {
             int log2m = log2m(rsd);
-            int k = (int)Math.pow(2, log2m);
+            int k = (int) Math.pow(2, log2m);
             return RegisterSet.getBits(k) * 4;
         }
 

@@ -70,7 +70,10 @@ public class LogLog implements ICardinality
 
     public LogLog(int k)
     {
-        if(k >= mAlpha.length) throw new IllegalArgumentException(String.format("Max k (%d) exceeded: k=%d", mAlpha.length-1, k));
+        if (k >= mAlpha.length)
+        {
+            throw new IllegalArgumentException(String.format("Max k (%d) exceeded: k=%d", mAlpha.length - 1, k));
+        }
 
         this.k = k;
         this.m = 1 << k;
@@ -81,11 +84,11 @@ public class LogLog implements ICardinality
     public LogLog(byte[] M)
     {
         this.M = M;
-        this.m =  M.length;
+        this.m = M.length;
         this.k = Integer.numberOfTrailingZeros(m);
-        assert(m == (1 << k)) : "Invalid array size: M.length must be a power of 2";
+        assert (m == (1 << k)) : "Invalid array size: M.length must be a power of 2";
         this.Ca = mAlpha[k];
-        for(byte b : M)
+        for (byte b : M)
         {
             Rsum += b;
         }
@@ -111,8 +114,8 @@ public class LogLog implements ICardinality
         System.out.println();
         */
 
-        double Ravg = Rsum / (double)m;
-        return (long)(Ca * Math.pow(2, Ravg));
+        double Ravg = Rsum / (double) m;
+        return (long) (Ca * Math.pow(2, Ravg));
     }
 
     @Override
@@ -122,10 +125,10 @@ public class LogLog implements ICardinality
 
         int x = MurmurHash.hash(o);
         int j = x >>> (Integer.SIZE - k);
-        byte r = (byte)(Integer.numberOfLeadingZeros( (x << k) | (1<<(k-1)) )+1);
-        if(M[j] < r)
+        byte r = (byte) (Integer.numberOfLeadingZeros((x << k) | (1 << (k - 1))) + 1);
+        if (M[j] < r)
         {
-            Rsum += r-M[j];
+            Rsum += r - M[j];
             M[j] = r;
             modified = true;
         }
@@ -140,7 +143,7 @@ public class LogLog implements ICardinality
      */
     protected static int rho(int x, int k)
     {
-        return Integer.numberOfLeadingZeros( (x << k) | (1<<(k-1)) )+1;
+        return Integer.numberOfLeadingZeros((x << k) | (1 << (k - 1))) + 1;
     }
 
     /**
@@ -150,26 +153,26 @@ public class LogLog implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws LogLogMergeException
     {
-        if(estimators == null || estimators.length == 0)
+        if (estimators == null || estimators.length == 0)
         {
             return this;
         }
         byte[] mergedBytes = Arrays.copyOf(this.M, this.M.length);
 
-        for(ICardinality estimator : estimators)
+        for (ICardinality estimator : estimators)
         {
-            if(!(this.getClass().isInstance(estimator)))
+            if (!(this.getClass().isInstance(estimator)))
             {
                 throw new LogLogMergeException("Cannot merge estimators of different class");
             }
-            if(estimator.sizeof() != this.sizeof())
+            if (estimator.sizeof() != this.sizeof())
             {
                 throw new LogLogMergeException("Cannot merge estimators of different sizes");
             }
             LogLog ll = (LogLog) estimator;
-            for(int i = 0; i < mergedBytes.length; ++i)
+            for (int i = 0; i < mergedBytes.length; ++i)
             {
-                mergedBytes[i] = (byte)Math.max(mergedBytes[i], ll.M[i]);
+                mergedBytes[i] = (byte) Math.max(mergedBytes[i], ll.M[i]);
             }
         }
 
@@ -178,17 +181,18 @@ public class LogLog implements ICardinality
 
     /**
      * Merges estimators to produce an estimator for their combined streams
+     *
      * @param estimators
      * @return merged estimator or null if no estimators were provided
      * @throws LogLogMergeException if estimators are not mergeable (all estimators must be the same size)
      */
     public static LogLog mergeEstimators(LogLog... estimators) throws LogLogMergeException
     {
-        if(estimators == null || estimators.length == 0)
+        if (estimators == null || estimators.length == 0)
         {
             return null;
         }
-        return (LogLog)estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
+        return (LogLog) estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
     }
 
 

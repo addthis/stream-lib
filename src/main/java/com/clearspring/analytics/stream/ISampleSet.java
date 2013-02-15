@@ -19,13 +19,19 @@ package com.clearspring.analytics.stream;
 import java.util.List;
 
 
-public interface ISampleSet<T> 
+public interface ISampleSet<T>
 {
-	long put(T element);
+    long put(T element);
+
     long put(T element, int incrementCount);
+
     T removeRandom();
+
     T peek();
+
     List<T> peek(int k);
+
     int size();
+
     long count();
 }

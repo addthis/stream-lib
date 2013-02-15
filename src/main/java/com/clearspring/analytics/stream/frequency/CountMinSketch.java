@@ -143,7 +143,8 @@ public class CountMinSketch implements IFrequency
                 }
             }
             return bos.toByteArray();
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             // Shouldn't happen
             throw new RuntimeException(e);

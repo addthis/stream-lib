@@ -22,34 +22,31 @@ import java.io.IOException;
 public interface ICardinality
 {
     /**
-     * 
      * @param o stream element
-     * @return false if the value returned by cardinality() is unaffected by the appearance of o in the stream. 
+     * @return false if the value returned by cardinality() is unaffected by the appearance of o in the stream.
      */
     boolean offer(Object o);
-    
+
     /**
-     * 
      * @return the number of unique elements in the stream or an estimate thereof
      */
     long cardinality();
-    
+
     /**
-     * 
      * @return size in bytes needed for serialization
      */
     int sizeof();
-    
+
     /**
-     * 
-     * @return 
-     * @throws IOException 
+     * @return
+     * @throws IOException
      */
     byte[] getBytes() throws IOException;
-    
+
     /**
      * Merges estimators to produce an estimator for the combined streams
      * of this estimator and those passed as arguments
+     *
      * @param estimators
      * @throws CardinalityMergeException
      */

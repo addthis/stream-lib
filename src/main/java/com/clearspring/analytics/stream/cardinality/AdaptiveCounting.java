@@ -28,10 +28,9 @@ import com.clearspring.analytics.util.IBuilder;
  * <i>Fast and Accurate Traffic Matrix Measurement Using Adaptive Cardinality Counting</i><br>
  * by:  Cai, Pan, Kwok, and Hwang
  * </p>
- *
+ * <p/>
  * TODO: use 5 bits/bucket instead of 8 (37.5% size reduction)<br/>
  * TODO: super-LogLog optimizations
- *
  */
 public class AdaptiveCounting extends LogLog
 {
@@ -55,9 +54,12 @@ public class AdaptiveCounting extends LogLog
     {
         super(M);
 
-        for(byte b : M)
+        for (byte b : M)
         {
-            if(b == 0) b_e++;
+            if (b == 0)
+            {
+                b_e++;
+            }
         }
     }
 
@@ -68,11 +70,14 @@ public class AdaptiveCounting extends LogLog
 
         long x = Lookup3Hash.lookup3ycs64(o.toString());
         int j = (int) (x >>> (Long.SIZE - k));
-        byte r = (byte)(Long.numberOfLeadingZeros( (x << k) | (1<<(k-1)) )+1);
-        if(M[j] < r)
+        byte r = (byte) (Long.numberOfLeadingZeros((x << k) | (1 << (k - 1))) + 1);
+        if (M[j] < r)
         {
-            Rsum += r-M[j];
-            if(M[j] == 0) b_e--;
+            Rsum += r - M[j];
+            if (M[j] == 0)
+            {
+                b_e--;
+            }
             M[j] = r;
             modified = true;
         }
@@ -83,10 +88,10 @@ public class AdaptiveCounting extends LogLog
     @Override
     public long cardinality()
     {
-        double B = (b_e/(double)m);
-        if( B >= B_s )
+        double B = (b_e / (double) m);
+        if (B >= B_s)
         {
-            return (long)Math.round(-m*Math.log(B));
+            return (long) Math.round(-m * Math.log(B));
         }
 
         return super.cardinality();
@@ -100,7 +105,7 @@ public class AdaptiveCounting extends LogLog
      */
     protected static byte rho(long x, int k)
     {
-        return (byte)(Long.numberOfLeadingZeros( (x << k) | (1<<(k-1)) )+1);
+        return (byte) (Long.numberOfLeadingZeros((x << k) | (1 << (k - 1))) + 1);
     }
 
     /**
@@ -110,23 +115,24 @@ public class AdaptiveCounting extends LogLog
     @Override
     public ICardinality merge(ICardinality... estimators) throws LogLogMergeException
     {
-        LogLog res = (LogLog)super.merge(estimators);
+        LogLog res = (LogLog) super.merge(estimators);
         return new AdaptiveCounting(res.M);
     }
 
     /**
      * Merges estimators to produce an estimator for their combined streams
+     *
      * @param estimators
      * @return merged estimator or null if no estimators were provided
      * @throws LogLogMergeException if estimators are not mergeable (all estimators must be the same size)
      */
     public static AdaptiveCounting mergeEstimators(LogLog... estimators) throws LogLogMergeException
     {
-        if(estimators == null || estimators.length == 0)
+        if (estimators == null || estimators.length == 0)
         {
             return null;
         }
-        return (AdaptiveCounting)estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
+        return (AdaptiveCounting) estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable
@@ -169,18 +175,21 @@ public class AdaptiveCounting extends LogLog
          * that allocates ~65KB and provides estimates with a Gaussian error distribution
          * with an average error of 0.5% and a standard deviation of 0.5%
          * </p>
+         *
          * @param maxCardinality
          * @throws IllegalArgumentException if maxCardinality is not a positive integer
-         *
          * @see LinearCounting.Builder#onePercentError(int)
          */
         public static IBuilder<ICardinality> obyCount(long maxCardinality)
         {
-            if(maxCardinality <= 0) throw new IllegalArgumentException("maxCardinality ("+maxCardinality+") must be a positive integer");
-
-            if(maxCardinality < 4250000)
+            if (maxCardinality <= 0)
             {
-                return LinearCounting.Builder.onePercentError((int)maxCardinality);
+                throw new IllegalArgumentException("maxCardinality (" + maxCardinality + ") must be a positive integer");
+            }
+
+            if (maxCardinality < 4250000)
+            {
+                return LinearCounting.Builder.onePercentError((int) maxCardinality);
             }
 
             return new Builder(16);

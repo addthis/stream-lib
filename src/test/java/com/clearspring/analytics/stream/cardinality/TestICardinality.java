@@ -31,10 +31,10 @@ import static org.junit.Assert.*;
 public class TestICardinality
 {
 
-    private int           N    = 1000000;
-    private ICardinality  cardinalityEstimator;
+    private int N = 1000000;
+    private ICardinality cardinalityEstimator;
     private static Random prng = new Random();
-    private static char[] hex  = "0123456789abcdef".toCharArray();
+    private static char[] hex = "0123456789abcdef".toCharArray();
 
     public TestICardinality(ICardinality cardinalityEstimator)
     {
@@ -63,7 +63,9 @@ public class TestICardinality
     {
         System.out.println("size: " + cardinalityEstimator.sizeof() + " bytes");
         for (int i = 0; i < N; i++)
+        {
             cardinalityEstimator.offer(streamElement(i));
+        }
 
         long estimate = cardinalityEstimator.cardinality();
         System.out.println(estimate);
@@ -72,8 +74,9 @@ public class TestICardinality
     }
 
     static int se = 0;
+
     protected static Object streamElement(int i)
-    {                
+    {
         return Long.toHexString(prng.nextLong());
         //return se++;
     }
@@ -81,14 +84,14 @@ public class TestICardinality
     @Parameters
     public static Collection<Object[]> regExValues()
     {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 //{ new LinearCounting(65536) }, 
                 //{ new CountThenEstimate() },
-                { new AdaptiveCounting(16) },
+                {new AdaptiveCounting(16)},
                 //{ new LogLog(10) },
                 //{ new LogLog(12) }, 
                 //{ new LogLog(14) },
-                });
+        });
     }
 
 }

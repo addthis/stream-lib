@@ -26,15 +26,17 @@ import com.clearspring.analytics.util.ListNode2;
 public class Counter<T> implements Externalizable
 {
     protected ListNode2<StreamSummary<T>.Bucket> bucketNode;
-    
-    protected T item;       
+
+    protected T item;
     protected long count;
     protected long error;
-    
+
     /**
      * For de-serialization
      */
-    public Counter() {}
+    public Counter()
+    {
+    }
 
     public Counter(ListNode2<StreamSummary<T>.Bucket> bucket, T item)
     {
@@ -43,32 +45,43 @@ public class Counter<T> implements Externalizable
         this.error = 0;
         this.item = item;
     }
-    
-    public T getItem() { return item; }
-    public long getCount() { return count; }
-    public long getError() { return error; }
-    
+
+    public T getItem()
+    {
+        return item;
+    }
+
+    public long getCount()
+    {
+        return count;
+    }
+
+    public long getError()
+    {
+        return error;
+    }
+
     @Override
     public String toString()
     {
-        return item+":"+count+':'+error;
+        return item + ":" + count + ':' + error;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException 
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
     {
-        item = (T)in.readObject();
+        item = (T) in.readObject();
         count = in.readLong();
         error = in.readLong();
     }
-    
+
     @Override
-    public void writeExternal(ObjectOutput out) throws IOException 
+    public void writeExternal(ObjectOutput out) throws IOException
     {
         out.writeObject(item);
         out.writeLong(count);
-        out.writeLong(error);           
+        out.writeLong(error);
     }
 }
 

@@ -79,11 +79,11 @@ public class TestCountThenEstimate
 
 
     }
-    
+
     @Test
     public void testSmallMerge() throws CardinalityMergeException
     {
-        
+
         // Untipped test case
         int numToMerge = 1000;
         int cardinalityPer = 5;
@@ -104,7 +104,7 @@ public class TestCountThenEstimate
         long mergedEstimate = merged.cardinality();
         assertEquals(expectedCardinality, mergedEstimate);
         assertFalse(merged.tipped);
-        
+
         // Tipped test case
         numToMerge = 10;
         cardinalityPer = 100;

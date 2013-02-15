@@ -59,7 +59,6 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     protected DoublyLinkedList<Bucket> bucketList;
 
     /**
-     *
      * @param capacity maximum size (larger capacities improve accuracy)
      */
     public StreamSummary(int capacity)
@@ -69,7 +68,10 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
         bucketList = new DoublyLinkedList<Bucket>();
     }
 
-    public int getCapacity() { return capacity; }
+    public int getCapacity()
+    {
+        return capacity;
+    }
 
     /**
      * Algorithm: <i>Space-Saving</i>
@@ -77,169 +79,180 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      * @param item stream element (<i>e</i>)
      * @return false if item was already in the stream summary, true otherwise
      */
-     @Override
-     public boolean offer(T item)
-     {
-         return offer(item, 1);
-     }
+    @Override
+    public boolean offer(T item)
+    {
+        return offer(item, 1);
+    }
 
-	/**
-	 * Algorithm: <i>Space-Saving</i>
-	 *
-	 * @param item stream element (<i>e</i>)
-	 * @return false if item was already in the stream summary, true otherwise
-	 */
-	@Override
-	public boolean offer(T item, int incrementCount)
-	{
-		return offerReturnAll(item,  incrementCount).left;
-	}
+    /**
+     * Algorithm: <i>Space-Saving</i>
+     *
+     * @param item stream element (<i>e</i>)
+     * @return false if item was already in the stream summary, true otherwise
+     */
+    @Override
+    public boolean offer(T item, int incrementCount)
+    {
+        return offerReturnAll(item, incrementCount).left;
+    }
 
-	/**
-      * @param item stream element (<i>e</i>)
-      * @return item dropped from summary if an item was dropped, null otherwise
-      */
-     public T offerReturnDropped(T item, int incrementCount)
-     {
-         return offerReturnAll(item, incrementCount).right;
-     }
+    /**
+     * @param item stream element (<i>e</i>)
+     * @return item dropped from summary if an item was dropped, null otherwise
+     */
+    public T offerReturnDropped(T item, int incrementCount)
+    {
+        return offerReturnAll(item, incrementCount).right;
+    }
 
-     /**
-      * @param item stream element (<i>e</i>)
-      * @return Pair<isNewItem, itemDropped> where isNewItem is the return value of offer() and itemDropped is null if no item was dropped
-      */
-     public Pair<Boolean, T> offerReturnAll(T item, int incrementCount)
-     {
-         ListNode2<Counter<T>> counterNode = counterMap.get(item);
-		 boolean isNewItem = (counterNode == null);
-         T droppedItem = null;
-         if(isNewItem)
-         {
+    /**
+     * @param item stream element (<i>e</i>)
+     * @return Pair<isNewItem, itemDropped> where isNewItem is the return value of offer() and itemDropped is null if no item was dropped
+     */
+    public Pair<Boolean, T> offerReturnAll(T item, int incrementCount)
+    {
+        ListNode2<Counter<T>> counterNode = counterMap.get(item);
+        boolean isNewItem = (counterNode == null);
+        T droppedItem = null;
+        if (isNewItem)
+        {
 
-             if(size() < capacity)
-             {
-                 counterNode = bucketList.enqueue(new Bucket(0)).getValue().counterList.add(new Counter<T>(bucketList.tail(), item));
-             }
-             else
-             {
-                 Bucket min = bucketList.first();
-                 counterNode = min.counterList.tail();
-                 Counter<T> counter = counterNode.getValue();
-                 droppedItem = counter.item;
-                 counterMap.remove(droppedItem);
-                 counter.item = item;
-                 counter.error = min.count;
-             }
-             counterMap.put(item, counterNode);
-         }
+            if (size() < capacity)
+            {
+                counterNode = bucketList.enqueue(new Bucket(0)).getValue().counterList.add(new Counter<T>(bucketList.tail(), item));
+            }
+            else
+            {
+                Bucket min = bucketList.first();
+                counterNode = min.counterList.tail();
+                Counter<T> counter = counterNode.getValue();
+                droppedItem = counter.item;
+                counterMap.remove(droppedItem);
+                counter.item = item;
+                counter.error = min.count;
+            }
+            counterMap.put(item, counterNode);
+        }
 
-         incrementCounter(counterNode, incrementCount);
+        incrementCounter(counterNode, incrementCount);
 
-         return new Pair<Boolean, T>(isNewItem, droppedItem);
-     }
+        return new Pair<Boolean, T>(isNewItem, droppedItem);
+    }
 
-     protected void incrementCounter(ListNode2<Counter<T>> counterNode, int incrementCount)
-     {
-         Counter<T> counter = counterNode.getValue();       // count_i
-         ListNode2<Bucket> bucketNode = counter.bucketNode;
-         Bucket bucket = bucketNode.getValue();         // Let Bucket_i be the bucket of count_i
-         ListNode2<Bucket> bucketNodeNext = bucketNode.getNext();
-         Bucket bucketNext = bucketNodeNext == null ? null : bucketNodeNext.getValue(); // Let Bucket_i^+ be Bucket_i's neighbor of larger value
-         bucket.counterList.remove(counterNode);            // Detach count_i from Bucket_i's child-list
-         counter.count = counter.count + incrementCount;
+    protected void incrementCounter(ListNode2<Counter<T>> counterNode, int incrementCount)
+    {
+        Counter<T> counter = counterNode.getValue();       // count_i
+        ListNode2<Bucket> bucketNode = counter.bucketNode;
+        Bucket bucket = bucketNode.getValue();         // Let Bucket_i be the bucket of count_i
+        ListNode2<Bucket> bucketNodeNext = bucketNode.getNext();
+        Bucket bucketNext = bucketNodeNext == null ? null : bucketNodeNext.getValue(); // Let Bucket_i^+ be Bucket_i's neighbor of larger value
+        bucket.counterList.remove(counterNode);            // Detach count_i from Bucket_i's child-list
+        counter.count = counter.count + incrementCount;
 
-         // Finding the right bucket for count_i
-         if(bucketNext != null && counter.count == bucketNext.count)
-         {
-             bucketNext.counterList.add(counterNode);       // Attach count_i to Bucket_i^+'s child-list
-         }
-         else // A new bucket has to be created
-         {
-             bucketNext = new Bucket(counter.count);        // Create a new Bucket Bucket_new
-             // Assign Bucket_new the value of count_i
-             bucketNext.counterList.add(counterNode);       // Attach count_i to Bucket_new's child-list
-             bucketNodeNext = bucketList.addAfter(bucketNode, bucketNext);  // Insert Bucket_new after Bucket_i
-         }
+        // Finding the right bucket for count_i
+        if (bucketNext != null && counter.count == bucketNext.count)
+        {
+            bucketNext.counterList.add(counterNode);       // Attach count_i to Bucket_i^+'s child-list
+        }
+        else // A new bucket has to be created
+        {
+            bucketNext = new Bucket(counter.count);        // Create a new Bucket Bucket_new
+            // Assign Bucket_new the value of count_i
+            bucketNext.counterList.add(counterNode);       // Attach count_i to Bucket_new's child-list
+            bucketNodeNext = bucketList.addAfter(bucketNode, bucketNext);  // Insert Bucket_new after Bucket_i
+        }
 
-         counter.bucketNode = bucketNodeNext;
+        counter.bucketNode = bucketNodeNext;
 
-         //Cleaning up
-         if(bucket.counterList.isEmpty())           // If Bucket_i's child-list is empty
-         {
-             bucketList.remove(bucketNode);         // Detach Bucket_i from the Stream-Summary
-         }
-     }
+        //Cleaning up
+        if (bucket.counterList.isEmpty())           // If Bucket_i's child-list is empty
+        {
+            bucketList.remove(bucketNode);         // Detach Bucket_i from the Stream-Summary
+        }
+    }
 
-     @Override
-     public List<T> peek(int k)
-     {
-         List<T> topK = new ArrayList<T>(k);
+    @Override
+    public List<T> peek(int k)
+    {
+        List<T> topK = new ArrayList<T>(k);
 
-         for(ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
-         {
-             Bucket b = bNode.getValue();
-             for(Counter<T> c : b.counterList)
-             {
-                 if(topK.size() == k) return topK;
-                 topK.add(c.item);
-             }
-         }
+        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
+        {
+            Bucket b = bNode.getValue();
+            for (Counter<T> c : b.counterList)
+            {
+                if (topK.size() == k)
+                {
+                    return topK;
+                }
+                topK.add(c.item);
+            }
+        }
 
-         return topK;
-     }
+        return topK;
+    }
 
-     public List<Counter<T>> topK(int k)
-     {
-         List<Counter<T>> topK = new ArrayList<Counter<T>>(k);
+    public List<Counter<T>> topK(int k)
+    {
+        List<Counter<T>> topK = new ArrayList<Counter<T>>(k);
 
-         for(ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
-         {
-             Bucket b = bNode.getValue();
-             for(Counter<T> c : b.counterList)
-             {
-                 if(topK.size() == k) return topK;
-                 topK.add(c);
-             }
-         }
+        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
+        {
+            Bucket b = bNode.getValue();
+            for (Counter<T> c : b.counterList)
+            {
+                if (topK.size() == k)
+                {
+                    return topK;
+                }
+                topK.add(c);
+            }
+        }
 
-         return topK;
-     }
+        return topK;
+    }
 
-     /**
-      *
-      * @return number of items stored
-      */
-     public int size()
-     {
-         return counterMap.size();
-     }
+    /**
+     * @return number of items stored
+     */
+    public int size()
+    {
+        return counterMap.size();
+    }
 
-     @Override
-     public String toString()
-     {
-         StringBuilder sb = new StringBuilder();
-         sb.append('[');
-         for(ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
-         {
-             Bucket b = bNode.getValue();
-             sb.append('{');
-             sb.append(b.count);
-             sb.append(":[");
-             for(Counter<T> c : b.counterList)
-             {
-                 sb.append('{');
-                 sb.append(c.item);
-                 sb.append(':');
-                 sb.append(c.error);
-                 sb.append("},");
-             }
-             if(b.counterList.size() > 0) sb.deleteCharAt(sb.length()-1);
-             sb.append("]},");
-         }
-         if(bucketList.size() > 0) sb.deleteCharAt(sb.length()-1);
-         sb.append(']');
-         return sb.toString();
-     }
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
+        {
+            Bucket b = bNode.getValue();
+            sb.append('{');
+            sb.append(b.count);
+            sb.append(":[");
+            for (Counter<T> c : b.counterList)
+            {
+                sb.append('{');
+                sb.append(c.item);
+                sb.append(':');
+                sb.append(c.error);
+                sb.append("},");
+            }
+            if (b.counterList.size() > 0)
+            {
+                sb.deleteCharAt(sb.length() - 1);
+            }
+            sb.append("]},");
+        }
+        if (bucketList.size() > 0)
+        {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        sb.append(']');
+        return sb.toString();
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -253,13 +266,13 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
 
         Bucket currentBucket = null;
         ListNode2<Bucket> currentBucketNode = null;
-        for(int i=0; i<size; i++)
+        for (int i = 0; i < size; i++)
         {
-            Counter<T> c = (Counter<T>)in.readObject();
-            if(currentBucket == null || c.count != currentBucket.count)
+            Counter<T> c = (Counter<T>) in.readObject();
+            if (currentBucket == null || c.count != currentBucket.count)
             {
                 currentBucket = new Bucket(c.count);
-                currentBucketNode =  bucketList.add(currentBucket);
+                currentBucketNode = bucketList.add(currentBucket);
             }
             c.bucketNode = currentBucketNode;
             counterMap.put(c.item, currentBucket.counterList.add(c));
@@ -271,10 +284,10 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     {
         out.writeInt(this.capacity);
         out.writeInt(this.size());
-        for(ListNode2<Bucket> bNode = bucketList.tail(); bNode != null; bNode = bNode.getNext())
+        for (ListNode2<Bucket> bNode = bucketList.tail(); bNode != null; bNode = bNode.getNext())
         {
             Bucket b = bNode.getValue();
-            for(Counter<T> c : b.counterList)
+            for (Counter<T> c : b.counterList)
             {
                 out.writeObject(c);
             }
@@ -284,10 +297,13 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     /**
      * For de-serialization
      */
-    public StreamSummary() {}
+    public StreamSummary()
+    {
+    }
 
     /**
      * For de-serialization
+     *
      * @param bytes
      * @throws IOException
      * @throws ClassNotFoundException

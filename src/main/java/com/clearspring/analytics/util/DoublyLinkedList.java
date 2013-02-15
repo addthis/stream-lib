@@ -31,7 +31,7 @@ public class DoublyLinkedList<T> implements Iterable<T>
     public ListNode2<T> add(T value)
     {
         ListNode2<T> node = new ListNode2<T>(value);
-        if(size++ == 0)
+        if (size++ == 0)
         {
             tail = node;
         }
@@ -52,7 +52,7 @@ public class DoublyLinkedList<T> implements Iterable<T>
     public ListNode2<T> enqueue(T value)
     {
         ListNode2<T> node = new ListNode2<T>(value);
-        if(size++ == 0)
+        if (size++ == 0)
         {
             head = node;
         }
@@ -72,7 +72,7 @@ public class DoublyLinkedList<T> implements Iterable<T>
         node.prev = head;
         node.next = null;
 
-        if(size++ == 0)
+        if (size++ == 0)
         {
             tail = node;
         }
@@ -96,7 +96,7 @@ public class DoublyLinkedList<T> implements Iterable<T>
         newNode.next = node.next;
         newNode.prev = node;
         node.next = newNode;
-        if(newNode.next == null)
+        if (newNode.next == null)
         {
             head = newNode;
         }
@@ -109,7 +109,7 @@ public class DoublyLinkedList<T> implements Iterable<T>
 
     public void remove(ListNode2<T> node)
     {
-        if(node == tail)
+        if (node == tail)
         {
             tail = node.next;
         }
@@ -118,7 +118,7 @@ public class DoublyLinkedList<T> implements Iterable<T>
             node.prev.next = node.next;
         }
 
-        if(node == head)
+        if (node == head)
         {
             head = node.prev;
         }
@@ -163,7 +163,10 @@ public class DoublyLinkedList<T> implements Iterable<T>
         @Override
         public T next()
         {
-            if(length != list.size) throw new ConcurrentModificationException();
+            if (length != list.size)
+            {
+                throw new ConcurrentModificationException();
+            }
             T next = itr.value;
             itr = itr.next;
             return next;
@@ -205,9 +208,9 @@ public class DoublyLinkedList<T> implements Iterable<T>
     @SuppressWarnings("unchecked")
     public T[] toArray()
     {
-        T[] a = (T[])new Object[size];
-        int i=0;
-        for(T v : this)
+        T[] a = (T[]) new Object[size];
+        int i = 0;
+        for (T v : this)
         {
             a[i++] = v;
         }

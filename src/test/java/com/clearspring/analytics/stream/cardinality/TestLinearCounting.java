@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-public class TestLinearCounting 
+public class TestLinearCounting
 {
     @Test
     public void testComputeCount()
@@ -40,19 +40,21 @@ public class TestLinearCounting
         lc.offer(19);
         assertEquals(27, lc.computeCount());
     }
-    
+
     @Test
     public void testSaturation()
     {
         LinearCounting lc = new LinearCounting(1);
-        for(int i=0; i<27; i++)
+        for (int i = 0; i < 27; i++)
+        {
             lc.offer(i);
-                
+        }
+
         assertTrue(lc.isSaturated());
-        assertEquals(0, lc.getCount());     
-        assertEquals(Long.MAX_VALUE, lc.cardinality());     
+        assertEquals(0, lc.getCount());
+        assertEquals(Long.MAX_VALUE, lc.cardinality());
     }
-    
+
     @Test
     public void testBuilder()
     {
@@ -70,30 +72,30 @@ public class TestLinearCounting
         assertEquals(74962, Builder.onePercentError(5000000).size);
         assertEquals(81372, Builder.onePercentError(5500000).size);
         assertEquals(131030, Builder.onePercentError(9500000).size);
-        assertEquals(137073, Builder.onePercentError(10000000).size);               
+        assertEquals(137073, Builder.onePercentError(10000000).size);
         assertEquals(137073, Builder.onePercentError(10000001).size);
         assertEquals(355055, Builder.onePercentError(30000000).size);
-        assertEquals(573038, Builder.onePercentError(50000000).size);       
+        assertEquals(573038, Builder.onePercentError(50000000).size);
         assertEquals(822207, Builder.onePercentError(75000000).size);
-        assertEquals(1071377, Builder.onePercentError(100000000).size);     
+        assertEquals(1071377, Builder.onePercentError(100000000).size);
         assertEquals(1167722, Builder.onePercentError(110000000).size);
         assertEquals(1264067, Builder.onePercentError(120000000).size);
         assertEquals(2500000, Builder.onePercentError(240000000).size);
-        
+
     }
-    
-    @Test(expected=IllegalArgumentException.class)
+
+    @Test(expected = IllegalArgumentException.class)
     public void testBuilderIllegalArgumentZero()
     {
         Builder.onePercentError(0);
     }
-    
-    @Test(expected=IllegalArgumentException.class)
+
+    @Test(expected = IllegalArgumentException.class)
     public void testBuilderIllegalArgumentNegative()
     {
-            Builder.onePercentError(-1);
+        Builder.onePercentError(-1);
     }
-    
+
     @Test
     public void testSerialization()
     {
@@ -103,13 +105,13 @@ public class TestLinearCounting
         lc.offer("c");
         lc.offer("d");
         lc.offer("e");
-        
+
         LinearCounting lc2 = new LinearCounting(lc.getBytes());
         assertArrayEquals(lc.map, lc2.map);
         assertEquals(lc.count, lc2.count);
-        assertEquals(lc.length, lc2.length);                                
+        assertEquals(lc.length, lc2.length);
     }
-    
+
     @Test
     public void testMerge() throws LinearCountingMergeException
     {
@@ -119,25 +121,26 @@ public class TestLinearCounting
 
         LinearCounting[] lcs = new LinearCounting[numToMerge];
         LinearCounting baseline = new LinearCounting(size);
-        for(int i=0; i<numToMerge; i++)
+        for (int i = 0; i < numToMerge; i++)
         {
             lcs[i] = new LinearCounting(size);
-            for(int j=0; j<cardinality; j++) {
+            for (int j = 0; j < cardinality; j++)
+            {
                 double val = Math.random();
                 lcs[i].offer(val);
                 baseline.offer(val);
             }
         }
-        
-        int expectedCardinality = numToMerge*cardinality;
+
+        int expectedCardinality = numToMerge * cardinality;
         long mergedEstimate = LinearCounting.mergeEstimators(lcs).cardinality();
-        double error = Math.abs(mergedEstimate - expectedCardinality) / (double)expectedCardinality;
+        double error = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
         assertEquals(0.01, error, 0.01);
-        
+
         LinearCounting lc = lcs[0];
         lcs = Arrays.asList(lcs).subList(1, lcs.length).toArray(new LinearCounting[0]);
         mergedEstimate = lc.merge(lcs).cardinality();
-        error = Math.abs(mergedEstimate - expectedCardinality) / (double)expectedCardinality;
+        error = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
         assertEquals(0.01, error, 0.01);
 
         long baselineEstimate = baseline.cardinality();

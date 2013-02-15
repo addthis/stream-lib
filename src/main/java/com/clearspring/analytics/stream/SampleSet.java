@@ -70,10 +70,10 @@ public class SampleSet<T> implements ISampleSet<T>
         return topK;
     }
 
-	public long put(T element)
-	{
-		return put(element, 1);
-	}
+    public long put(T element)
+    {
+        return put(element, 1);
+    }
 
     public long put(T element, int incrementCount)
     {
@@ -170,18 +170,30 @@ public class SampleSet<T> implements ISampleSet<T>
             Node<T> b = node.prev, c = node, d = node.next, a = (b == null) ? null : b.prev;
 
             // Re-link each of 3 neighboring pairs
-            if (a != null) a.next = c;
+            if (a != null)
+            {
+                a.next = c;
+            }
             c.prev = a;
 
             c.next = b;
             b.prev = c;
 
             b.next = d;
-            if (d != null) d.prev = b;
+            if (d != null)
+            {
+                d.prev = b;
+            }
 
             // B and C may have switched head/tail roles
-            if (head == b) head = c;
-            if (tail == c) tail = b;
+            if (head == b)
+            {
+                head = c;
+            }
+            if (tail == c)
+            {
+                tail = b;
+            }
         }
     }
 
@@ -195,18 +207,30 @@ public class SampleSet<T> implements ISampleSet<T>
             Node<T> a = node.prev, b = node, c = node.next, d = (c == null) ? null : c.next;
 
             // Re-link each of 3 neighboring pairs
-            if (a != null) a.next = c;
+            if (a != null)
+            {
+                a.next = c;
+            }
             c.prev = a;
 
             c.next = b;
             b.prev = c;
 
-            if (d != null) d.prev = b;
+            if (d != null)
+            {
+                d.prev = b;
+            }
             b.next = d;
 
             // B and C may have switched head/tail roles
-            if (head == b) head = c;
-            if (tail == c) tail = b;
+            if (head == b)
+            {
+                head = c;
+            }
+            if (tail == c)
+            {
+                tail = b;
+            }
         }
     }
 

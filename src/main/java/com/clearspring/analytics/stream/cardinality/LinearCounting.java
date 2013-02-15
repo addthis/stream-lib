@@ -27,7 +27,6 @@ import java.util.Arrays;
 /**
  * See <i>A Linear-Time Probabilistic Counting Algorithm for Database Applications</i>
  * by Whang, Vander-Zanden, Taylor
- *
  */
 public class LinearCounting implements ICardinality
 {
@@ -49,12 +48,11 @@ public class LinearCounting implements ICardinality
     protected int count;
 
     /**
-     *
      * @param size of bit array in bytes
      */
     public LinearCounting(int size)
     {
-        this.length = 8*size;
+        this.length = 8 * size;
         this.count = this.length;
         map = new byte[size];
     }
@@ -62,14 +60,14 @@ public class LinearCounting implements ICardinality
     public LinearCounting(byte[] map)
     {
         this.map = map;
-        this.length = 8*map.length;
+        this.length = 8 * map.length;
         this.count = computeCount();
     }
 
     @Override
     public long cardinality()
     {
-        return (long)(Math.round(length*Math.log(length/((double)count))));
+        return (long) (Math.round(length * Math.log(length / ((double) count))));
     }
 
     @Override
@@ -83,12 +81,12 @@ public class LinearCounting implements ICardinality
     {
         boolean modified = false;
 
-        long hash = (long)MurmurHash.hash(o);
-        int bit = (int)((hash & 0xFFFFFFFFL) % (long)length);
-        int i = bit/8;
+        long hash = (long) MurmurHash.hash(o);
+        int bit = (int) ((hash & 0xFFFFFFFFL) % (long) length);
+        int i = bit / 8;
         byte b = map[i];
-        byte mask = (byte)(1 << (bit % 8));
-        if((mask & b) == 0)
+        byte mask = (byte) (1 << (bit % 8));
+        if ((mask & b) == 0)
         {
             map[i] = (byte) (b | mask);
             count--;
@@ -106,22 +104,21 @@ public class LinearCounting implements ICardinality
 
     protected int computeCount()
     {
-        int c=0;
-        for(byte b : map)
+        int c = 0;
+        for (byte b : map)
         {
-            c+= Integer.bitCount(b & 0xFF);
+            c += Integer.bitCount(b & 0xFF);
         }
 
         return length - c;
     }
 
     /**
-     *
      * @return (# set bits) / (total # of bits)
      */
     public double getUtilization()
     {
-        return (length-count) / (double) length;
+        return (length - count) / (double) length;
     }
 
     public int getCount()
@@ -136,15 +133,19 @@ public class LinearCounting implements ICardinality
 
     /**
      * For debug purposes
+     *
      * @return
      */
     protected String mapAsBitString()
     {
         StringBuilder sb = new StringBuilder();
-        for(byte b : map)
+        for (byte b : map)
         {
             String bits = Integer.toBinaryString(b);
-            for(int i = 0; i < 8 - bits.length(); i++) sb.append('0');
+            for (int i = 0; i < 8 - bits.length(); i++)
+            {
+                sb.append('0');
+            }
             sb.append(bits);
         }
         return sb.toString();
@@ -157,7 +158,7 @@ public class LinearCounting implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws LinearCountingMergeException
     {
-        if(estimators == null || estimators.length == 0)
+        if (estimators == null || estimators.length == 0)
         {
             return this;
         }
@@ -168,6 +169,7 @@ public class LinearCounting implements ICardinality
 
     /**
      * Merges estimators to produce an estimator for their combined streams
+     *
      * @param estimators
      * @return merged estimator or null if no estimators were provided
      * @throws LinearCountingMergeException if estimators are not mergeable (all estimators must be the same size)
@@ -175,7 +177,7 @@ public class LinearCounting implements ICardinality
     public static LinearCounting mergeEstimators(LinearCounting... estimators) throws LinearCountingMergeException
     {
         LinearCounting merged = null;
-        if(estimators != null && estimators.length > 0)
+        if (estimators != null && estimators.length > 0)
         {
             int size = estimators[0].map.length;
             byte[] mergedBytes = new byte[size];
@@ -215,14 +217,14 @@ public class LinearCounting implements ICardinality
          * Taken from Table II of Whang et al.
          */
         protected final static int[] onePercentErrorLength =
-        {
-            5034, 5067, 5100, 5133, 5166, 5199, 5231, 5264, 5296,                    // 100 - 900
-            5329, 5647, 5957, 6260, 6556, 6847, 7132, 7412, 7688,                    // 1000 - 9000
-            7960, 10506, 12839, 15036, 17134, 19156, 21117, 23029, 24897,            // 10000 - 90000
-            26729, 43710, 59264, 73999, 88175, 101932, 115359, 128514, 141441,       // 100000 - 900000
-            154171, 274328, 386798, 494794, 599692, 702246, 802931, 902069, 999894,  // 1000000 - 9000000
-            1096582                                                                  // 10000000
-        };
+                {
+                        5034, 5067, 5100, 5133, 5166, 5199, 5231, 5264, 5296,                    // 100 - 900
+                        5329, 5647, 5957, 6260, 6556, 6847, 7132, 7412, 7688,                    // 1000 - 9000
+                        7960, 10506, 12839, 15036, 17134, 19156, 21117, 23029, 24897,            // 10000 - 90000
+                        26729, 43710, 59264, 73999, 88175, 101932, 115359, 128514, 141441,       // 100000 - 900000
+                        154171, 274328, 386798, 494794, 599692, 702246, 802931, 902069, 999894,  // 1000000 - 9000000
+                        1096582                                                                  // 10000000
+                };
 
         protected final int size;
 
@@ -255,39 +257,42 @@ public class LinearCounting implements ICardinality
          * cardinality less than maxCardinality
          *
          * @param maxCardinality
-         * @throws IllegalArgumentException if maxCardinality is not a positive integer
          * @return
+         * @throws IllegalArgumentException if maxCardinality is not a positive integer
          */
         public static Builder onePercentError(int maxCardinality)
         {
-            if(maxCardinality <= 0) throw new IllegalArgumentException("maxCardinality ("+maxCardinality+") must be a positive integer");
+            if (maxCardinality <= 0)
+            {
+                throw new IllegalArgumentException("maxCardinality (" + maxCardinality + ") must be a positive integer");
+            }
 
             int length = -1;
-            if(maxCardinality < 100)
+            if (maxCardinality < 100)
             {
                 length = onePercentErrorLength[0];
             }
-            else if(maxCardinality < 10000000)
+            else if (maxCardinality < 10000000)
             {
-                int logscale = (int)Math.log10(maxCardinality);
-                int scaleValue = (int)Math.pow(10, logscale);
+                int logscale = (int) Math.log10(maxCardinality);
+                int scaleValue = (int) Math.pow(10, logscale);
                 int scaleIndex = maxCardinality / scaleValue;
-                int index = 9*(logscale-2)+(scaleIndex-1);
-                int lowerBound = scaleValue*scaleIndex;
-                length = lerp(lowerBound, onePercentErrorLength[index], lowerBound+scaleValue, onePercentErrorLength[index+1], maxCardinality);
+                int index = 9 * (logscale - 2) + (scaleIndex - 1);
+                int lowerBound = scaleValue * scaleIndex;
+                length = lerp(lowerBound, onePercentErrorLength[index], lowerBound + scaleValue, onePercentErrorLength[index + 1], maxCardinality);
 
                 //System.out.println(String.format("Lower bound: %9d, Max cardinality: %9d, Upper bound: %9d", lowerBound, maxCardinality, lowerBound+scaleValue));
                 //System.out.println(String.format("Lower bound: %9d, Interpolated   : %9d, Upper bound: %9d", onePercentErrorLength[index], length, onePercentErrorLength[index+1]));
             }
-            else if(maxCardinality < 50000000)
+            else if (maxCardinality < 50000000)
             {
                 length = lerp(10000000, 1096582, 50000000, 4584297, maxCardinality);
             }
-            else if(maxCardinality < 100000000)
+            else if (maxCardinality < 100000000)
             {
                 length = lerp(50000000, 4584297, 100000000, 8571013, maxCardinality);
             }
-            else if(maxCardinality <= 120000000)
+            else if (maxCardinality <= 120000000)
             {
                 length = lerp(100000000, 8571013, 120000000, 10112529, maxCardinality);
             }
@@ -296,7 +301,7 @@ public class LinearCounting implements ICardinality
                 length = maxCardinality / 12;
             }
 
-            int sz = (int)Math.ceil(length / 8D);
+            int sz = (int) Math.ceil(length / 8D);
 
             //System.out.println("length: "+length+", size (bytes): "+sz);
 
@@ -304,7 +309,6 @@ public class LinearCounting implements ICardinality
         }
 
         /**
-         *
          * @param x0
          * @param y0
          * @param x1
@@ -314,7 +318,7 @@ public class LinearCounting implements ICardinality
          */
         protected static int lerp(int x0, int y0, int x1, int y1, int x)
         {
-            return (int)Math.ceil(y0+(x-x0)*(double)(y1-y0)/(x1-x0));
+            return (int) Math.ceil(y0 + (x - x0) * (double) (y1 - y0) / (x1 - x0));
         }
     }
 }

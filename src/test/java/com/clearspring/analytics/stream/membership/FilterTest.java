@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +48,7 @@ public class FilterTest
             }
             collisions += (MAX_HASH_COUNT - hashes.size());
         }
-        assertTrue("Collisions: "+collisions, collisions <= 100);
+        assertTrue("Collisions: " + collisions, collisions <= 100);
     }
 
     @Test
@@ -96,7 +97,7 @@ public class FilterTest
         }
 
         double fp_ratio = fp / (keys.size() * BloomCalculations.probs[spec.bucketsPerElement][spec.K]);
-        assertTrue("FP ratio: "+fp_ratio, fp_ratio < 1.03);
+        assertTrue("FP ratio: " + fp_ratio, fp_ratio < 1.03);
     }
 
     public static Filter testSerialize(Filter f) throws IOException

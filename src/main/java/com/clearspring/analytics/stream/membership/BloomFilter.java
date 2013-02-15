@@ -141,14 +141,16 @@ public class BloomFilter extends Filter
         return n;
     }
 
-    /** @return a BloomFilter that always returns a positive match, for testing */
+    /**
+     * @return a BloomFilter that always returns a positive match, for testing
+     */
     public static BloomFilter alwaysMatchingBloomFilter()
     {
         BitSet set = new BitSet(64);
         set.set(0, 64);
         return new BloomFilter(1, set);
     }
-    
+
     public static byte[] serialize(BloomFilter filter)
     {
         DataOutputBuffer out = new DataOutputBuffer();
@@ -157,11 +159,14 @@ public class BloomFilter extends Filter
             BloomFilter.serializer().serialize(filter, out);
             out.close();
         }
-        catch (IOException e) { e.printStackTrace(); }
-        
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
         return out.getData();
     }
-    
+
     public static BloomFilter deserialize(byte[] bytes)
     {
         BloomFilter filter = null;
@@ -172,10 +177,13 @@ public class BloomFilter extends Filter
             filter = BloomFilter.serializer().deserialize(in);
             in.close();
         }
-        catch (IOException e) { e.printStackTrace(); }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
 
         return filter;
-    }    
+    }
 }
 
 class BloomFilterSerializer implements ICompactSerializer<BloomFilter>

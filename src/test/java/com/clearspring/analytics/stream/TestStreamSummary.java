@@ -43,7 +43,7 @@ public class TestStreamSummary
     {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "A", "A"};
-        for(String i : stream)
+        for (String i : stream)
         {
             vs.offer(i);
             /*
@@ -59,11 +59,13 @@ public class TestStreamSummary
     {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for(String i : stream)
+        for (String i : stream)
+        {
             vs.offer(i);
+        }
         List<Counter<String>> topK = vs.topK(3);
-        for(Counter<String> c : topK)
-        {           
+        for (Counter<String> c : topK)
+        {
             assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
         }
     }
@@ -73,103 +75,113 @@ public class TestStreamSummary
     {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for(String i : stream)
+        for (String i : stream)
+        {
             vs.offer(i, 10);
+        }
         List<Counter<String>> topK = vs.topK(3);
-        for(Counter<String> c : topK)
+        for (Counter<String> c : topK)
         {
             assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
         }
     }
-    
+
     @Test
     public void testGeometricDistribution()
-    {   
+    {
         StreamSummary<Integer> vs = new StreamSummary<Integer>(10);
         RandomEngine re = RandomEngine.makeDefault();
 
-        for(int i=0; i<NUM_ITERATIONS; i++)
+        for (int i = 0; i < NUM_ITERATIONS; i++)
         {
             int z = Distributions.nextGeometric(0.25, re);
-            vs.offer(z);        
+            vs.offer(z);
         }
 
         List<Integer> top = vs.peek(5);
         System.out.println("Geometric:");
-        for(Integer e : top)
+        for (Integer e : top)
+        {
             System.out.println(e);
+        }
 
         int tippyTop = top.get(0);
         assertEquals(0, tippyTop);
         System.out.println(vs);
     }
-    
+
     @SuppressWarnings("unchecked")
     @Test
     public void testCounterSerialization() throws IOException, ClassNotFoundException
-    {       
+    {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for(String i : stream)
+        for (String i : stream)
+        {
             vs.offer(i);
+        }
         List<Counter<String>> topK = vs.topK(3);
-        for(Counter<String> c : topK)
+        for (Counter<String> c : topK)
         {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutput oo = new ObjectOutputStream(baos);
             oo.writeObject(c);
             oo.close();
-            
+
             ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-            Counter<String> clone = (Counter<String>)oi.readObject();
+            Counter<String> clone = (Counter<String>) oi.readObject();
             assertEquals(c.getCount(), clone.getCount());
             assertEquals(c.getError(), clone.getError());
             assertEquals(c.getItem(), clone.getItem());
         }
     }
 
-    
+
     @SuppressWarnings("unchecked")
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException
-    {       
+    {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for(String i : stream)
+        for (String i : stream)
+        {
             vs.offer(i);
+        }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutput oo = new ObjectOutputStream(baos);
         oo.writeObject(vs);
         oo.close();
-            
-        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-        StreamSummary<String> clone = (StreamSummary<String>)oi.readObject();
 
-        assertEquals(vs.toString(), clone.toString());      
+        ObjectInput oi = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        StreamSummary<String> clone = (StreamSummary<String>) oi.readObject();
+
+        assertEquals(vs.toString(), clone.toString());
     }
-    
-    
+
+
     @Test
     public void testByteSerialization() throws IOException, ClassNotFoundException
     {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for(String i : stream)
+        for (String i : stream)
+        {
             vs.offer(i);
+        }
 
         testSerialization(vs);
-        
+
         // Empty
         vs = new StreamSummary<String>(0);
         testSerialization(vs);
     }
-    
+
     private void testSerialization(StreamSummary<?> vs) throws IOException, ClassNotFoundException
     {
         byte[] bytes = vs.toBytes();
         StreamSummary<String> clone = new StreamSummary<String>(bytes);
 
-        assertEquals(vs.toString(), clone.toString());      
+        assertEquals(vs.toString(), clone.toString());
     }
 }
