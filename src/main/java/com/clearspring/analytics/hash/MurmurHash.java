@@ -42,6 +42,8 @@ public class MurmurHash
             return hashLong(Float.floatToRawIntBits((Float)o));
         if(o instanceof String)
             return hash(((String)o).getBytes());
+        if(o instanceof byte[])
+            return hash((byte[])o);
         return hash(o.toString());
     }
 
@@ -144,6 +146,11 @@ public class MurmurHash
 			final byte[] bytes = ((String)o).getBytes();
 			return hash64(bytes, bytes.length);
 		}
+        else if (o instanceof byte[])
+        {
+            final byte[] bytes = (byte[])o;
+            return hash64(bytes, bytes.length);
+        }
 		return hash64(o.toString());
 	}
 
