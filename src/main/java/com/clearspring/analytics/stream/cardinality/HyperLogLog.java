@@ -131,14 +131,19 @@ public class HyperLogLog implements ICardinality
         // j will be between 0 and 2^log2m
         final int j = x >>> (Integer.SIZE - log2m);
         final int r = Integer.numberOfLeadingZeros((x << this.log2m) | (1 << (this.log2m - 1)) + 1) + 1;
-        if (registerSet.get(j) < r)
-        {
-            registerSet.set(j, r);
-            return true;
-        }
-        else
-        {
-            return false;
+
+        while (true) {
+            int oldR = registerSet.get(j);
+            if (oldR < r)
+            {
+                if (registerSet.compareAndSet(j, oldR, r)) {
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 
