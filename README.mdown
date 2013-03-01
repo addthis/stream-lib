@@ -1,4 +1,3 @@
-
 ## Description
 
 A Java library for summarizing data in streams for which it is
@@ -94,6 +93,10 @@ ACM Trans. Database Syst., 15(2):208–229, 1990.
 items in data streams. In ICALP ’02: Proceedings of the 29th
 International Colloquium on Automata, Languages and Programming,
 pages 693–703, London, UK, 2002. Springer-Verlag.
+
+ * Stefan Heule, Marc Nunkesser, Alex Hall.  HyperLogLog in Practice: 
+Algorithmic Engineering of a State of The Art Cardinality Estimation 
+Algorithm.  Proceedings of the EDBT 2013 Conference, ACM, Genoa, Italy 
 
 
 #### Top-K
