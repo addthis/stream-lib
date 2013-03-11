@@ -1,7 +1,19 @@
 package com.clearspring.analytics.stream.quantile;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * Q-Digest datastructure.
@@ -108,9 +120,9 @@ public class QDigest implements IQuantileEstimator
     @Override
     public void offer(long value)
     {
-        if (value < 0 || value == Long.MAX_VALUE)
+        if (value < 0 || value > Long.MAX_VALUE/2)
         {
-            throw new IllegalArgumentException("Can only accept values in the range 0.." + (Long.MAX_VALUE - 1));
+            throw new IllegalArgumentException("Can only accept values in the range 0.." + Long.MAX_VALUE/2 + ", got " + value);
         }
         // Rebuild if the value is too large for the current tree height
         if (value >= capacity)
@@ -148,6 +160,7 @@ public class QDigest implements IQuantileEstimator
 
         QDigest res = new QDigest(a.compressionFactor);
         res.capacity = a.capacity;
+        res.size = a.size + b.size;
         for (long k : a.node2count.keySet())
         {
             res.node2count.put(k, a.node2count.get(k));
@@ -291,11 +304,11 @@ public class QDigest implements IQuantileEstimator
         long s = 0;
         for (long[] r : ranges)
         {
+            s += r[2];
             if (s > q * size)
             {
                 return r[1];
             }
-            s += r[2];
         }
         return ranges.get(ranges.size() - 1)[1];
     }
