@@ -146,8 +146,8 @@ public class HyperLogLog implements ICardinality
     @Override
     public long cardinality()
     {
-	    // disabling long range correction by default because
-	    // it does not seem to work
+        // disabling long range correction by default because
+        // it does not seem to work
         return cardinality(false);
     }
 
