@@ -146,10 +146,12 @@ public class HyperLogLog implements ICardinality
     @Override
     public long cardinality()
     {
-        return cardinality(true);
+	    // disabling long range correction by default because
+	    // it does not seem to work
+        return cardinality(false);
     }
 
-    public long cardinality(boolean enableLongRangeCorrection)
+	public long cardinality(boolean enableLongRangeCorrection)
     {
         double registerSum = 0;
         int count = registerSet.count;
@@ -178,19 +180,13 @@ public class HyperLogLog implements ICardinality
             // Intermedia Range Estimate
             return Math.round(estimate);
         }
-        else if (estimate > (1.0 / 30.0) * POW_2_32)
+        else if (enableLongRangeCorrection && estimate > (1.0 / 30.0) * POW_2_32)
         {
             // Large Range Estimate
-            if (enableLongRangeCorrection)
-            {
-                return Math.round((NEGATIVE_POW_2_32 * Math.log(1.0 - (estimate / POW_2_32))));
-            }
-            else
-            {
-                return Math.round(estimate);
-            }
+            // NOTE:  this doesn't work so don't use it unless you have a good reason
+            return Math.round((NEGATIVE_POW_2_32 * Math.log(1.0 - (estimate / POW_2_32))));
         }
-        return 0;
+        return Math.round(estimate);
     }
 
     @Override
