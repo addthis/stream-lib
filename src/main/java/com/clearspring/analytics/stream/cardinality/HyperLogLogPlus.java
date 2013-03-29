@@ -161,6 +161,15 @@ public class HyperLogLogPlus implements ICardinality
 
     public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet, RegisterSet registerSet)
     {
+        if (p < 4 || p > sp)
+        {
+            throw new IllegalArgumentException("p must be between 4 and sp (inclusive)");
+        }
+        if (sp > 32)
+        {
+            throw new IllegalArgumentException("sp values greater than 32 not supported");
+        }
+
         this.p = p;
         this.sp = sp;
         this.m = (int) Math.pow(2, p);
@@ -323,8 +332,9 @@ public class HyperLogLogPlus implements ICardinality
         //Push to the left for all the spaces you know are between the start of your bits and the left 'wall'
         //then push p bits off as well so we have just our friend "all 0s?"
         int zeroTest = 0;
-        if (p < sp) {
-          zeroTest = idx << ((32 - sp) + p);
+        if (p < sp)
+        {
+            zeroTest = idx << ((32 - sp) + p);
         }
         if (zeroTest == 0)
         {
