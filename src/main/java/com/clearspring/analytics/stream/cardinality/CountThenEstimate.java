@@ -20,11 +20,7 @@ import com.clearspring.analytics.util.ExternalizableUtil;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Exact -> Estimator cardinality counting
@@ -116,6 +112,18 @@ public class CountThenEstimate implements ICardinality, Externalizable
             return estimator.cardinality();
         }
         return counter.size();
+    }
+
+    @Override
+    public boolean offerHashed(long hashedLong)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean offerHashed(int hashedInt)
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

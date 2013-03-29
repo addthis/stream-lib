@@ -17,7 +17,9 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.*;
+import com.clearspring.analytics.util.Bits;
+import com.clearspring.analytics.util.IBuilder;
+import com.clearspring.analytics.util.Varint;
 
 import java.io.*;
 import java.util.*;
@@ -225,13 +227,25 @@ public class HyperLogLogPlus implements ICardinality
         }
     }
 
+    @Override
+    public boolean offerHashed(long hashedLong)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean offerHashed(int hashedInt)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+
     /**
      * Add data to estimator based on the mode it is in
      *
      * @param o stream element
      * @return Will almost always return true for sparse mode because the additions are batched in
      */
-
     @Override
     public boolean offer(Object o)
     {

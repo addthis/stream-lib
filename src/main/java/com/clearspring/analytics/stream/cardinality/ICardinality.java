@@ -28,6 +28,22 @@ public interface ICardinality
     boolean offer(Object o);
 
     /**
+     * Offer the value as a hashed long value
+     *
+     * @param hashedLong - the hash of the item to offer to the estimator
+     * @return false if the value returned by cardinality() is unaffected by the appearance of hashedLong in the stream
+     */
+    boolean offerHashed(long hashedLong);
+
+    /**
+     * Offer the value as a hashed long value
+     *
+     * @param hashedInt - the hash of the item to offer to the estimator
+     * @return false if the value returned by cardinality() is unaffected by the appearance of hashedInt in the stream
+     */
+    boolean offerHashed(int hashedInt);
+
+    /**
      * @return the number of unique elements in the stream or an estimate thereof
      */
     long cardinality();

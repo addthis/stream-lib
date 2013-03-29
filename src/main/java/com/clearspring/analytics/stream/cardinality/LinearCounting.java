@@ -78,6 +78,18 @@ public class LinearCounting implements ICardinality
     }
 
     @Override
+    public boolean offerHashed(long hashedLong)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean offerHashed(int hashedInt)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean offer(Object o)
     {
         boolean modified = false;

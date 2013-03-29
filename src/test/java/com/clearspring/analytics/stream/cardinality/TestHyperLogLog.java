@@ -16,6 +16,8 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -78,7 +80,7 @@ public class TestHyperLogLog
     {
         long start = System.currentTimeMillis();
         HyperLogLog hyperLogLog = new HyperLogLog(0.01);
-        int size = 10000000;
+        int size = 100000000;
         for (int i = 0; i < size; i++)
         {
             hyperLogLog.offer(TestICardinality.streamElement(i));
@@ -127,24 +129,35 @@ public class TestHyperLogLog
     }
 
     @Test
-    public void testPrecise_disableLongRangeCorrection() throws CardinalityMergeException
+    public void testPrecise() throws CardinalityMergeException
     {
-        int cardinality = 150000000;
-
-        HyperLogLog baseline = new HyperLogLog(20);
+        int cardinality = 1000000000;
+        int b = 12;
+        HyperLogLog baseline = new HyperLogLog(b);
+        HyperLogLog guava128 = new HyperLogLog(b);
+        HashFunction hf128 = Hashing.murmur3_128();
         for (int j = 0; j < cardinality; j++)
         {
-            double val = Math.random();
-            baseline.offer(val);
+            Double val = Math.random();
+            String valString = val.toString();
+            baseline.offer(valString);
+            guava128.offerHashed(hf128.hashString(valString).asLong());
+            if (j > 0 && j % 1000000 == 0)
+            {
+                System.out.println("current count: " + j);
+            }
         }
 
 
-        long mergedEstimate = baseline.cardinality(false);
-        double se = cardinality * (1.04 / Math.sqrt(Math.pow(2, 20)));
-
-        System.out.println("Expect estimate: " + mergedEstimate + " is between " + (cardinality - (3 * se)) + " and " + (cardinality + (3 * se)));
-
-        assertTrue(mergedEstimate >= cardinality - (3 * se));
-        assertTrue(mergedEstimate <= cardinality + (3 * se));
+        long baselineEstimate = baseline.cardinality();
+        long g128Estimate = guava128.cardinality();
+        double se = cardinality * (1.04 / Math.sqrt(Math.pow(2, b)));
+        double baselineError = (baselineEstimate-cardinality)/(double)cardinality;
+        double g128Error = (g128Estimate-cardinality)/(double)cardinality;
+        System.out.format("b: %f g128 %f", baselineError, g128Error);
+        assertTrue("baseline estimate bigger than expected", baselineEstimate >= cardinality - (2 * se));
+        assertTrue("baseline estimate smaller than expected", baselineEstimate <= cardinality + (2 * se));
+        assertTrue("g128 estimate bigger than expected", g128Estimate >= cardinality - (2 * se));
+        assertTrue("g128 estimate smaller than expected", g128Estimate <= cardinality + (2 * se));
     }
 }
