@@ -138,7 +138,7 @@ public class HyperLogLogPlus implements ICardinality
     private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
     private List<byte[]> sparseSet;
     //How big the sparse set is allowed to get before we convert to 'normal'
-    private int sparseSetThreshold;
+    private final int sparseSetThreshold;
 
     //How big the temp list is allowed to get before we batch merge it into the sparse set
     static final int SORT_THRESHOLD = 50000;
