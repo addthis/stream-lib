@@ -322,7 +322,10 @@ public class HyperLogLogPlus implements ICardinality
         int idx = (int) (x >>> (64 - sp));
         //Push to the left for all the spaces you know are between the start of your bits and the left 'wall'
         //then push p bits off as well so we have just our friend "all 0s?"
-        int zeroTest = idx << ((32 - sp) + p);
+        int zeroTest = 0;
+        if (p < sp) {
+          zeroTest = idx << ((32 - sp) + p);
+        }
         if (zeroTest == 0)
         {
             //See offer
