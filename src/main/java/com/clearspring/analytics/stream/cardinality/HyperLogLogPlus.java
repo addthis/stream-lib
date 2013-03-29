@@ -137,12 +137,11 @@ public class HyperLogLogPlus implements ICardinality
 
     private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
     private List<byte[]> sparseSet;
+    //How big the sparse set is allowed to get before we convert to 'normal'
+    private int sparseSetThreshold;
 
     //How big the temp list is allowed to get before we batch merge it into the sparse set
     static final int SORT_THRESHOLD = 50000;
-
-    //How big the sparse set is allowed to get before we convert to 'normal'
-    static final int MAX_THRESHOLD = 100000;
 
 
     public HyperLogLogPlus(int p, int sp)
@@ -168,6 +167,7 @@ public class HyperLogLogPlus implements ICardinality
         this.sm = (int) Math.pow(2, sp);
         this.registerSet = registerSet;
         this.sparseSet = sparseSet;
+        this.sparseSetThreshold = (int) (m * 0.75);
         // See the paper.
         switch (p)
         {
@@ -223,7 +223,7 @@ public class HyperLogLogPlus implements ICardinality
                 if (tmpSet.size() > SORT_THRESHOLD)
                 {
                     mergeTempList();
-                    if (sparseSet.size() > MAX_THRESHOLD)
+                    if (sparseSet.size() > sparseSetThreshold)
                     {
                         convertToNormal();
                     }
@@ -842,7 +842,7 @@ public class HyperLogLogPlus implements ICardinality
             {
                 if (hll.format == Format.SPARSE)
                 {
-                    if (sparseSet.size() + hll.sparseSet.size() > MAX_THRESHOLD)
+                    if (sparseSet.size() + hll.sparseSet.size() > sparseSetThreshold)
                     {
                         convertToNormal();
                         hll.convertToNormal();
