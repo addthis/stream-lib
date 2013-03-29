@@ -16,8 +16,8 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import com.clearspring.analytics.util.IBuilder;
 import com.clearspring.analytics.hash.MurmurHash;
+import com.clearspring.analytics.util.IBuilder;
 
 import java.util.Arrays;
 
@@ -119,13 +119,17 @@ public class LogLog implements ICardinality
     }
 
     @Override
-    public boolean offer(Object o)
+    public boolean offerHashed(long hashedLong)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean offerHashed(int hashedInt)
     {
         boolean modified = false;
-
-        int x = MurmurHash.hash(o);
-        int j = x >>> (Integer.SIZE - k);
-        byte r = (byte) (Integer.numberOfLeadingZeros((x << k) | (1 << (k - 1))) + 1);
+        int j = hashedInt >>> (Integer.SIZE - k);
+        byte r = (byte) (Integer.numberOfLeadingZeros((hashedInt << k) | (1 << (k - 1))) + 1);
         if (M[j] < r)
         {
             Rsum += r - M[j];
@@ -134,6 +138,13 @@ public class LogLog implements ICardinality
         }
 
         return modified;
+    }
+
+    @Override
+    public boolean offer(Object o)
+    {
+        int x = MurmurHash.hash(o);
+        return offer(x);
     }
 
     /**

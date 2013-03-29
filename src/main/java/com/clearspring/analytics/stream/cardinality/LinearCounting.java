@@ -21,7 +21,6 @@ import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.Serializable;
-
 import java.util.Arrays;
 
 /**
@@ -74,6 +73,18 @@ public class LinearCounting implements ICardinality
     public byte[] getBytes()
     {
         return map;
+    }
+
+    @Override
+    public boolean offerHashed(long hashedLong)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean offerHashed(int hashedInt)
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -53,12 +53,26 @@ import java.io.Serializable;
  * been working on:
  * <p/>
  * https://github.com/yammer/probablyjs
+ * <p>
+ * Note that this implementation does not include the long range correction function
+ * defined in the original paper.  Empirical evidence shows that the correction
+ * function causes more harm than good.
+ * </p>
+ *
+ * <p>
+ * Users have different motivations to use different types of hashing functions.
+ * Rather than try to keep up with all available hash functions and to remove
+ * the concern of causing future binary incompatibilities this class allows clients
+ * to offer the value in hashed int or long form.  This way clients are free
+ * to change their hash function on their own time line.  We recommend using Google's
+ * Guava Murmur3_128 implementation as it provides good performance and speed when
+ * high precision is required.  In our tests the 32bit MurmurHash function included
+ * in this project is faster and produces better results than the 32 bit murmur3
+ * implementation google provides.
+ * </p>
  */
 public class HyperLogLog implements ICardinality
 {
-    private final static double POW_2_32 = Math.pow(2, 32);
-    private final static double NEGATIVE_POW_2_32 = -4294967296.0;
-
     private final RegisterSet registerSet;
     private final int log2m;
     private final double alphaMM;
@@ -124,13 +138,27 @@ public class HyperLogLog implements ICardinality
 
 
     @Override
-    public boolean offer(Object o)
+    public boolean offerHashed(long hashedValue)
     {
-        final int x = MurmurHash.hash(o);
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
-        final int j = x >>> (Integer.SIZE - log2m);
-        final int r = Integer.numberOfLeadingZeros((x << this.log2m) | (1 << (this.log2m - 1)) + 1) + 1;
+        final int j = (int) (hashedValue >>> (Long.SIZE - log2m));
+        final int r = Long.numberOfLeadingZeros((hashedValue << this.log2m) | (1 << (this.log2m - 1)) + 1) + 1;
+        return updateRegister(j, r);
+    }
+
+    @Override
+    public boolean offerHashed(int hashedValue)
+    {
+        // j becomes the binary address determined by the first b log2m of x
+        // j will be between 0 and 2^log2m
+        final int j = hashedValue >>> (Integer.SIZE - log2m);
+        final int r = Integer.numberOfLeadingZeros((hashedValue << this.log2m) | (1 << (this.log2m - 1)) + 1) + 1;
+        return updateRegister(j, r);
+    }
+
+    private boolean updateRegister(int j, int r)
+    {
         if (registerSet.get(j) < r)
         {
             registerSet.set(j, r);
@@ -142,16 +170,16 @@ public class HyperLogLog implements ICardinality
         }
     }
 
+	@Override
+    public boolean offer(Object o)
+    {
+        final int x = MurmurHash.hash(o);
+        return offerHashed(x);
+    }
+
 
     @Override
     public long cardinality()
-    {
-        // disabling long range correction by default because
-        // it does not seem to work
-        return cardinality(false);
-    }
-
-	public long cardinality(boolean enableLongRangeCorrection)
     {
         double registerSum = 0;
         int count = registerSet.count;
@@ -175,18 +203,10 @@ public class HyperLogLog implements ICardinality
             }
             return Math.round(count * Math.log(count / zeros));
         }
-        else if (estimate <= (1.0 / 30.0) * POW_2_32)
+        else
         {
-            // Intermedia Range Estimate
             return Math.round(estimate);
         }
-        else if (enableLongRangeCorrection && estimate > (1.0 / 30.0) * POW_2_32)
-        {
-            // Large Range Estimate
-            // NOTE:  this doesn't work so don't use it unless you have a good reason
-            return Math.round((NEGATIVE_POW_2_32 * Math.log(1.0 - (estimate / POW_2_32))));
-        }
-        return Math.round(estimate);
     }
 
     @Override
