@@ -332,11 +332,11 @@ public class HyperLogLogPlus implements ICardinality
             final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
             //Invert run length by xoring it with a bunch of 1s
             int invrl = runLength ^ 63;
-            return idx
-                    << 6       //push the idx left 6 times to make room to put in the run length
-                    | invrl    //then merge in the run length
-                    << 1       //move left again to make room for the flag bit
-                    | 1;       //merge in the flag bit (set to one because we needed the run length)
+            return (((idx
+                    << 6)       //push the idx left 6 times to make room to put in the run length
+                    | invrl)    //then merge in the run length
+                    << 1)       //move left again to make room for the flag bit
+                    | 1;        //merge in the flag bit (set to one because we needed the run length)
         }
         else
         {
