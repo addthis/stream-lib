@@ -137,12 +137,11 @@ public class HyperLogLogPlus implements ICardinality
 
     private final ArrayList<Integer> tmpSet = new ArrayList<Integer>(1000);
     private List<byte[]> sparseSet;
+    //How big the sparse set is allowed to get before we convert to 'normal'
+    private final int sparseSetThreshold;
 
     //How big the temp list is allowed to get before we batch merge it into the sparse set
     static final int SORT_THRESHOLD = 50000;
-
-    //How big the sparse set is allowed to get before we convert to 'normal'
-    static final int MAX_THRESHOLD = 100000;
 
 
     public HyperLogLogPlus(int p, int sp)
@@ -162,12 +161,22 @@ public class HyperLogLogPlus implements ICardinality
 
     public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet, RegisterSet registerSet)
     {
+        if (p < 4 || p > sp)
+        {
+            throw new IllegalArgumentException("p must be between 4 and sp (inclusive)");
+        }
+        if (sp > 32)
+        {
+            throw new IllegalArgumentException("sp values greater than 32 not supported");
+        }
+
         this.p = p;
         this.sp = sp;
         this.m = (int) Math.pow(2, p);
         this.sm = (int) Math.pow(2, sp);
         this.registerSet = registerSet;
         this.sparseSet = sparseSet;
+        this.sparseSetThreshold = (int) (m * 0.75);
         // See the paper.
         switch (p)
         {
@@ -223,7 +232,7 @@ public class HyperLogLogPlus implements ICardinality
                 if (tmpSet.size() > SORT_THRESHOLD)
                 {
                     mergeTempList();
-                    if (sparseSet.size() > MAX_THRESHOLD)
+                    if (sparseSet.size() > sparseSetThreshold)
                     {
                         convertToNormal();
                     }
@@ -322,18 +331,22 @@ public class HyperLogLogPlus implements ICardinality
         int idx = (int) (x >>> (64 - sp));
         //Push to the left for all the spaces you know are between the start of your bits and the left 'wall'
         //then push p bits off as well so we have just our friend "all 0s?"
-        int zeroTest = idx << ((32 - sp) + p);
+        int zeroTest = 0;
+        if (p < sp)
+        {
+            zeroTest = idx << ((32 - sp) + p);
+        }
         if (zeroTest == 0)
         {
             //See offer
             final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
             //Invert run length by xoring it with a bunch of 1s
             int invrl = runLength ^ 63;
-            return idx
-                    << 6       //push the idx left 6 times to make room to put in the run length
-                    | invrl    //then merge in the run length
-                    << 1       //move left again to make room for the flag bit
-                    | 1;       //merge in the flag bit (set to one because we needed the run length)
+            return (((idx
+                    << 6)       //push the idx left 6 times to make room to put in the run length
+                    | invrl)    //then merge in the run length
+                    << 1)       //move left again to make room for the flag bit
+                    | 1;        //merge in the flag bit (set to one because we needed the run length)
         }
         else
         {
@@ -839,7 +852,7 @@ public class HyperLogLogPlus implements ICardinality
             {
                 if (hll.format == Format.SPARSE)
                 {
-                    if (sparseSet.size() + hll.sparseSet.size() > MAX_THRESHOLD)
+                    if (sparseSet.size() + hll.sparseSet.size() > sparseSetThreshold)
                     {
                         convertToNormal();
                         hll.convertToNormal();
