@@ -19,17 +19,53 @@ package com.clearspring.analytics.stream.cardinality;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.clearspring.analytics.util.*;
-
 
 public class TestHyperLogLogPlus
 {
+
+	public static void main(final String[] args) throws Throwable {
+		long startTime = System.currentTimeMillis();
+
+		int numSets = 10;
+		int setSize = 1 * 1000 * 1000;
+		int repeats = 5;
+
+		HyperLogLogPlus[] counters = new HyperLogLogPlus[numSets];
+		for (int i = 0; i < numSets; i++) {
+			counters[i] = new HyperLogLogPlus(15, 15);
+		}
+		for (int i = 0; i < numSets; i++) {
+			for (int j = 0; j < setSize; j++) {
+				String val = UUID.randomUUID().toString();
+				for (int z = 0; z < repeats; z++)
+				{
+					counters[i].offer(val);
+				}
+			}
+		}
+
+		ICardinality merged = counters[0];
+		long sum = merged.cardinality();
+		for (int i = 1; i < numSets; i++) {
+			sum += counters[i].cardinality();
+			merged = merged.merge(counters[i]);
+		}
+
+		long trueSize = numSets * setSize;
+		System.out.println("True Cardinality: " + trueSize);
+		System.out.println("Summed Cardinality: " + sum);
+		System.out.println("Merged Cardinality: " + merged.cardinality());
+		System.out.println("Merged Error: " + (merged.cardinality() - trueSize) / (float)trueSize);
+		System.out.println("Duration: " + ((System.currentTimeMillis() - startTime)/1000) + "s");
+	}
+
     @Test
     public void testComputeCount()
     {
@@ -48,6 +84,30 @@ public class TestHyperLogLogPlus
         assertTrue(estimate >= expectedCardinality - (3 * se));
         assertTrue(estimate <= expectedCardinality + (3 * se));
     }
+
+	@Test
+	public void testSmallCardinalityRepeatedInsert() {
+		HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
+		int count = 15000;
+		int maxAttempts = 200;
+		Random r = new Random();
+		for (int i = 0; i < count; i++)
+		{
+			int n = r.nextInt(maxAttempts) + 1;
+			for (int j = 0; j < n ; j++)
+			{
+				hyperLogLogPlus.offer("i" + i);
+			}
+		}
+		long estimate = hyperLogLogPlus.cardinality();
+		double se = count * (1.04 / Math.sqrt(Math.pow(2, 14)));
+		long expectedCardinality = count;
+
+		System.out.println("Expect estimate: " + estimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
+
+		assertTrue(estimate >= expectedCardinality - (3 * se));
+		assertTrue(estimate <= expectedCardinality + (3 * se));
+	}
 
 //    @Test
 //    public void testDelta()

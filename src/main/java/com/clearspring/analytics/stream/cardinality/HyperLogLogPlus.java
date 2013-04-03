@@ -461,7 +461,7 @@ public class HyperLogLogPlus implements ICardinality
                 {
                     H = estimatePrime;
                 }
-                if (H < thresholdData[p - 4])
+                if (H < thresholdData[p])
                 {
                     return Math.round(H);
                 }
