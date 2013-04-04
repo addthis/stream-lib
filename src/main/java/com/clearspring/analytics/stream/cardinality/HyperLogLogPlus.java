@@ -497,7 +497,7 @@ public class HyperLogLogPlus implements ICardinality
         {
             biasTotal += biasVector[nearestNeighbor];
         }
-        return biasTotal / (biasVector.length);
+        return biasTotal / nearestNeighbors.length;
     }
 
     private int[] getNearestNeighbors(SortedMap<Double, Integer> distanceMap)
