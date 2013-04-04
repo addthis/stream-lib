@@ -461,7 +461,7 @@ public class HyperLogLogPlus implements ICardinality
                 {
                     H = estimatePrime;
                 }
-		if (H < thresholdData[p-4])
+                if (H < thresholdData[p - 4])
                 {
                     return Math.round(H);
                 }
@@ -497,7 +497,7 @@ public class HyperLogLogPlus implements ICardinality
         {
             biasTotal += biasVector[nearestNeighbor];
         }
-        return biasTotal / nearestNeighbors.length;
+        return biasTotal / (biasVector.length);
     }
 
     private int[] getNearestNeighbors(SortedMap<Double, Integer> distanceMap)
