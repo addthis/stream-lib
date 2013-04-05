@@ -144,27 +144,45 @@ public class HyperLogLogPlus implements ICardinality
     private int sortThreshold;
 
 
+    /**
+     * This constructor disables the sparse set.  If the counter is likely to exceed
+     * the sparse set thresholds than using this constructor will help avoid the
+     * extra memory pressure created by maintaining the sparse set until that threshold is
+     * breached.
+     *
+     * @param p - the precision value for the normal set
+     */
     public HyperLogLogPlus(int p)
     {
         this(p, 0);
     }
 
+    /**
+     * Basic constructor for creating a instance that supports sparse and normal
+     * representations. The values of <code>p</code> and
+     * <code>sp</code> define the precision of the Normal and Sparse set
+     * representations for the data structure.  <code>p</code> must be a value
+     * between 4 and <code>sp</code> and <code>sp</code> must be less than 32.
+     *
+     * @param p - the precision value for the normal set
+     * @param sp - the precision value for the sparse set
+     */
     public HyperLogLogPlus(int p, int sp)
     {
         this(p, sp, new ArrayList<byte[]>(), new RegisterSet((int) Math.pow(2, p)));
     }
 
-    public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet)
+    private HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet)
     {
         this(p, sp, sparseSet, new RegisterSet((int) Math.pow(2, p)));
     }
 
-    public HyperLogLogPlus(int p, int sp, RegisterSet registerSet)
+    private HyperLogLogPlus(int p, int sp, RegisterSet registerSet)
     {
         this(p, sp, new ArrayList<byte[]>(), registerSet);
     }
 
-    public HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet, RegisterSet registerSet)
+    private HyperLogLogPlus(int p, int sp, List<byte[]> sparseSet, RegisterSet registerSet)
     {
         if (p < 4 || (p > sp && sp != 0))
         {
