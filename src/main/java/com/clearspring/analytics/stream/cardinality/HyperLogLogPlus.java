@@ -144,6 +144,11 @@ public class HyperLogLogPlus implements ICardinality
     private int sortThreshold;
 
 
+    public HyperLogLogPlus(int p)
+    {
+        this(p, 0);
+    }
+
     public HyperLogLogPlus(int p, int sp)
     {
         this(p, sp, new ArrayList<byte[]>(), new RegisterSet((int) Math.pow(2, p)));
@@ -174,7 +179,7 @@ public class HyperLogLogPlus implements ICardinality
         m = (int) Math.pow(2, p);
         this.registerSet = registerSet;
         format = Format.NORMAL;
-        if (sp != 0) // Use sparse representation
+        if (sp > 0) // Use sparse representation
         {
             format = Format.SPARSE;
             this.sp = sp;
