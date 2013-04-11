@@ -49,7 +49,7 @@ public class HyperLogLogPlus implements ICardinality
     }
 
     // threshold and bias data taken from google's bias correction data set:  https://docs.google.com/document/d/1gyjfMHy43U9OWBXxfaeG-3MjGzejW1dlpyMwEYAAWEI/view?fullscreen#
-    double[] thresholdData = {10, 20, 40, 80, 220, 400, 900, 1800, 3100, 6500, 15500, 20000, 500000, 120000, 350000};
+    double[] thresholdData = {10, 20, 40, 80, 220, 400, 900, 1800, 3100, 6500, 15500, 20000, 50000, 120000, 350000};
 
     double[][] rawEstimateData = {
             // precision 4
