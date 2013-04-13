@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Clearspring Technologies, Inc. 
+ * Copyright (C) 2011 Clearspring Technologies, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,23 @@ public class TestLinearCounting
         assertEquals(1167722, Builder.onePercentError(110000000).size);
         assertEquals(1264067, Builder.onePercentError(120000000).size);
         assertEquals(2500000, Builder.onePercentError(240000000).size);
+    }
 
+    @Test
+    public void testArbitraryStdErrorSize()
+    {
+        // Some sanity check with 1% error
+        assertEquals(630, Builder.withError(0.01, 100).size);
+        assertEquals(759, Builder.withError(0.01, 3375).size);
+
+        // Checking for 10% error (values from original paper)
+        assertEquals(10, Builder.withError(0.1, 100).size);
+        assertEquals(34, Builder.withError(0.1, 1000).size);
+        assertEquals(214, Builder.withError(0.1, 10000).size);
+        assertEquals(1593, Builder.withError(0.1, 100000).size);
+        assertEquals(12610, Builder.withError(0.1, 1000000).size);
+        assertEquals(103977, Builder.withError(0.1, 10000000).size);
+        assertEquals(882720, Builder.withError(0.1, 100000000).size);
     }
 
     @Test(expected = IllegalArgumentException.class)

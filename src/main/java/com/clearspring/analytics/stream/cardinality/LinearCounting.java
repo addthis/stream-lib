@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Clearspring Technologies, Inc. 
+ * Copyright (C) 2011 Clearspring Technologies, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.Serializable;
-
 import java.util.Arrays;
+
+import static java.lang.Math.*;
 
 /**
  * See <i>A Linear-Time Probabilistic Counting Algorithm for Database Applications</i>
@@ -306,6 +307,68 @@ public class LinearCounting implements ICardinality
             //System.out.println("length: "+length+", size (bytes): "+sz);
 
             return new Builder(sz);
+        }
+
+        /**
+         * Builds Linear Counter with arbitrary standard error and maximum expected cardinality.
+         * <p/>
+         * This method is more compute intensive than {@link #onePercentError(int)} as it is perform
+         * solving precision inequality in runtime. Therefore, {@link #onePercentError(int)} should be
+         * used whenever possible.
+         *
+         * @param eps            standard error as a fraction (e.g. {@code 0.01} for 1%)
+         * @param maxCardinality maximum expected cardinality
+         */
+        public static Builder withError(double eps, int maxCardinality)
+        {
+            int sz = computeRequiredBitMaskLength(maxCardinality, eps);
+            return new Builder((int) Math.ceil(sz / 8D));
+        }
+
+        /**
+         * Runs binary search to find minimum bit mask length that holds precision inequality.
+         *
+         * @param n   expected cardinality
+         * @param eps desired standard error
+         * @return minimal required bit mask length
+         */
+        private static int computeRequiredBitMaskLength(double n, double eps)
+        {
+            if (eps >= 1 || eps <= 0)
+            {
+                throw new IllegalArgumentException("Epsilon should be in (0, 1) range");
+            }
+            if (n <= 0)
+            {
+                throw new IllegalArgumentException("Cardinality should be positive");
+            }
+            int fromM = 1;
+            int toM = 100000000;
+            int m;
+            double eq;
+            do
+            {
+                m = (toM + fromM) / 2;
+                eq = precisionInequalityRV(n / m, eps);
+                if (m > eq)
+                {
+                    toM = m;
+                }
+                else
+                {
+                    fromM = m + 1;
+                }
+            } while (toM > fromM);
+            return m > eq ? m : m + 1;
+        }
+
+        /**
+         * @param t   load factor for linear counter
+         * @param eps desired standard error
+         */
+        private static double precisionInequalityRV(double t, double eps)
+        {
+            return max(1.0 / pow(eps * t, 2), 5) * (exp(t) - t - 1);
         }
 
         /**
