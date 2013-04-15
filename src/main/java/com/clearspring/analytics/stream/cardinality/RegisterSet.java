@@ -95,4 +95,10 @@ public class RegisterSet
             }
         }
     }
+
+    public void clear() {
+        for (int i = 0; i < this.M.length; i++) {
+            this.M[i] = 0;
+        }
+    }
 }

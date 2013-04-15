@@ -207,7 +207,12 @@ public class HyperLogLog implements ICardinality
     public byte[] getBytes() throws IOException
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
+        return getBytes(baos);
+    }
+
+    public byte[] getBytes(ByteArrayOutputStream buffer)
+            throws IOException {
+        DataOutputStream dos = new DataOutputStream(buffer);
 
         dos.writeInt(log2m);
         dos.writeInt(registerSet.size * 4);
@@ -216,7 +221,11 @@ public class HyperLogLog implements ICardinality
             dos.writeInt(x);
         }
 
-        return baos.toByteArray();
+        return buffer.toByteArray();
+    }
+
+    public void clear() {
+        this.registerSet.clear();
     }
 
     @Override

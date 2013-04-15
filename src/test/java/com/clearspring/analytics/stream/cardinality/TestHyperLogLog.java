@@ -130,6 +130,22 @@ public class TestHyperLogLog
     }
 
     @Test
+    public void testClear() {
+        double error = 0.02;
+        HyperLogLog estimator = new HyperLogLog(error);
+        int cardinality = 10000;
+        for (int i = 0; i < cardinality; i++) {
+            estimator.offer(Math.random());
+        }
+        long estimate = estimator.cardinality();
+        assertTrue(estimate <= (cardinality * (1 + error)));
+        assertTrue(estimate >= (cardinality * (1 - error)));
+
+        estimator.clear();
+        assertTrue(estimator.cardinality() == 0);
+    }
+
+    @Test
     public void testPrecise_disableLongRangeCorrection() throws CardinalityMergeException
     {
         int cardinality = 150000000;
