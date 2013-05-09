@@ -19,9 +19,7 @@ package com.clearspring.analytics.stream.cardinality;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -169,11 +167,60 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testSortEncodedSet()
+    {
+        List<Integer> testSet = new ArrayList<Integer>();
+        testSet.add(655403);
+        testSet.add(655416);
+        testSet.add(655425);
+        HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
+        hyperLogLogPlus.sortEncodedSet(testSet);
+        assertEquals(new Integer(655403), testSet.get(0));
+        assertEquals(new Integer(655425), testSet.get(1));
+        assertEquals(new Integer(655416), testSet.get(2));
+
+    }
+
+    @Test
+    public void testMergeSelf() throws CardinalityMergeException, IOException
+    {
+        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000 };
+        final int[] ps = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+        final int[] sps = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+
+        for (int cardinality : cardinalities)
+        {
+            for (int j = 0; j < ps.length; j++)
+            {
+                for (int sp : sps)
+                {
+                    if (sp < ps[j])
+                    {
+                        continue;
+                    }
+                    System.out.println(ps[j] + "-" + sp);
+                    HyperLogLogPlus hllPlus = new HyperLogLogPlus(ps[j], sp);
+                    for (int l = 0; l < cardinality; l++)
+                    {
+                        hllPlus.offer(Math.random());
+                    }
+                    HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBytes());
+                    assertEquals(hllPlus.cardinality(), deserialized.cardinality());
+                    ICardinality merged = hllPlus.merge(deserialized);
+                    System.out.println(merged.cardinality() + " : " + hllPlus.cardinality());
+                    assertEquals(hllPlus.cardinality(), merged.cardinality());
+                }
+            }
+        }
+
+    }
+
+    @Test
     public void testMerge_Sparse() throws CardinalityMergeException
     {
         int numToMerge = 4;
         int bits = 18;
-        int cardinality = 1000000;
+        int cardinality = 4000;
 
         HyperLogLogPlus[] hyperLogLogs = new HyperLogLogPlus[numToMerge];
         HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);

@@ -429,6 +429,17 @@ public class HyperLogLogPlus implements ICardinality
     }
 
     /**
+     * returns the hash portion of the of the integer value
+     * @param k - the encoded integer to extract the hash from
+     * @return the encoded hash value
+     */
+    private int getEncodedHash(int k)
+    {
+        return (k << p + (31 - sp));
+    }
+
+
+    /**
      * Get the idx' from an encoding
      *
      * @param k encoded data
@@ -853,10 +864,47 @@ public class HyperLogLogPlus implements ICardinality
         if (tmpSet.size() != 0)
         {
             resetDelta();
-            Collections.sort(tmpSet);
+            sortEncodedSet(tmpSet);
             sparseSet = merge(sparseSet, tmpSet);
             tmpSet.clear();
         }
+    }
+
+    // exposed for testing
+    public void sortEncodedSet(List<Integer> encodedSet)
+    {
+        Collections.sort(encodedSet, new Comparator<Integer>()
+        {
+            @Override
+            public int compare(Integer left, Integer right)
+            {
+                if (left.equals(right))
+                {
+                    return 0;
+                }
+                int leftIndex = getSparseIndex(left);
+                int rightIndex = getSparseIndex(right);
+                if (leftIndex < rightIndex)
+                {
+                    return -1;
+                }
+                else if (rightIndex < leftIndex)
+                {
+                    return 1;
+                }
+                int leftHash = getEncodedHash(left);
+                int rightHash = getEncodedHash(right);
+                if (leftHash < rightHash)
+                {
+                    return -1;
+                }
+                else if (rightHash < leftHash)
+                {
+                    return 1;
+                }
+                return 0;
+            }
+        });
     }
 
     /**
