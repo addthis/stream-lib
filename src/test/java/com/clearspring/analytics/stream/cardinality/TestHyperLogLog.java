@@ -18,6 +18,7 @@ package com.clearspring.analytics.stream.cardinality;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -129,6 +130,7 @@ public class TestHyperLogLog
     }
 
     @Test
+    @Ignore
     public void testPrecise() throws CardinalityMergeException
     {
         int cardinality = 1000000000;
