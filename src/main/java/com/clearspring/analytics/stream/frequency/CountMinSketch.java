@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -45,6 +46,17 @@ public class CountMinSketch implements IFrequency
         this.width = (int) Math.ceil(2 / epsOfTotalCount);
         this.depth = (int) Math.ceil(-Math.log(1 - confidence) / Math.log(2));
         initTablesWith(depth, width, seed);
+    }
+
+    private CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table)
+    {
+        this.depth = depth;
+        this.width = width;
+        this.eps   = 2.0 / width;
+        this.confidence = 1 - 1 / Math.pow(2, depth);
+        this.hashA = hashA;
+        this.table = table;
+        this.size  = size;
     }
 
     private void initTablesWith(int depth, int width, int seed)
@@ -125,6 +137,56 @@ public class CountMinSketch implements IFrequency
         return res;
     }
 
+    /**
+     * Merges count min sketches to produce a count min sketch for their combined streams
+     *
+     * @param estimators
+     * @return merged estimator or null if no estimators were provided
+     * @throws CMSMergeException if estimators are not mergeable (same depth, width and seed)
+     */
+    public static CountMinSketch merge(CountMinSketch... estimators) throws CMSMergeException
+    {
+        CountMinSketch merged = null;
+        if (estimators != null && estimators.length > 0)
+        {
+            int depth = estimators[0].depth;
+            int width = estimators[0].width;
+            long[] hashA = Arrays.copyOf(estimators[0].hashA, estimators[0].hashA.length);
+
+            long[][] table = new long[depth][width];
+            int size = 0;
+
+            for (CountMinSketch estimator : estimators)
+            {
+                if (estimator.depth != depth)
+                {
+                    throw new CMSMergeException("Cannot merge estimators of different depth");
+                }
+                if (estimator.width != width)
+                {
+                    throw new CMSMergeException("Cannot merge estimators of different width");
+                }
+                if (!Arrays.equals(estimator.hashA, hashA))
+                {
+                    throw new CMSMergeException("Cannot merge estimators of different seed");
+                }
+
+                for (int i = 0; i < table.length; i++)
+                {
+                    for (int j = 0; j < table[i].length; j++)
+                    {
+                        table[i][j] += estimator.table[i][j];
+                    }
+                }
+                size += estimator.size;
+            }
+
+            merged = new CountMinSketch(depth, width, size, hashA, table);
+        }
+
+        return merged;
+    }
+
     public static byte[] serialize(CountMinSketch sketch)
     {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -179,6 +241,15 @@ public class CountMinSketch implements IFrequency
         {
             // Shouldn't happen
             throw new RuntimeException(e);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    protected static class CMSMergeException extends FrequencyMergeException
+    {
+        public CMSMergeException(String message)
+        {
+            super(message);
         }
     }
 }
