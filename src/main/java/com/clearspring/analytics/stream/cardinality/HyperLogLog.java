@@ -16,16 +16,12 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+
 import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.Bits;
 import com.clearspring.analytics.util.IBuilder;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
 
 /**
  * Java implementation of HyperLogLog (HLL) algorithm from this paper:
@@ -215,20 +211,17 @@ public class HyperLogLog implements ICardinality
         return registerSet.size * 4;
     }
 
-    @Override
-    public byte[] getBytes() throws IOException
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
 
-        dos.writeInt(log2m);
-        dos.writeInt(registerSet.size * 4);
+    @Override
+    public byte[] getBytes() {
+        ByteBuffer bb = ByteBuffer.allocate(Bits.INT_BYTES * (1+1+registerSet.size));
+        bb.putInt(log2m);
+        bb.putInt(registerSet.size * Bits.INT_BYTES);
         for (int x : registerSet.bits())
         {
-            dos.writeInt(x);
+            bb.putInt(x);
         }
-
-        return baos.toByteArray();
+        return bb.array();
     }
 
     @Override
@@ -283,15 +276,13 @@ public class HyperLogLog implements ICardinality
             return RegisterSet.getBits(k) * 4;
         }
 
-        public static HyperLogLog build(byte[] bytes) throws IOException
+        public static HyperLogLog build(byte[] bytes)
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            DataInputStream oi = new DataInputStream(bais);
-            int log2m = oi.readInt();
-            int size = oi.readInt();
-            byte[] longArrayBytes = new byte[size];
-            oi.readFully(longArrayBytes);
-            return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), Bits.getBits(longArrayBytes)));
+            ByteBuffer bb = ByteBuffer.wrap(bytes);
+            int log2m = bb.getInt();
+            int size = bb.getInt();
+            int [] regSetDump = Bits.getBits(bb, size);
+            return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), regSetDump));
         }
     }
 

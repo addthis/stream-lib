@@ -19,9 +19,12 @@ package com.clearspring.analytics.util;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class Bits
 {
+
+    public static final int INT_BYTES = Integer.SIZE / 8;
 
     public static int[] getBits(byte[] mBytes) throws IOException
     {
@@ -31,6 +34,16 @@ public class Bits
         for (int i = 0; i < bitSize; i++)
         {
             bits[i] = dis.readInt();
+        }
+        return bits;
+    }
+
+    public static int [] getBits(ByteBuffer bb, int size)
+    {
+        int count = size / (Integer.SIZE/8);
+        int [] bits = new int[count];
+        for (int i = 0; i < count; i++) {
+            bits[i] = bb.getInt();
         }
         return bits;
     }
