@@ -7,12 +7,17 @@ import java.io.ObjectOutputStream;
 
 public class ExternalizableUtil
 {
-    public static byte[] toBytes(Externalizable o) throws IOException
+    public static byte[] toBytes(Externalizable o)
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream out = new ObjectOutputStream(baos);
-        o.writeExternal(out);
-        out.flush();
-        return baos.toByteArray();
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream out = new ObjectOutputStream(baos);
+            o.writeExternal(out);
+            out.flush();
+            return baos.toByteArray();
+        } catch (IOException e) {
+            // ByteArrayOutputStream does not throw IOException
+            throw new IllegalStateException(e);
+        }
     }
 }
