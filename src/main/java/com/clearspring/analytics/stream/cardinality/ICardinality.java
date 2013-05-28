@@ -57,7 +57,7 @@ public interface ICardinality
      * @return
      * @throws IOException
      */
-    byte[] getBytes() throws IOException;
+    byte[] getBytes();
 
     /**
      * Merges estimators to produce an estimator for the combined streams
