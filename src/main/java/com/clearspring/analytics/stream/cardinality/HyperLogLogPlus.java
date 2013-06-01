@@ -260,15 +260,7 @@ public class HyperLogLogPlus implements ICardinality
                 //Push a 1 to where the bit string would have ended if we didnt just push the idx out of the way
                 //A one is always added to runLength for estimation calculation purposes
                 final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
-                if (registerSet.get((int) idx) < runLength)
-                {
-                    registerSet.set((int) idx, runLength);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return registerSet.updateIfGreater((int)idx, runLength);
             case SPARSE:
                 //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
                 int k = encodeHash(x, p, sp);
@@ -306,10 +298,7 @@ public class HyperLogLogPlus implements ICardinality
             int k = deltaRead(sparseSet, i);
             int idx = getIndex(k, p);
             int r = decodeRunLength(k);
-            if (registerSet.get(idx) < r)
-            {
-                registerSet.set(idx, r);
-            }
+            registerSet.updateIfGreater(idx, r);
         }
         format = Format.NORMAL;
         tmpSet = null;
@@ -971,7 +960,7 @@ public class HyperLogLogPlus implements ICardinality
             {
                 for (int b = 0; b < registerSet.count; b++)
                 {
-                    registerSet.set(b, Math.max(registerSet.get(b), hll.registerSet.get(b)));
+                    registerSet.updateIfGreater(b, hll.registerSet.get(b));
                 }
             }
 
