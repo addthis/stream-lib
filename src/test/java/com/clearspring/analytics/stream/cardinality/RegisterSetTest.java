@@ -16,9 +16,11 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import org.junit.Test;
-
 import static junit.framework.Assert.assertEquals;
+
+import java.util.Random;
+
+import org.junit.Test;
 
 public class RegisterSetTest
 {
@@ -47,6 +49,38 @@ public class RegisterSetTest
         RegisterSet rs = new RegisterSet(6);
         rs.set(0, 11);
         assertEquals(11, rs.get(0));
+    }
+    
+    @Test
+    public void testMerge()
+    {
+        Random rand = new Random(2);
+        int count = 32;
+        RegisterSet rs = new RegisterSet(count);
+        RegisterSet[] rss = new RegisterSet[5];
+
+        for (int i = 0; i < rss.length; i++)
+        {
+            rss[i] = new RegisterSet(count);
+
+            for (int pos = 0; pos < rs.count; pos++)
+            {
+                int val = rand.nextInt(10);
+                rs.updateIfGreater(pos, val);
+                rss[i].set(pos, val);
+            }
+        }
+
+        RegisterSet merged = new RegisterSet(count);
+        for (int i = 0; i < rss.length; i++)
+        {
+           merged.merge(rss[i]);
+        }
+
+        for (int pos = 0; pos < rs.count; pos++)
+        {
+            assertEquals(rs.get(pos), merged.get(pos));
+        }
     }
 
     @Test

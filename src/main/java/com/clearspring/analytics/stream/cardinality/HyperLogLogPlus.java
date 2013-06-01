@@ -958,12 +958,8 @@ public class HyperLogLogPlus implements ICardinality
             }
             if (format != Format.SPARSE)
             {
-                for (int b = 0; b < registerSet.count; b++)
-                {
-                    registerSet.updateIfGreater(b, hll.registerSet.get(b));
-                }
+                registerSet.merge(hll.registerSet);
             }
-
         }
         if (format == Format.SPARSE)
         {

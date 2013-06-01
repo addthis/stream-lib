@@ -239,10 +239,7 @@ public class HyperLogLog implements ICardinality
                 throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
             }
             HyperLogLog hll = (HyperLogLog) estimator;
-            for (int b = 0; b < mergedSet.count; b++)
-            {
-                mergedSet.updateIfGreater(b, hll.registerSet.get(b));
-            }
+            mergedSet.merge(hll.registerSet);
         }
         return new HyperLogLog(this.log2m, mergedSet);
     }

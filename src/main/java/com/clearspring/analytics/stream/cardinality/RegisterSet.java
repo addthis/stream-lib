@@ -94,6 +94,22 @@ public class RegisterSet
         }
     }
 
+    public void merge(RegisterSet that)
+    {
+        for (int bucket = 0; bucket < M.length; bucket++)
+        {
+            for (int j = 0; j < LOG2_BITS_PER_WORD; j++)
+            {
+                int mask = 0x1f << (REGISTER_SIZE * j);
+
+                int thisVal = (this.M[bucket] & mask);
+                int thatVal = (that.M[bucket] & mask);
+                int newVal  = (thisVal < thatVal) ? thatVal : thisVal;
+                this.M[bucket] = (this.M[bucket] & ~mask) | newVal;
+            }
+        }
+    }
+
     public int[] bits()
     {
         int[] copy = new int[size];
