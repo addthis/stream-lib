@@ -60,19 +60,19 @@ public class RegisterSet
 
     public static int getBits(int count)
     {
-        return (int) Math.floor(count / LOG2_BITS_PER_WORD);
+        return count / LOG2_BITS_PER_WORD;
     }
 
     public void set(int position, int value)
     {
-        int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
+        int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
         this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
     }
 
     public int get(int position)
     {
-        int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
+        int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
         return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
     }
