@@ -144,7 +144,7 @@ public class HyperLogLog implements ICardinality
         // j will be between 0 and 2^log2m
         final int j = (int) (hashedValue >>> (Long.SIZE - log2m));
         final int r = Long.numberOfLeadingZeros((hashedValue << this.log2m) | (1 << (this.log2m - 1)) + 1) + 1;
-        return updateRegister(j, r);
+        return registerSet.updateIfGreater(j, r);
     }
 
     @Override
@@ -154,20 +154,7 @@ public class HyperLogLog implements ICardinality
         // j will be between 0 and 2^log2m
         final int j = hashedValue >>> (Integer.SIZE - log2m);
         final int r = Integer.numberOfLeadingZeros((hashedValue << this.log2m) | (1 << (this.log2m - 1)) + 1) + 1;
-        return updateRegister(j, r);
-    }
-
-    private boolean updateRegister(int j, int r)
-    {
-        if (registerSet.get(j) < r)
-        {
-            registerSet.set(j, r);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return registerSet.updateIfGreater(j, r);
     }
 
 	@Override
@@ -252,10 +239,7 @@ public class HyperLogLog implements ICardinality
                 throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
             }
             HyperLogLog hll = (HyperLogLog) estimator;
-            for (int b = 0; b < mergedSet.count; b++)
-            {
-                mergedSet.set(b, Math.max(mergedSet.get(b), hll.registerSet.get(b)));
-            }
+            mergedSet.merge(hll.registerSet);
         }
         return new HyperLogLog(this.log2m, mergedSet);
     }

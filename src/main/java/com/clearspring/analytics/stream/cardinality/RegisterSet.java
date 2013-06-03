@@ -60,21 +60,55 @@ public class RegisterSet
 
     public static int getBits(int count)
     {
-        return (int) Math.floor(count / LOG2_BITS_PER_WORD);
+        return count / LOG2_BITS_PER_WORD;
     }
 
     public void set(int position, int value)
     {
-        int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
+        int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
         this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
     }
 
     public int get(int position)
     {
-        int bucketPos = (int) Math.floor(position / LOG2_BITS_PER_WORD);
+        int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
         return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
+    }
+    
+    public boolean updateIfGreater(int position, int value)
+    {
+        int bucket = position / LOG2_BITS_PER_WORD;
+        int shift  = REGISTER_SIZE * (position - (bucket * LOG2_BITS_PER_WORD));
+        int mask = 0x1f << shift;
+
+        // Use long to avoid sign issues with the left-most shift
+        long curVal = this.M[bucket] & mask;
+        long newVal = value << shift;
+        if (curVal < newVal) {
+            this.M[bucket] = (int)((this.M[bucket] & ~mask) | newVal);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void merge(RegisterSet that)
+    {
+        for (int bucket = 0; bucket < M.length; bucket++)
+        {
+            int word = 0;
+            for (int j = 0; j < LOG2_BITS_PER_WORD; j++)
+            {
+                int mask = 0x1f << (REGISTER_SIZE * j);
+
+                int thisVal = (this.M[bucket] & mask);
+                int thatVal = (that.M[bucket] & mask);
+                word |= (thisVal < thatVal) ? thatVal : thisVal;
+            }
+            this.M[bucket] = word;
+        }
     }
 
     public int[] bits()
