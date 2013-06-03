@@ -172,7 +172,7 @@ public class HyperLogLog implements ICardinality
         int count = registerSet.count;
         for (int j = 0; j < registerSet.count; j++)
         {
-            registerSum += Math.pow(2, (-1 * registerSet.get(j)));
+            registerSum += 1.0 / (1<<registerSet.get(j));
         }
 
         double estimate = alphaMM * (1 / registerSum);
