@@ -170,9 +170,14 @@ public class HyperLogLog implements ICardinality
     {
         double registerSum = 0;
         int count = registerSet.count;
+        double zeros = 0.0;
         for (int j = 0; j < registerSet.count; j++)
         {
-            registerSum += Math.pow(2, (-1 * registerSet.get(j)));
+            int val = registerSet.get(j);
+            registerSum += 1.0 / (1<<val);
+            if (val == 0) {
+                zeros++;
+            }
         }
 
         double estimate = alphaMM * (1 / registerSum);
@@ -180,14 +185,6 @@ public class HyperLogLog implements ICardinality
         if (estimate <= (5.0 / 2.0) * count)
         {
             // Small Range Estimate
-            double zeros = 0.0;
-            for (int z = 0; z < count; z++)
-            {
-                if (registerSet.get(z) == 0)
-                {
-                    zeros++;
-                }
-            }
             return Math.round(count * Math.log(count / zeros));
         }
         else

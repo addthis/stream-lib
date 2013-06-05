@@ -477,9 +477,14 @@ public class HyperLogLogPlus implements ICardinality
             case NORMAL:
                 double registerSum = 0;
                 int count = registerSet.count;
+                double zeros = 0;
                 for (int j = 0; j < registerSet.count; j++)
                 {
-                    registerSum += Math.pow(2, (-1 * registerSet.get(j)));
+                    int val = registerSet.get(j);
+                    registerSum += 1.0 / (1<<val);
+                    if (val == 0) {
+                        zeros++;
+                    }
                 }
 
                 double estimate = alphaMM * (1 / registerSum);
@@ -487,15 +492,6 @@ public class HyperLogLogPlus implements ICardinality
                 if (estimate <= (5 * m))
                 {
                     estimatePrime = estimate - getEstimateBias(estimate, p);
-                }
-                // Small Range Estimate
-                double zeros = 0.0;
-                for (int z = 0; z < count; z++)
-                {
-                    if (registerSet.get(z) == 0)
-                    {
-                        zeros++;
-                    }
                 }
                 double H;
                 if (zeros > 0)
