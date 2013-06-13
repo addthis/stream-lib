@@ -63,14 +63,6 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 		if (oldVal != null)
 		{
 			val = oldVal.count.addAndGet(incrementCount);
-
-			minVal.compareAndSet(null, oldVal);
-
-			ErrorAndCount minValue = minVal.get();
-			if (val < minValue.count.get())
-			{
-				minVal.set(oldVal);
-			}
 		}
 		else if (size.incrementAndGet() > capacity)
 		{
@@ -81,7 +73,22 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 			value.count.getAndAdd(count);
 			value.error.set(count);
 		}
+		minVal.set(getMinValue());
+
 		return val != incrementCount;
+	}
+
+	private ErrorAndCount getMinValue()
+	{
+		ErrorAndCount<T> minVal = null;
+		for (ErrorAndCount<T> entry : itemMap.values())
+		{
+			if (minVal == null || entry.count.get() < minVal.count.get())
+			{
+				minVal = entry;
+			}
+		}
+		return minVal;
 	}
 
 	@Override
