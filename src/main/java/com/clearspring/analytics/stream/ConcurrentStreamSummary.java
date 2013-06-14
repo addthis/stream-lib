@@ -38,14 +38,18 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ConcurrentStreamSummary<T> implements ITopK<T>
 {
 	private final int capacity;
-	private final ConcurrentHashMap<T, ErrorAndCount> itemMap;
-	private final AtomicReference<ErrorAndCount> minVal = new AtomicReference<>();
-	private final AtomicLong size = new AtomicLong(0);
+	private final ConcurrentHashMap<T, ScoredItem> itemMap;
+	private final AtomicReference<ScoredItem> minVal;
+	private final AtomicLong size;
+	private final AtomicBoolean reachCapacity;
 
 	public ConcurrentStreamSummary(final int capacity)
 	{
 		this.capacity = capacity;
-		itemMap = new ConcurrentHashMap<>(capacity);
+		this.minVal = new AtomicReference<>();
+		this.size = new AtomicLong(0);
+		this.itemMap = new ConcurrentHashMap<>(capacity);
+		this.reachCapacity = new AtomicBoolean(false);
 	}
 
 	@Override
@@ -58,32 +62,41 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 	public boolean offer(final T element, final int incrementCount)
 	{
 		long val = incrementCount;
-		ErrorAndCount value = new ErrorAndCount(element, incrementCount);
-		ErrorAndCount oldVal = itemMap.putIfAbsent(element, value);
+		ScoredItem value = new ScoredItem(element, incrementCount);
+		ScoredItem oldVal = itemMap.putIfAbsent(element, value);
 		if (oldVal != null)
 		{
-			val = oldVal.count.addAndGet(incrementCount);
+			val = oldVal.addAndGetCount(incrementCount);
 		}
-		else if (size.incrementAndGet() > capacity)
+		else if (reachCapacity.get() || size.incrementAndGet() > capacity)
 		{
-			ErrorAndCount oldMinVal = minVal.getAndSet(value);
-			long count = oldMinVal.count.get();
-			itemMap.remove(oldMinVal.value);
+			reachCapacity.set(true);
 
-			value.count.getAndAdd(count);
-			value.error.set(count);
+			ScoredItem oldMinVal = minVal.getAndSet(value);
+			itemMap.remove(oldMinVal.getItem());
+
+			while (oldMinVal.isNewItem())
+			{
+				// Wait for the oldMinVal so its error and value are completely up to date.
+				// no thread.sleep here due to the overhead of calling it - the waiting time will be microseconds.
+			}
+			long count = oldMinVal.getCount();
+
+			value.addAndGetCount(count);
+			value.setError(count);
 		}
+		value.setNewItem(false);
 		minVal.set(getMinValue());
 
 		return val != incrementCount;
 	}
 
-	private ErrorAndCount getMinValue()
+	private ScoredItem getMinValue()
 	{
-		ErrorAndCount<T> minVal = null;
-		for (ErrorAndCount<T> entry : itemMap.values())
+		ScoredItem<T> minVal = null;
+		for (ScoredItem<T> entry : itemMap.values())
 		{
-			if (minVal == null || entry.count.get() < minVal.count.get())
+			if (minVal == null || (!entry.isNewItem() && entry.getCount() < minVal.getCount()))
 			{
 				minVal = entry;
 			}
@@ -96,9 +109,9 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("[");
-		for (ErrorAndCount entry : itemMap.values())
+		for (ScoredItem entry : itemMap.values())
 		{
-			sb.append("("+ entry.count.get()  + ": " + entry.value + ", e: " + entry.error.get() + "),");
+			sb.append("("+ entry.getCount()  + ": " + entry.getItem() + ", e: " + entry.getError() + "),");
 		}
 		sb.deleteCharAt(sb.length() - 1);
 		sb.append("]");
@@ -120,9 +133,10 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 	public List<ScoredItem<T>> peekWithScores(final int k)
 	{
 		List<ScoredItem<T>> values = new ArrayList<>();
-		for (Map.Entry<T, ErrorAndCount> entry : itemMap.entrySet())
+		for (Map.Entry<T, ScoredItem> entry : itemMap.entrySet())
 		{
-			values.add(new ScoredItem(entry.getKey(), entry.getValue().count.get(), entry.getValue().error.get()));
+			ScoredItem value = entry.getValue();
+			values.add(new ScoredItem(value.getItem(), value.getCount(), value.getError()));
 		}
 		Collections.sort(values);
 		values = values.size() > k ? values.subList(0, k) : values;

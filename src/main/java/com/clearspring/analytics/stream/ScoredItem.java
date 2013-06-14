@@ -21,22 +21,37 @@ package com.clearspring.analytics.stream;
  */
 public class ScoredItem<T> implements Comparable<ScoredItem>
 {
-	private final Long score;
-
-	private final Long error;
-
+	private final AtomicLong error;
+	private final AtomicLong count;
+	private final AtomicBoolean newItem;
 	private final T item;
 
-	public ScoredItem(final T item, final Long score, final Long error)
+	public ScoredItem(final T item, final long count, final long error)
 	{
 		this.item = item;
-		this.score = score;
-		this.error = error;
+		this.error = new AtomicLong(error);
+		this.count = new AtomicLong(count);
+		this.newItem = new AtomicBoolean(true);
 	}
 
-	public Long getError()
+	public ScoredItem(final T item, final long count)
 	{
-		return error;
+		 this(item, count, 0L);
+	}
+
+	public long addAndGetCount(final long delta)
+	{
+		return this.count.addAndGet(delta);
+	}
+
+	public void setError(final long newError)
+	{
+		this.error.set(newError);
+	}
+
+	public long getError()
+	{
+		return error.get();
 	}
 
 	public T getItem()
@@ -44,14 +59,39 @@ public class ScoredItem<T> implements Comparable<ScoredItem>
 		return item;
 	}
 
-	public Long getScore()
+	public boolean isNewItem()
 	{
-		return score;
+		return newItem.get();
+	}
+
+	public long getCount()
+	{
+		return count.get();
 	}
 
 	@Override
 	public int compareTo(final ScoredItem o)
 	{
-		return o.score.compareTo(score);
+		return Long.compare(o.count.get(), count.get());
+	}
+
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("Value: ");
+		sb.append(item);
+		sb.append(", Count: ");
+		sb.append(count);
+		sb.append(", Error: ");
+		sb.append(error);
+		sb.append(", object: ");
+		sb.append(super.toString());
+		return sb.toString();
+	}
+
+
+	public void setNewItem(final boolean newItem)
+	{
+		this.newItem.set(newItem);
 	}
 }
