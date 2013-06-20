@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,9 +47,9 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 	public ConcurrentStreamSummary(final int capacity)
 	{
 		this.capacity = capacity;
-		this.minVal = new AtomicReference<>();
+		this.minVal = new AtomicReference<ScoredItem>();
 		this.size = new AtomicLong(0);
-		this.itemMap = new ConcurrentHashMap<>(capacity);
+		this.itemMap = new ConcurrentHashMap<T, ScoredItem>(capacity);
 		this.reachCapacity = new AtomicBoolean(false);
 	}
 
@@ -121,7 +122,7 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 	@Override
 	public List<T> peek(final int k)
 	{
-		List<T> toReturn = new ArrayList<>(k);
+		List<T> toReturn = new ArrayList<T>(k);
 		List<ScoredItem<T>> values = peekWithScores(k);
 		for (ScoredItem<T> value : values)
 		{
@@ -132,7 +133,7 @@ public class ConcurrentStreamSummary<T> implements ITopK<T>
 
 	public List<ScoredItem<T>> peekWithScores(final int k)
 	{
-		List<ScoredItem<T>> values = new ArrayList<>();
+		List<ScoredItem<T>> values = new ArrayList<ScoredItem<T>>();
 		for (Map.Entry<T, ScoredItem> entry : itemMap.entrySet())
 		{
 			ScoredItem value = entry.getValue();
