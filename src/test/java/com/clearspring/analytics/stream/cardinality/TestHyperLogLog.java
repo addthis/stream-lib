@@ -16,13 +16,21 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import com.google.common.collect.Lists;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -72,6 +80,38 @@ public class TestHyperLogLog
         System.out.println("time: " + (System.currentTimeMillis() - start));
         long estimate = hyperLogLog.cardinality();
         double err = Math.abs(estimate - size) / (double) size;
+        System.out.println(err);
+        assertTrue(err < .1);
+    }
+    
+    @Test
+    public void testConcurrentUpdate() throws Exception
+    {
+        long start = System.currentTimeMillis();
+        final HyperLogLog hyperLogLog = new HyperLogLog(10);
+        final int size = 1000;
+        final int perThread = 10000;
+        List<Future<?>> futures = Lists.newArrayListWithCapacity(1000);
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(8);
+        for (int i = 0; i < size; i++)
+        {
+            final int base = i * perThread;
+            futures.add(executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    for (int n = 0; n < perThread; n++) {
+                        hyperLogLog.offer(TestICardinality.streamElement(base + n));
+                    }
+                }
+            }));
+        }
+        for (Future<?> f : futures) 
+        {
+            f.get();
+        }
+        System.out.println("concurrent time: " + (System.currentTimeMillis() - start));
+        long estimate = hyperLogLog.cardinality();
+        double err = Math.abs(estimate - size * perThread) / (double) (size * perThread);
         System.out.println(err);
         assertTrue(err < .1);
     }

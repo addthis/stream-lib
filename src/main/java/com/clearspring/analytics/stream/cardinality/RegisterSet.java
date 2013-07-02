@@ -16,6 +16,8 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
 public class RegisterSet
 {
     public final static int LOG2_BITS_PER_WORD = 6;
@@ -24,7 +26,7 @@ public class RegisterSet
     public final int count;
     public final int size;
 
-    private final int[] M;
+    private final AtomicIntegerArray M;
 
     public RegisterSet(int count)
     {
@@ -40,22 +42,22 @@ public class RegisterSet
         {
             if (bits == 0)
             {
-                this.M = new int[1];
+                this.M = new AtomicIntegerArray(1);
             }
             else if (bits % Integer.SIZE == 0)
             {
-                this.M = new int[bits];
+                this.M = new AtomicIntegerArray(bits);
             }
             else
             {
-                this.M = new int[bits + 1];
+                this.M = new AtomicIntegerArray(bits + 1);
             }
         }
         else
         {
-            this.M = initialValues;
+            this.M = new AtomicIntegerArray(initialValues);
         }
-        this.size = this.M.length;
+        this.size = this.M.length();
     }
 
     public static int getBits(int count)
@@ -67,14 +69,17 @@ public class RegisterSet
     {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
+        int currentVal; 
+        do {
+            currentVal = this.M.get(bucketPos);
+        } while(!this.M.compareAndSet(bucketPos, currentVal, (currentVal & ~(0x1f << shift)) | (value << shift)));
     }
 
     public int get(int position)
     {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
+        return (this.M.get(bucketPos) & (0x1f << shift)) >>> shift;
     }
     
     public boolean updateIfGreater(int position, int value)
@@ -84,37 +89,51 @@ public class RegisterSet
         int mask = 0x1f << shift;
 
         // Use long to avoid sign issues with the left-most shift
-        long curVal = this.M[bucket] & mask;
+        int curM; 
         long newVal = value << shift;
-        if (curVal < newVal) {
-            this.M[bucket] = (int)((this.M[bucket] & ~mask) | newVal);
-            return true;
-        } else {
-            return false;
+        long curVal;
+        while(true) {
+            curM = this.M.get(bucket);
+            curVal = curM & mask;
+            if (curVal < newVal) {
+                if (this.M.compareAndSet(bucket, curM, (int)((curM & ~mask) | newVal))) {
+                    return true;
+                }
+            } else {
+                return false;
+            }
         }
     }
 
     public void merge(RegisterSet that)
     {
-        for (int bucket = 0; bucket < M.length; bucket++)
+        for (int bucket = 0; bucket < M.length(); bucket++)
         {
             int word = 0;
-            for (int j = 0; j < LOG2_BITS_PER_WORD; j++)
+            int thisM;
+            int thatM;
+            do 
             {
-                int mask = 0x1f << (REGISTER_SIZE * j);
-
-                int thisVal = (this.M[bucket] & mask);
-                int thatVal = (that.M[bucket] & mask);
-                word |= (thisVal < thatVal) ? thatVal : thisVal;
-            }
-            this.M[bucket] = word;
+                thisM = this.M.get(bucket);
+                thatM = that.M.get(bucket);
+                for (int j = 0; j < LOG2_BITS_PER_WORD; j++)
+                {
+                    int mask = 0x1f << (REGISTER_SIZE * j);
+                    
+                    int thisVal = (thisM & mask);
+                    int thatVal = (thatM & mask);
+                    word |= (thisVal < thatVal) ? thatVal : thisVal;
+                }
+            } while(!this.M.compareAndSet(bucket, thisM, word));
         }
     }
 
     public int[] bits()
     {
         int[] copy = new int[size];
-        System.arraycopy(M, 0, copy, 0, M.length);
+        for (int i = 0; i < size; i++) {
+            copy[i] = M.get(i);
+        }
         return copy;
     }
 }
