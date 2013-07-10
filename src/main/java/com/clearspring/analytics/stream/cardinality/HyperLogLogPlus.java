@@ -17,8 +17,7 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.IBuilder;
-import com.clearspring.analytics.util.Varint;
+import com.clearspring.analytics.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -840,10 +839,10 @@ public class HyperLogLogPlus implements ICardinality
         {
             case NORMAL:
                 dos.write(Varint.writeUnsignedVarInt(0));
-                dos.write(Varint.writeUnsignedVarInt(registerSet.size ));
+                dos.write(Varint.writeUnsignedVarInt(registerSet.size * 4));
                 for (int x : registerSet.bits())
                 {
-                    dos.write(Varint.writeUnsignedVarInt(x));
+                    dos.writeInt(x);
                 }
                 break;
             case SPARSE:
@@ -1022,14 +1021,9 @@ public class HyperLogLogPlus implements ICardinality
             if (formatType == 0)
             {
                 int size = Varint.readUnsignedVarInt(oi);
-                int[] registerSet = new int[size];
-                int i = 0;
-                while (oi.available() > 0)
-                {
-                    int l = Varint.readUnsignedVarInt(oi);
-                    registerSet[i++] = l;
-                }
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), registerSet));
+                byte[] longArrayBytes = new byte[size];
+                oi.readFully(longArrayBytes);
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             }
