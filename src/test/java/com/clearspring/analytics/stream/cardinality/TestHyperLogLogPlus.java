@@ -28,41 +28,46 @@ import static org.junit.Assert.assertTrue;
 public class TestHyperLogLogPlus
 {
 
-	public static void main(final String[] args) throws Throwable {
-		long startTime = System.currentTimeMillis();
+    public static void main(final String[] args) throws Throwable
+    {
+        long startTime = System.currentTimeMillis();
 
-		int numSets = 10;
-		int setSize = 1 * 1000 * 1000;
-		int repeats = 5;
+        int numSets = 10;
+        int setSize = 1 * 1000 * 1000;
+        int repeats = 5;
 
-		HyperLogLogPlus[] counters = new HyperLogLogPlus[numSets];
-		for (int i = 0; i < numSets; i++) {
-			counters[i] = new HyperLogLogPlus(15, 15);
-		}
-		for (int i = 0; i < numSets; i++) {
-			for (int j = 0; j < setSize; j++) {
-				String val = UUID.randomUUID().toString();
-				for (int z = 0; z < repeats; z++)
-				{
-					counters[i].offer(val);
-				}
-			}
-		}
+        HyperLogLogPlus[] counters = new HyperLogLogPlus[numSets];
+        for (int i = 0; i < numSets; i++)
+        {
+            counters[i] = new HyperLogLogPlus(15, 15);
+        }
+        for (int i = 0; i < numSets; i++)
+        {
+            for (int j = 0; j < setSize; j++)
+            {
+                String val = UUID.randomUUID().toString();
+                for (int z = 0; z < repeats; z++)
+                {
+                    counters[i].offer(val);
+                }
+            }
+        }
 
-		ICardinality merged = counters[0];
-		long sum = merged.cardinality();
-		for (int i = 1; i < numSets; i++) {
-			sum += counters[i].cardinality();
-			merged = merged.merge(counters[i]);
-		}
+        ICardinality merged = counters[0];
+        long sum = merged.cardinality();
+        for (int i = 1; i < numSets; i++)
+        {
+            sum += counters[i].cardinality();
+            merged = merged.merge(counters[i]);
+        }
 
-		long trueSize = numSets * setSize;
-		System.out.println("True Cardinality: " + trueSize);
-		System.out.println("Summed Cardinality: " + sum);
-		System.out.println("Merged Cardinality: " + merged.cardinality());
-		System.out.println("Merged Error: " + (merged.cardinality() - trueSize) / (float)trueSize);
-		System.out.println("Duration: " + ((System.currentTimeMillis() - startTime)/1000) + "s");
-	}
+        long trueSize = numSets * setSize;
+        System.out.println("True Cardinality: " + trueSize);
+        System.out.println("Summed Cardinality: " + sum);
+        System.out.println("Merged Cardinality: " + merged.cardinality());
+        System.out.println("Merged Error: " + (merged.cardinality() - trueSize) / (float) trueSize);
+        System.out.println("Duration: " + ((System.currentTimeMillis() - startTime) / 1000) + "s");
+    }
 
     @Test
     public void testComputeCount()
@@ -207,7 +212,6 @@ public class TestHyperLogLogPlus
                     HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBytes());
                     assertEquals(hllPlus.cardinality(), deserialized.cardinality());
                     ICardinality merged = hllPlus.merge(deserialized);
-                    System.out.println(merged.cardinality() + " : " + hllPlus.cardinality());
                     assertEquals(hllPlus.cardinality(), merged.cardinality());
                 }
             }

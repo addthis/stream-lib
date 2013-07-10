@@ -17,7 +17,6 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bits;
 import com.clearspring.analytics.util.IBuilder;
 import com.clearspring.analytics.util.Varint;
 
@@ -269,7 +268,7 @@ public class HyperLogLogPlus implements ICardinality
                 if (tmpSet.size() > sortThreshold)
                 {
                     mergeTempList();
-                    if (sparseSet.size() > sparseSetThreshold)
+                    if (getSparseSetSize() > sparseSetThreshold)
                     {
                         convertToNormal();
                     }
@@ -279,6 +278,23 @@ public class HyperLogLogPlus implements ICardinality
                 break;
         }
         return false;
+    }
+
+    /**
+     * @return the total number of bytes contained in the sparseSet
+     */
+    private int getSparseSetSize()
+    {
+        if (sparseSet == null || sparseSet.size() == 0)
+        {
+            return 0;
+        }
+        int size = 0;
+        for (byte[] bytes : sparseSet)
+        {
+            size += bytes.length;
+        }
+        return size;
     }
 
     /**
@@ -801,7 +817,15 @@ public class HyperLogLogPlus implements ICardinality
     @Override
     public int sizeof()
     {
-        return registerSet.size * 4;
+        switch (format)
+        {
+            case NORMAL:
+                return registerSet.size * 4;
+            case SPARSE:
+                return getSparseSetSize();
+            default:
+                throw new RuntimeException("unexpected format type: " + format);
+        }
     }
 
     @Override
@@ -810,27 +834,25 @@ public class HyperLogLogPlus implements ICardinality
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
 
-        dos.writeInt(p);
-        dos.writeInt(sp);
+        dos.write(Varint.writeUnsignedVarInt(p));
+        dos.write(Varint.writeUnsignedVarInt(sp));
         switch (format)
         {
             case NORMAL:
-                dos.writeInt(0);
-                dos.writeInt(registerSet.size * 4);
+                dos.write(Varint.writeUnsignedVarInt(0));
+                dos.write(Varint.writeUnsignedVarInt(registerSet.size ));
                 for (int x : registerSet.bits())
                 {
-                    dos.writeInt(x);
+                    dos.write(Varint.writeUnsignedVarInt(x));
                 }
                 break;
             case SPARSE:
-                dos.writeInt(1);
+                dos.write(Varint.writeUnsignedVarInt(1));
                 mergeTempList();
                 for (byte[] bytes : sparseSet)
                 {
-                    dos.writeInt(bytes.length);
                     dos.write(bytes);
                 }
-                dos.writeInt(-1);
                 break;
         }
 
@@ -923,7 +945,7 @@ public class HyperLogLogPlus implements ICardinality
             }
             if (estimator.sizeof() != size)
             {
-                throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
+                throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes, " + estimator.sizeof() + " != " + size);
             }
             HyperLogLogPlus hll = (HyperLogLogPlus) estimator;
             if (format == Format.SPARSE)
@@ -968,8 +990,8 @@ public class HyperLogLogPlus implements ICardinality
 
     public static class Builder implements IBuilder<ICardinality>, Serializable
     {
-        private int p;
-        private int sp;
+        private final int p;
+        private final int sp;
 
         public Builder(int p, int sp)
         {
@@ -994,27 +1016,30 @@ public class HyperLogLogPlus implements ICardinality
         {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             DataInputStream oi = new DataInputStream(bais);
-            int p = oi.readInt();
-            int sp = oi.readInt();
-            int formatType = oi.readInt();
+            int p = Varint.readUnsignedVarInt(oi);
+            int sp = Varint.readUnsignedVarInt(oi);
+            int formatType = Varint.readUnsignedVarInt(oi);
             if (formatType == 0)
             {
-                int size = oi.readInt();
-                byte[] longArrayBytes = new byte[size];
-                oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+                int size = Varint.readUnsignedVarInt(oi);
+                int[] registerSet = new int[size];
+                int i = 0;
+                while (oi.available() > 0)
+                {
+                    int l = Varint.readUnsignedVarInt(oi);
+                    registerSet[i++] = l;
+                }
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), registerSet));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             }
             else
             {
-                int l;
                 List<byte[]> rehydratedSet = new ArrayList<byte[]>();
-                while ((l = oi.readInt()) > 0)
+                while (oi.available() > 0)
                 {
-                    byte[] longArrayBytes = new byte[l];
-                    oi.read(longArrayBytes, 0, l);
-                    rehydratedSet.add(longArrayBytes);
+                    int l = Varint.readUnsignedVarInt(oi);
+                    rehydratedSet.add(Varint.writeUnsignedVarInt(l));
                 }
                 HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, rehydratedSet);
                 hyperLogLogPlus.format = Format.SPARSE;
