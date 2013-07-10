@@ -48,6 +48,11 @@ public class HyperLogLogPlus implements ICardinality
         SPARSE, NORMAL
     }
 
+    /**
+     * used to mark codec version for serialization
+     */
+    private static final int VERSION = 2;
+
     // threshold and bias data taken from google's bias correction data set:  https://docs.google.com/document/d/1gyjfMHy43U9OWBXxfaeG-3MjGzejW1dlpyMwEYAAWEI/view?fullscreen#
     static final double[] thresholdData = {10, 20, 40, 80, 220, 400, 900, 1800, 3100, 6500, 15500, 20000, 50000, 120000, 350000};
 
@@ -832,7 +837,8 @@ public class HyperLogLogPlus implements ICardinality
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
-
+        // write version flag (always negative)
+        dos.writeInt(-VERSION);
         dos.write(Varint.writeUnsignedVarInt(p));
         dos.write(Varint.writeUnsignedVarInt(sp));
         switch (format)
@@ -863,9 +869,10 @@ public class HyperLogLogPlus implements ICardinality
      * and the temp list.
      * <p/>
      * Set up the delta encoding, sort the temp list, merge the lists, blow up the temp list.
+     *
+     * Exposed for testing purposes
      */
-
-    public void mergeTempList()
+    protected void mergeTempList()
     {
         if (tmpSet.size() != 0)
         {
@@ -987,6 +994,19 @@ public class HyperLogLogPlus implements ICardinality
         return outEst;
     }
 
+    /** exposed for testing */
+    protected RegisterSet getRegisterSet()
+    {
+        return registerSet;
+    }
+
+    /** exposed for testing */
+    protected List<byte[]> getSparseSet()
+    {
+        return sparseSet;
+    }
+
+
     public static class Builder implements IBuilder<ICardinality>, Serializable
     {
         private final int p;
@@ -1015,6 +1035,58 @@ public class HyperLogLogPlus implements ICardinality
         {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             DataInputStream oi = new DataInputStream(bais);
+            int version = oi.readInt();
+            // the new encoding scheme includes a version field
+            // that is always negative.  If the version field
+            // is not present then we'll use the legacy
+            // decoding method
+            if (version < 0)
+            {
+                return decodeBytes(oi);
+            }
+            else
+            {
+                // need to re-create this stream
+                // because the first int read above
+                // is not present in the legacy codec
+                bais = new ByteArrayInputStream(bytes);
+                oi = new DataInputStream(bais);
+                return legacyDecode(oi);
+            }
+        }
+
+        private static HyperLogLogPlus legacyDecode(DataInputStream oi) throws IOException
+        {
+            int p = oi.readInt();
+            int sp = oi.readInt();
+            int formatType = oi.readInt();
+            if (formatType == 0)
+            {
+                int size = oi.readInt();
+                byte[] longArrayBytes = new byte[size];
+                oi.readFully(longArrayBytes);
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+                hyperLogLogPlus.format = Format.NORMAL;
+                return hyperLogLogPlus;
+            }
+            else
+            {
+                int l;
+                List<byte[]> rehydratedSet = new ArrayList<byte[]>();
+                while ((l = oi.readInt()) > 0)
+                {
+                    byte[] longArrayBytes = new byte[l];
+                    oi.read(longArrayBytes, 0, l);
+                    rehydratedSet.add(longArrayBytes);
+                }
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, rehydratedSet);
+                hyperLogLogPlus.format = Format.SPARSE;
+                return hyperLogLogPlus;
+            }
+        }
+
+        private static HyperLogLogPlus decodeBytes(DataInputStream oi) throws IOException
+        {
             int p = Varint.readUnsignedVarInt(oi);
             int sp = Varint.readUnsignedVarInt(oi);
             int formatType = Varint.readUnsignedVarInt(oi);

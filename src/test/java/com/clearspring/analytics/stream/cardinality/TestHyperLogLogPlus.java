@@ -18,6 +18,8 @@ package com.clearspring.analytics.stream.cardinality;
 
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -286,6 +288,78 @@ public class TestHyperLogLogPlus
 
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
+    }
+
+    @Test
+    public void testLegacyCodec_normal() throws IOException
+    {
+        int bits = 18;
+        int cardinality = 1000000;
+
+        HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
+        for (int j = 0; j < cardinality; j++)
+        {
+            double val = Math.random();
+            baseline.offer(val);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+
+        dos.writeInt(bits);
+        dos.writeInt(25);
+        dos.writeInt(0);
+        dos.writeInt(baseline.getRegisterSet().size * 4);
+        for (int x : baseline.getRegisterSet().bits())
+        {
+            dos.writeInt(x);
+        }
+
+        byte[] legacyBytes = baos.toByteArray();
+
+        // decode legacy
+        HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
+        assertEquals(baseline.cardinality(), decoded.cardinality());
+        byte[] newBytes = baseline.getBytes();
+        assertTrue(newBytes.length < legacyBytes.length);
+
+    }
+
+    @Test
+    public void testLegacyCodec_sparse() throws IOException
+    {
+        int bits = 18;
+        int cardinality = 5000;
+
+        HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
+        for (int j = 0; j < cardinality; j++)
+        {
+            double val = Math.random();
+            baseline.offer(val);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+
+        dos.writeInt(bits);
+        dos.writeInt(25);
+        dos.writeInt(1);
+        baseline.mergeTempList();
+        for (byte[] bytes : baseline.getSparseSet())
+        {
+            dos.writeInt(bytes.length);
+            dos.write(bytes);
+        }
+        dos.writeInt(-1);
+
+        byte[] legacyBytes = baos.toByteArray();
+
+        // decode legacy
+        HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
+        assertEquals(baseline.cardinality(), decoded.cardinality());
+        byte[] newBytes = baseline.getBytes();
+        assertTrue(newBytes.length < legacyBytes.length);
+
     }
 
     @Test
