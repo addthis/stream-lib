@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Eric Vlaanderen
  */
-public class ScoredItem<T> implements Comparable<ScoredItem>
+public class ScoredItem<T> implements Comparable<ScoredItem<T>>
 {
 	private final AtomicLong error;
 	private final AtomicLong count;
@@ -73,9 +73,11 @@ public class ScoredItem<T> implements Comparable<ScoredItem>
 	}
 
 	@Override
-	public int compareTo(final ScoredItem o)
+	public int compareTo(final ScoredItem<T> o)
 	{
-		return Long.compare(o.count.get(), count.get());
+		long x = o.count.get();
+		long y = count.get();
+		return (x < y) ? -1 : ((x == y) ? 0 : 1);
 	}
 
 	public String toString()
