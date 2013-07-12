@@ -22,6 +22,7 @@ import com.clearspring.analytics.util.IBuilder;
 import com.clearspring.analytics.util.Varint;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 
@@ -805,36 +806,47 @@ public class HyperLogLogPlus implements ICardinality
     }
 
     @Override
-    public byte[] getBytes() throws IOException
+    public byte[] getBytes()
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-
-        dos.writeInt(p);
-        dos.writeInt(sp);
+        ByteBuffer bb = null;
+        
         switch (format)
         {
             case NORMAL:
-                dos.writeInt(0);
-                dos.writeInt(registerSet.size * 4);
+                int bbSize = Bits.INT_BYTES * (1+1+1+1+registerSet.size);
+                bb = ByteBuffer.allocate(bbSize);
+                bb.putInt(p);
+                bb.putInt(sp);
+                bb.putInt(0);
+                bb.putInt((Integer.SIZE/8) * registerSet.size);
                 for (int x : registerSet.bits())
                 {
-                    dos.writeInt(x);
+                    bb.putInt(x);
                 }
                 break;
             case SPARSE:
-                dos.writeInt(1);
                 mergeTempList();
+
+                int sparseByteCount = 0;
+                for (byte[] bytes: sparseSet)
+                {
+                    sparseByteCount += Bits.INT_BYTES * 1 + bytes.length;
+                }
+
+                bb = ByteBuffer.allocate(Bits.INT_BYTES * (1+1+1+1) + sparseByteCount);
+                bb.putInt(p);
+                bb.putInt(sp);
+                bb.putInt(1);
                 for (byte[] bytes : sparseSet)
                 {
-                    dos.writeInt(bytes.length);
-                    dos.write(bytes);
+                    bb.putInt(bytes.length);
+                    bb.put(bytes);
                 }
-                dos.writeInt(-1);
+                bb.putInt(-1);
                 break;
         }
 
-        return baos.toByteArray();
+        return bb.array();
     }
 
     /**
@@ -990,19 +1002,18 @@ public class HyperLogLogPlus implements ICardinality
             return RegisterSet.getBits(k) * 5;
         }
 
-        public static HyperLogLogPlus build(byte[] bytes) throws IOException
+        public static HyperLogLogPlus build(byte[] bytes)
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            DataInputStream oi = new DataInputStream(bais);
-            int p = oi.readInt();
-            int sp = oi.readInt();
-            int formatType = oi.readInt();
+            ByteBuffer bb = ByteBuffer.wrap(bytes);
+
+            int p = bb.getInt();
+            int sp = bb.getInt();
+            int formatType = bb.getInt();
             if (formatType == 0)
             {
-                int size = oi.readInt();
-                byte[] longArrayBytes = new byte[size];
-                oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+                int size = bb.getInt();
+                int [] regSetDump = Bits.getBits(bb, size);
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), regSetDump));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             }
@@ -1010,10 +1021,10 @@ public class HyperLogLogPlus implements ICardinality
             {
                 int l;
                 List<byte[]> rehydratedSet = new ArrayList<byte[]>();
-                while ((l = oi.readInt()) > 0)
+                while ((l = bb.getInt()) > 0)
                 {
                     byte[] longArrayBytes = new byte[l];
-                    oi.read(longArrayBytes, 0, l);
+                    bb.get(longArrayBytes, 0, l);
                     rehydratedSet.add(longArrayBytes);
                 }
                 HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, rehydratedSet);

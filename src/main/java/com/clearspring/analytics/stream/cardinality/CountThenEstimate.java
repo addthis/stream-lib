@@ -183,7 +183,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
     }
 
     @Override
-    public byte[] getBytes() throws IOException
+    public byte[] getBytes()
     {
         return ExternalizableUtil.toBytes(this);
     }
