@@ -16,6 +16,7 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import com.clearspring.analytics.util.Varint;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -176,15 +177,15 @@ public class TestHyperLogLogPlus
     @Test
     public void testSortEncodedSet()
     {
-        List<Integer> testSet = new ArrayList<Integer>();
-        testSet.add(655403);
-        testSet.add(655416);
-        testSet.add(655425);
+        int[] testSet = new int[3];
+        testSet[0] = 655403;
+        testSet[1] = 655416;
+        testSet[2] = 655425;
         HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
-        hyperLogLogPlus.sortEncodedSet(testSet);
-        assertEquals(new Integer(655403), testSet.get(0));
-        assertEquals(new Integer(655425), testSet.get(1));
-        assertEquals(new Integer(655416), testSet.get(2));
+        testSet = hyperLogLogPlus.sortEncodedSet(testSet);
+        assertEquals(655403, testSet[0]);
+        assertEquals(655425, testSet[1]);
+        assertEquals(655416, testSet[2]);
 
     }
 
@@ -205,7 +206,7 @@ public class TestHyperLogLogPlus
                     {
                         continue;
                     }
-                    System.out.println(ps[j] + "-" + sp);
+                    System.out.println(ps[j] + "-" + sp + ": " + cardinality);
                     HyperLogLogPlus hllPlus = new HyperLogLogPlus(ps[j], sp);
                     for (int l = 0; l < cardinality; l++)
                     {
@@ -219,6 +220,16 @@ public class TestHyperLogLogPlus
             }
         }
 
+    }
+
+    @Test
+    public void testSparseSpace() throws IOException
+    {
+        HyperLogLogPlus hllp = new HyperLogLogPlus(14, 14);
+        for (int i = 0; i < 10000 ; i++) {
+            hllp.offer(i );
+        }
+        System.out.println("Size: " + hllp.getBytes().length);
     }
 
     @Test
@@ -345,7 +356,16 @@ public class TestHyperLogLogPlus
         dos.writeInt(25);
         dos.writeInt(1);
         baseline.mergeTempList();
-        for (byte[] bytes : baseline.getSparseSet())
+        int[] sparseSet = baseline.getSparseSet();
+        List<byte[]> sparseBytes = new ArrayList<byte[]>(sparseSet.length);
+
+        int prevDelta = 0;
+        for (int k : sparseSet)
+        {
+            sparseBytes.add(Varint.writeUnsignedVarInt(k - prevDelta));
+            prevDelta = k;
+        }
+        for (byte[] bytes : sparseBytes)
         {
             dos.writeInt(bytes.length);
             dos.write(bytes);
