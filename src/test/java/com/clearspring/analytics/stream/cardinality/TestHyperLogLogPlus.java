@@ -182,7 +182,7 @@ public class TestHyperLogLogPlus
         testSet[1] = 655416;
         testSet[2] = 655425;
         HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
-        testSet = hyperLogLogPlus.sortEncodedSet(testSet);
+        testSet = hyperLogLogPlus.sortEncodedSet(testSet, 3);
         assertEquals(655403, testSet[0]);
         assertEquals(655425, testSet[1]);
         assertEquals(655416, testSet[2]);
@@ -220,6 +220,14 @@ public class TestHyperLogLogPlus
             }
         }
 
+    }
+
+    @Test
+    public void testOne() throws IOException
+    {
+        HyperLogLogPlus one = new HyperLogLogPlus(8,25);
+        one.offer("a");
+        assertEquals(1, one.cardinality());
     }
 
     @Test
@@ -374,7 +382,7 @@ public class TestHyperLogLogPlus
 
         byte[] legacyBytes = baos.toByteArray();
 
-        // decode legacy
+        //  decode legacy
         HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
         assertEquals(baseline.cardinality(), decoded.cardinality());
         byte[] newBytes = baseline.getBytes();

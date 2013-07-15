@@ -287,7 +287,6 @@ public class HyperLogLogPlus implements ICardinality
                 if (tmpIndex > sortThreshold)
                 {
                     mergeTempList();
-                    tmpIndex = 0;
                     if (sparseSet != null && sparseSet.length > sparseSetThreshold)
                     {
                         convertToNormal();
@@ -850,19 +849,21 @@ public class HyperLogLogPlus implements ICardinality
         int[] retSet = sparseSet;
         if (tmpIndex > 0)
         {
-            tmpSet = sortEncodedSet(tmpSet);
+            tmpSet = sortEncodedSet(tmpSet, tmpIndex);
             retSet = merge(sparseSet, tmpSet);
             tmpSet = new int[sortThreshold+1];
+            tmpIndex = 0;
         }
         sparseSet = retSet == null ? new int[0] : retSet;
     }
 
     // exposed for testing
-    public int[] sortEncodedSet(int[] encodedSet)
+    public int[] sortEncodedSet(int[] encodedSet, int validIndex)
     {
         List<Integer> sortedList = new ArrayList<Integer>();
-        for (int k : encodedSet)
+        for (int i = 0; i < validIndex; i++)
         {
+            int k = encodedSet[i];
             sortedList.add(k);
         }
 
