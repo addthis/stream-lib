@@ -790,15 +790,7 @@ public class HyperLogLogPlus implements ICardinality
     @Override
     public int sizeof()
     {
-        switch (format)
-        {
-            case NORMAL:
-                return registerSet.size * 4;
-            case SPARSE:
-                return sparseSet != null ? sparseSet.length * 4 : 0;
-            default:
-                throw new RuntimeException("unexpected format type: " + format);
-        }
+        return registerSet.size * 4;
     }
 
     @Override
