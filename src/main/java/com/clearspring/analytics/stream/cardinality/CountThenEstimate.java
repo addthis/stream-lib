@@ -286,10 +286,11 @@ public class CountThenEstimate implements ICardinality, Externalizable
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        if (estimators == null || estimators.length == 0)
+        if (estimators == null)
         {
-            return this;
+            return mergeEstimators(this);
         }
+        
         CountThenEstimate[] all = Arrays.copyOf(estimators, estimators.length + 1, CountThenEstimate[].class);
         all[all.length - 1] = this;
         return mergeEstimators(all);
