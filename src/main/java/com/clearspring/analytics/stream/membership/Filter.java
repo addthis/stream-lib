@@ -72,7 +72,7 @@ public abstract class Filter
     // http://www.eecs.harvard.edu/~kirsch/pubs/bbbf/esa06.pdf
     // does prove to work in actual tests, and is obviously faster
     // than performing further iterations of murmur.
-    static int[] getHashBuckets(String key, int hashCount, int max)
+    public static int[] getHashBuckets(String key, int hashCount, int max)
     {
         byte[] b;
         try
