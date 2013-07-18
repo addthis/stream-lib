@@ -1,4 +1,20 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.clearspring.analytics.stream.frequency;
+
+import com.clearspring.analytics.stream.membership.Filter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -117,6 +133,25 @@ public class CountMinSketch implements IFrequency
     }
 
     @Override
+    public void add(String item, long count)
+    {
+        if (count < 0)
+        {
+            // Actually for negative increments we'll need to use the median
+            // instead of minimum, and accuracy will suffer somewhat.
+            // Probably makes sense to add an "allow negative increments"
+            // parameter to constructor.
+            throw new IllegalArgumentException("Negative increments not implemented");
+        }
+        int[] buckets = Filter.getHashBuckets(item, depth, width);
+        for (int i = 0; i < depth; ++i)
+        {
+            table[i][buckets[i]] += count;
+        }
+        size += count;
+    }
+
+    @Override
     public long size()
     {
         return size;
@@ -133,6 +168,18 @@ public class CountMinSketch implements IFrequency
         for (int i = 0; i < depth; ++i)
         {
             res = Math.min(res, table[i][hash(item, i)]);
+        }
+        return res;
+    }
+
+    @Override
+    public long estimateCount(String item)
+    {
+        long res = Long.MAX_VALUE;
+        int[] buckets = Filter.getHashBuckets(item, depth, width);
+        for (int i = 0; i < depth; ++i)
+        {
+            res = Math.min(res, table[i][buckets[i]]);
         }
         return res;
     }
