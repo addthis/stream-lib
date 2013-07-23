@@ -898,6 +898,71 @@ public class HyperLogLogPlus implements ICardinality
         });
     }
 
+    /** Add all the elements of the other set to this set.
+     * 
+     * If possible, the sparse mode is protected. A switch to the normal mode
+     * is triggered only if the resulting set exceed the threshold.
+     *
+     * This operation does not imply a loss of precision.
+     *
+     * @param other A compatible Hyperloglog++ instance (same p and sp)
+     * @throws CardinalityMergeException if other is not compatible
+     */
+    public void addAll(HyperLogLogPlus other) throws HyperLogLogPlusMergeException
+    {
+        if (other.sizeof() != sizeof())
+        {
+            throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
+        }
+        
+        if (format == Format.NORMAL && other.format == Format.NORMAL)
+        {
+            registerSet.merge(other.registerSet);
+            return;
+        }
+        
+        if (format == Format.SPARSE && other.format == Format.SPARSE)
+        {
+            sparseSet = mergeEstimators(other);
+            // Convert to normal mode if needed. 
+            // Since offer trigger the switch to the normal mode on only when 
+            // the tmpSet is full and the threshold is reached, we follow the same 
+            // behavior here to ease testing
+            if (sparseSet.size() > sparseSetThreshold + sortThreshold)
+            {
+                convertToNormal();
+            }
+            return;
+        }
+        
+        if (format == Format.SPARSE && other.format == Format.NORMAL)
+        {
+            convertToNormal();
+            registerSet.merge(other.registerSet);
+            return;
+        }
+        
+        if (format == Format.NORMAL && other.format == Format.SPARSE)
+        {
+            // Iterating over other's sparse set and updating only required indexes
+            // of this' register set is several orders of magnitude faster than copying 
+            // and converting other to normal mode. This use case is quite common since
+            // we tend to aggregate small sets to large sets.
+            other.mergeTempList();
+            other.resetDelta();
+            for (int i = 0; i < other.sparseSet.size(); i++)
+            {
+                int k = other.deltaRead(other.sparseSet, i);
+                int idx = other.getIndex(k, p);
+                int r = other.decodeRunLength(k);
+                registerSet.updateIfGreater(idx, r);
+            }
+            return;
+        }
+        
+        throw new IllegalStateException("Unhandled HLL++ merge combination");
+    }
+    
     /**
      * Merge this HLL++ with a bunch of others! The power of minions!
      * <p/>
@@ -916,60 +981,25 @@ public class HyperLogLogPlus implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        if (estimators == null || estimators.length == 0)
+        HyperLogLogPlus merged = new HyperLogLogPlus(p, sp);
+        merged.addAll(this);
+        
+        if (estimators == null)
         {
-            return this;
+            return merged;
         }
-        int size = this.sizeof();
+        
         for (ICardinality estimator : estimators)
         {
             if (!(estimator instanceof HyperLogLogPlus))
             {
                 throw new HyperLogLogPlusMergeException("Cannot merge estimators of different class");
             }
-            if (estimator.sizeof() != size)
-            {
-                throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
-            }
             HyperLogLogPlus hll = (HyperLogLogPlus) estimator;
-            if (format == Format.SPARSE)
-            {
-                if (hll.format == Format.SPARSE)
-                {
-                    if (sparseSet.size() + hll.sparseSet.size() > sparseSetThreshold)
-                    {
-                        convertToNormal();
-                        hll.convertToNormal();
-                    }
-                    else
-                    {
-                        sparseSet = mergeEstimators(hll);
-                    }
-                }
-                else
-                {
-                    convertToNormal();
-                }
-            }
-            else
-            {
-                if (hll.format == Format.SPARSE)
-                {
-                    hll.convertToNormal();
-                }
-            }
-            if (format != Format.SPARSE)
-            {
-                registerSet.merge(hll.registerSet);
-            }
+            merged.addAll(hll);
         }
-        if (format == Format.SPARSE)
-        {
-            return new HyperLogLogPlus(p, sp, sparseSet);
-        }
-        HyperLogLogPlus outEst = new HyperLogLogPlus(p, sp, registerSet);
-        outEst.format = Format.NORMAL;
-        return outEst;
+        
+        return merged;
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable

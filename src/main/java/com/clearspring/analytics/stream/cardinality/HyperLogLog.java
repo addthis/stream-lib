@@ -214,31 +214,45 @@ public class HyperLogLog implements ICardinality
 
         return baos.toByteArray();
     }
+    
+    /** Add all the elements of the other set to this set.
+     * 
+     * This operation does not imply a loss of precision.
+     * 
+     * @param other A compatible Hyperloglog instance (same log2m)
+     * @throws CardinalityMergeException if other is not compatible
+     */
+    public void addAll(HyperLogLog other) throws CardinalityMergeException {
+        if (this.sizeof() != other.sizeof())
+        {
+            throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
+        }
+        
+        registerSet.merge(other.registerSet);
+    }
 
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        if (estimators == null || estimators.length == 0)
+        HyperLogLog merged = new HyperLogLog(log2m);
+        merged.addAll(this);
+
+        if (estimators == null)
         {
-            return this;
+            return merged;
         }
-        RegisterSet mergedSet;
-        int size = this.sizeof();
-        mergedSet = new RegisterSet((int) Math.pow(2, this.log2m), this.registerSet.bits());
+        
         for (ICardinality estimator : estimators)
         {
             if (!(estimator instanceof HyperLogLog))
             {
                 throw new HyperLogLogMergeException("Cannot merge estimators of different class");
             }
-            if (estimator.sizeof() != size)
-            {
-                throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
-            }
             HyperLogLog hll = (HyperLogLog) estimator;
-            mergedSet.merge(hll.registerSet);
+            merged.addAll(hll);
         }
-        return new HyperLogLog(this.log2m, mergedSet);
+        
+        return merged;
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable

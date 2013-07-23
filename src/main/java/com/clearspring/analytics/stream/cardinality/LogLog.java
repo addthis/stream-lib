@@ -164,12 +164,12 @@ public class LogLog implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws LogLogMergeException
     {
-        if (estimators == null || estimators.length == 0)
+        if (estimators == null)
         {
-            return this;
+            return new LogLog(M);
         }
+        
         byte[] mergedBytes = Arrays.copyOf(this.M, this.M.length);
-
         for (ICardinality estimator : estimators)
         {
             if (!(this.getClass().isInstance(estimator)))
