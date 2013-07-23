@@ -171,9 +171,9 @@ public class LinearCounting implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws LinearCountingMergeException
     {
-        if (estimators == null || estimators.length == 0)
+        if (estimators == null) 
         {
-            return this;
+            return new LinearCounting(map);
         }
         LinearCounting[] lcs = Arrays.copyOf(estimators, estimators.length + 1, LinearCounting[].class);
         lcs[lcs.length - 1] = this;

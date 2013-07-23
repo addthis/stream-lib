@@ -60,11 +60,13 @@ public interface ICardinality
     byte[] getBytes() throws IOException;
 
     /**
-     * Merges estimators to produce an estimator for the combined streams
-     * of this estimator and those passed as arguments
+     * Merges estimators to produce a new estimator for the combined streams
+     * of this estimator and those passed as arguments.
+     * 
+     * Nor this estimator nor the one passed as parameters are modified.
      *
-     * @param estimators
-     * @throws CardinalityMergeException
+     * @param estimators Zero or more compatible estimators
+     * @throws CardinalityMergeException If at least one of the estimators is not compatible with this one
      */
     ICardinality merge(ICardinality... estimators) throws CardinalityMergeException;
 }
