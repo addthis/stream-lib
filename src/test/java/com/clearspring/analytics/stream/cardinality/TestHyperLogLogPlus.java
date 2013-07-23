@@ -182,6 +182,30 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testMergeSelf_forceNormal() throws CardinalityMergeException, IOException
+    {
+        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+        for (int cardinality : cardinalities)
+        {
+            for (int j = 4; j < 24; j++)
+            {
+                System.out.println("p=" + j);
+                HyperLogLogPlus hllPlus = new HyperLogLogPlus(j, 0);
+                for (int l = 0; l < cardinality; l++)
+                {
+                    hllPlus.offer(Math.random());
+                }
+                System.out.println("hllcardinality=" + hllPlus.cardinality() + " cardinality=" + cardinality);
+                HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBytes());
+                assertEquals(hllPlus.cardinality(), deserialized.cardinality());
+                ICardinality merged = hllPlus.merge(deserialized);
+                System.out.println(merged.cardinality() + " : " + hllPlus.cardinality());
+                assertEquals(hllPlus.cardinality(), merged.cardinality());
+            }
+        }
+    }
+
+    @Test
     public void testMergeSelf() throws CardinalityMergeException, IOException
     {
         final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000 };

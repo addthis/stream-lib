@@ -502,7 +502,8 @@ public class HyperLogLogPlus implements ICardinality
                 {
                     H = estimatePrime;
                 }
-                if (H < thresholdData[p - 4])
+                // when p is large the threshold is just 5*m
+                if ((p <= 18 && H < thresholdData[p - 4]) || (p > 18 && estimate <= 5 * m))
                 {
                     return Math.round(H);
                 }
@@ -523,6 +524,11 @@ public class HyperLogLogPlus implements ICardinality
     private double getEstimateBias(double estimate, int p)
     {
         // get nearest neighbors for this estimate and precision
+        // above p = 18 there is no bias correction
+        if (p > 18)
+        {
+            return 0;
+        }
         double[] estimateVector = rawEstimateData[p - 4];
         SortedMap<Double, Integer> estimateDistances = calcDistances(estimate, estimateVector);
         int[] nearestNeighbors = getNearestNeighbors(estimateDistances);
