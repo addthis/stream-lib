@@ -900,7 +900,8 @@ public class HyperLogLogPlus implements ICardinality
         return toIntArray(sortedList);
     }
 
-    /** Add all the elements of the other set to this set.
+    /**
+     * Add all the elements of the other set to this set.
      * 
      * If possible, the sparse mode is protected. A switch to the normal mode
      * is triggered only if the resulting set exceed the threshold.
@@ -930,7 +931,7 @@ public class HyperLogLogPlus implements ICardinality
             // Since offer trigger the switch to the normal mode on only when 
             // the tmpSet is full and the threshold is reached, we follow the same 
             // behavior here to ease testing
-            if (sparseSet.size() > sparseSetThreshold + sortThreshold)
+            if (sparseSet.length > sparseSetThreshold + sortThreshold)
             {
                 convertToNormal();
             }
@@ -951,10 +952,9 @@ public class HyperLogLogPlus implements ICardinality
             // and converting other to normal mode. This use case is quite common since
             // we tend to aggregate small sets to large sets.
             other.mergeTempList();
-            other.resetDelta();
-            for (int i = 0; i < other.sparseSet.size(); i++)
+            for (int i = 0; i < other.sparseSet.length; i++)
             {
-                int k = other.deltaRead(other.sparseSet, i);
+                int k = other.sparseSet[i];
                 int idx = other.getIndex(k, p);
                 int r = other.decodeRunLength(k);
                 registerSet.updateIfGreater(idx, r);
