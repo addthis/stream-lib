@@ -1,5 +1,6 @@
 package com.clearspring.analytics.stream.quantile;
 
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 
@@ -68,10 +69,13 @@ public class QDigest implements IQuantileEstimator
         }
     };
 
+    private static final int MAP_INITIAL_SIZE = Hash.DEFAULT_INITIAL_SIZE;
+    private static final float MAP_LOAD_FACTOR = Hash.VERY_FAST_LOAD_FACTOR;
+
     private long size;
     private long capacity = 1;
     private double compressionFactor;
-    private Long2LongOpenHashMap node2count = new Long2LongOpenHashMap();
+    private Long2LongOpenHashMap node2count = new Long2LongOpenHashMap(MAP_INITIAL_SIZE, MAP_LOAD_FACTOR);
 
     public QDigest(double compressionFactor)
     {
@@ -202,7 +206,7 @@ public class QDigest implements IQuantileEstimator
 
     private void rebuildToCapacity(long newCapacity)
     {
-        Long2LongOpenHashMap newNode2count = new Long2LongOpenHashMap();
+        Long2LongOpenHashMap newNode2count = new Long2LongOpenHashMap(MAP_INITIAL_SIZE, MAP_LOAD_FACTOR);
         // rebuild to newLogCapacity.
         // This means that our current tree becomes a leftmost subtree
         // of the new tree.
