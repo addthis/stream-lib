@@ -21,6 +21,11 @@
   </licenses>
 
   <dependencies>
+    <dependency>
+      <groupId>it.unimi.dsi</groupId>
+      <artifactId>fastutil</artifactId>
+      <version>6.5.7</version>
+    </dependency>
 
     <!-- Test -->
     <dependency>
