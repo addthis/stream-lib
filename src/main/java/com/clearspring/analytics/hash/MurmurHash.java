@@ -17,6 +17,8 @@ package com.clearspring.analytics.hash;
  * the License.
  */
 
+import java.nio.ByteBuffer;
+
 /**
  * This is a very fast, non-cryptographic hash suitable for general hash-based
  * lookup. See http://murmurhash.googlepages.com/ for more details.
@@ -58,6 +60,11 @@ public class MurmurHash
         {
             return hash((byte[]) o);
         }
+        if (o instanceof ByteBuffer)
+        {
+            ByteBuffer bytes = (ByteBuffer) o;
+            return hash(bytes, bytes.position(), bytes.remaining(), -1);
+        }
         return hash(o.toString());
     }
 
@@ -73,6 +80,11 @@ public class MurmurHash
 
     public static int hash(byte[] data, int length, int seed)
     {
+        return hash(ByteBuffer.wrap(data), 0, length, seed);
+    }
+
+    public static int hash(ByteBuffer data, int offset, int length, int seed)
+    {
         int m = 0x5bd1e995;
         int r = 24;
 
@@ -83,13 +95,13 @@ public class MurmurHash
         for (int i = 0; i < len_4; i++)
         {
             int i_4 = i << 2;
-            int k = data[i_4 + 3];
+            int k = data.get(offset + i_4 + 3);
             k = k << 8;
-            k = k | (data[i_4 + 2] & 0xff);
+            k = k | (data.get(offset + i_4 + 2) & 0xff);
             k = k << 8;
-            k = k | (data[i_4 + 1] & 0xff);
+            k = k | (data.get(offset + i_4 + 1) & 0xff);
             k = k << 8;
-            k = k | (data[i_4 + 0] & 0xff);
+            k = k | (data.get(offset + i_4 + 0) & 0xff);
             k *= m;
             k ^= k >>> r;
             k *= m;
@@ -105,15 +117,15 @@ public class MurmurHash
         {
             if (left >= 3)
             {
-                h ^= (int) data[length - 3] << 16;
+                h ^= (int) data.get(offset + length - 3) << 16;
             }
             if (left >= 2)
             {
-                h ^= (int) data[length - 2] << 8;
+                h ^= (int) data.get(offset + length - 2) << 8;
             }
             if (left >= 1)
             {
-                h ^= (int) data[length - 1];
+                h ^= (int) data.get(offset + length - 1);
             }
 
             h *= m;
@@ -165,6 +177,11 @@ public class MurmurHash
             final byte[] bytes = (byte[]) o;
             return hash64(bytes, bytes.length);
         }
+        else if (o instanceof ByteBuffer)
+        {
+            final ByteBuffer bytes = (ByteBuffer) o;
+            return hash64(bytes, bytes.position(), bytes.remaining(), 0xe17a1465);
+        }
         return hash64(o.toString());
     }
 
@@ -193,6 +210,11 @@ public class MurmurHash
      */
     public static long hash64(final byte[] data, int length, int seed)
     {
+        return hash64(ByteBuffer.wrap(data), 0, length, seed);
+    }
+
+    public static long hash64(final ByteBuffer data, int offset, int length, int seed)
+    {
         final long m = 0xc6a4a7935bd1e995L;
         final int r = 47;
 
@@ -203,10 +225,10 @@ public class MurmurHash
         for (int i = 0; i < length8; i++)
         {
             final int i8 = i * 8;
-            long k = ((long) data[i8 + 0] & 0xff) + (((long) data[i8 + 1] & 0xff) << 8)
-                    + (((long) data[i8 + 2] & 0xff) << 16) + (((long) data[i8 + 3] & 0xff) << 24)
-                    + (((long) data[i8 + 4] & 0xff) << 32) + (((long) data[i8 + 5] & 0xff) << 40)
-                    + (((long) data[i8 + 6] & 0xff) << 48) + (((long) data[i8 + 7] & 0xff) << 56);
+            long k = ((long) data.get(offset + i8 + 0) & 0xff) + (((long) data.get(offset + i8 + 1) & 0xff) << 8)
+                    + (((long) data.get(offset + i8 + 2) & 0xff) << 16) + (((long) data.get(offset + i8 + 3) & 0xff) << 24)
+                    + (((long) data.get(offset + i8 + 4) & 0xff) << 32) + (((long) data.get(offset + i8 + 5) & 0xff) << 40)
+                    + (((long) data.get(offset + i8 + 6) & 0xff) << 48) + (((long) data.get(offset + i8 + 7) & 0xff) << 56);
 
             k *= m;
             k ^= k >>> r;
@@ -219,22 +241,21 @@ public class MurmurHash
         switch (length % 8)
         {
             case 7:
-                h ^= (long) (data[(length & ~7) + 6] & 0xff) << 48;
+                h ^= (long) (data.get(offset + (length & ~7) + 6) & 0xff) << 48;
             case 6:
-                h ^= (long) (data[(length & ~7) + 5] & 0xff) << 40;
+                h ^= (long) (data.get(offset + (length & ~7) + 5) & 0xff) << 40;
             case 5:
-                h ^= (long) (data[(length & ~7) + 4] & 0xff) << 32;
+                h ^= (long) (data.get(offset + (length & ~7) + 4) & 0xff) << 32;
             case 4:
-                h ^= (long) (data[(length & ~7) + 3] & 0xff) << 24;
+                h ^= (long) (data.get(offset + (length & ~7) + 3) & 0xff) << 24;
             case 3:
-                h ^= (long) (data[(length & ~7) + 2] & 0xff) << 16;
+                h ^= (long) (data.get(offset + (length & ~7) + 2) & 0xff) << 16;
             case 2:
-                h ^= (long) (data[(length & ~7) + 1] & 0xff) << 8;
+                h ^= (long) (data.get(offset + (length & ~7) + 1) & 0xff) << 8;
             case 1:
-                h ^= (long) (data[length & ~7] & 0xff);
+                h ^= (long) (data.get(offset + length & ~7) & 0xff);
                 h *= m;
         }
-        ;
 
         h ^= h >>> r;
         h *= m;

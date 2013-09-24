@@ -19,6 +19,8 @@ package com.clearspring.analytics.hash;
 import junit.framework.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author epollan
  */
@@ -38,6 +40,10 @@ public class TestMurmurHash
         Object bytesAsObject = inputBytes;
         Assert.assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
                 hashOfString, MurmurHash.hash(bytesAsObject));
+
+        ByteBuffer bytesAsByteBuffer = ByteBuffer.wrap(inputBytes);
+        Assert.assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
+                hashOfString, MurmurHash.hash(bytesAsByteBuffer));
     }
 
     @Test
@@ -53,5 +59,9 @@ public class TestMurmurHash
         Object bytesAsObject = inputBytes;
         Assert.assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
                 hashOfString, MurmurHash.hash64(bytesAsObject));
+
+        ByteBuffer bytesAsByteBuffer = ByteBuffer.wrap(inputBytes);
+        Assert.assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
+                hashOfString, MurmurHash.hash64(bytesAsByteBuffer));
     }
 }
