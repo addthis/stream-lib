@@ -248,40 +248,19 @@ public class HyperLogLogPlus implements ICardinality
     @Override
     public boolean offerHashed(long hashedLong)
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean offerHashed(int hashedInt)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-
-    /**
-     * Add data to estimator based on the mode it is in
-     *
-     * @param o stream element
-     * @return Will almost always return true for sparse mode because the additions are batched in
-     */
-    @Override
-    public boolean offer(Object o)
-    {
-        long x = MurmurHash.hash64(o);
-
         switch (format)
         {
             case NORMAL:
                 // find first p bits of x
-                final long idx = x >>> (64 - p);
+                final long idx = hashedLong >>> (64 - p);
                 //Ignore the first p bits (the idx), and then find the number of leading zeros
                 //Push a 1 to where the bit string would have ended if we didnt just push the idx out of the way
                 //A one is always added to runLength for estimation calculation purposes
-                final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
+                final int runLength = Long.numberOfLeadingZeros((hashedLong << this.p) | (1 << (this.p - 1))) + 1;
                 return registerSet.updateIfGreater((int)idx, runLength);
             case SPARSE:
                 //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
-                int k = encodeHash(x, p, sp);
+                int k = encodeHash(hashedLong, p, sp);
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
                 if (tmpIndex > sortThreshold)
@@ -297,6 +276,25 @@ public class HyperLogLogPlus implements ICardinality
                 break;
         }
         return false;
+    }
+
+    @Override
+    public boolean offerHashed(int hashedInt)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Add data to estimator based on the mode it is in
+     *
+     * @param o stream element
+     * @return Will almost always return true for sparse mode because the additions are batched in
+     */
+    @Override
+    public boolean offer(Object o)
+    {
+        long x = MurmurHash.hash64(o);
+        return offerHashed(x);
     }
 
     /**
