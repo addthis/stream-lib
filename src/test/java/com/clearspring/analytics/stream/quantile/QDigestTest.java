@@ -5,6 +5,9 @@ import cern.jet.random.engine.MersenneTwister64;
 import cern.jet.random.engine.RandomEngine;
 import org.junit.Test;
 
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class QDigestTest
@@ -45,6 +48,7 @@ public class QDigestTest
                 for (long x : samples[i]) {
                     digests[i].offer(x);
                 }
+                assertEquals(samples[i].length, digests[i].computeActualSize());
             }
 
             int numTotal = 0;
@@ -62,11 +66,14 @@ public class QDigestTest
                 long[] total = new long[numTotal];
                 int offset = 0;
                 QDigest totalDigest = new QDigest(compressionFactor);
+                long expectedSize = 0;
                 for (int j = 0; j <= i; ++j) {
                     System.arraycopy(samples[j], 0, total, offset, samples[j].length);
                     offset += samples[j].length;
                     totalDigest = QDigest.unionOf(totalDigest, digests[j]);
+                    expectedSize += samples[j].length;
                 }
+                assertEquals(expectedSize, totalDigest.computeActualSize());
 
                 for (double q = 0; q <= 1; q += 0.01) {
                     long res = totalDigest.getQuantile(q);
@@ -88,5 +95,45 @@ public class QDigestTest
                 1.0 * numSmaller / ys.length,
                 1.0 * (numSmaller + numEqual) / ys.length
         };
+    }
+
+    @Test
+    public void testMergeBug() {
+        int compressionFactor = 2;
+
+        long[] aSamples = {0,0,1,0,1,1};
+        long[] bSamples = {0,1,0,0,0,3};
+        long[] allSamples = Arrays.copyOf(aSamples, aSamples.length + bSamples.length);
+        System.arraycopy(bSamples, 0, allSamples, aSamples.length, bSamples.length);
+
+        QDigest a = new QDigest(compressionFactor);
+        QDigest b = new QDigest(compressionFactor);
+        QDigest c = new QDigest(compressionFactor);
+        for (long x : aSamples) a.offer(x);
+        for (long x : bSamples) b.offer(x);
+        for (long x : allSamples) c.offer(x);
+        QDigest ab = QDigest.unionOf(a, b);
+
+        System.out.println("a: " + a);
+        System.out.println("b: " + b);
+        System.out.println("ab: " + ab);
+        System.out.println("c: " + c);
+
+        assertEquals(allSamples.length, c.computeActualSize());
+
+        int logCapacity = 1;
+        long max = 0;
+        for (long x : allSamples) max = Math.max(max, x);
+        for (double scale = 1; scale < max; scale *= compressionFactor, logCapacity++) {}
+
+        double eps = logCapacity / compressionFactor;
+        for (double q = 0; q <= 1; q += 0.01)
+        {
+            long res = c.getQuantile(q);
+            double[] actualRank = actualRankOf(res, allSamples);
+            assertTrue(
+                    actualRank[0] + " .. " + actualRank[1] + " outside error bound for  " + q,
+                    q >= actualRank[0] - eps && q <= actualRank[1] + eps);
+        }
     }
 }

@@ -240,7 +240,11 @@ public class QDigest implements IQuantileEstimator
         Long[] allNodes = node2count.keySet().toArray(new Long[node2count.size()]);
         for (long node : allNodes)
         {
-            compressDownward(node);
+            // The root node is not compressible: it has no parent and no sibling
+            if (!isRoot(node))
+            {
+                compressDownward(node);
+            }
         }
     }
 
@@ -349,6 +353,19 @@ public class QDigest implements IQuantileEstimator
         return ranges;
     }
 
+    public String toString()
+    {
+        List<long[]> ranges = toAscRanges();
+        StringBuilder res = new StringBuilder();
+        for (long[] range : ranges)
+        {
+            if (res.length() > 0)
+                res.append(", ");
+            res.append(range[0]).append(" .. ").append(range[1]).append(": ").append(range[2]);
+        }
+        return res.toString();
+    }
+
     public static byte[] serialize(QDigest d)
     {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -398,5 +415,13 @@ public class QDigest implements IQuantileEstimator
         {
             throw new RuntimeException(e);
         }
+    }
+
+    // For debugging purposes.
+    public long computeActualSize()
+    {
+        long res = 0;
+        for (long x : node2count.values()) res += x;
+        return res;
     }
 }
