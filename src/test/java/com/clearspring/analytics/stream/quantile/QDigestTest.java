@@ -97,8 +97,11 @@ public class QDigestTest
         };
     }
 
+    /**
+     * Test for bug identified and corrected by http://github.com/addthis/stream-lib/pull/52
+     **/
     @Test
-    public void testMergeBug() {
+    public void testMerge() {
         int compressionFactor = 2;
 
         long[] aSamples = {0,0,1,0,1,1};
@@ -136,9 +139,12 @@ public class QDigestTest
                     q >= actualRank[0] - eps && q <= actualRank[1] + eps);
         }
     }
-    
+
+    /**
+     * Test for bug identified and corrected by http://github.com/addthis/stream-lib/pull/53
+     **/
     @Test
-    public void testSerializationBug(){
+    public void testSerialization(){
         long[] samples = {0,20};
         QDigest digestA = new QDigest(2);
         
