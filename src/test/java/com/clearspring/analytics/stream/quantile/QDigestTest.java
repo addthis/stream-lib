@@ -136,4 +136,26 @@ public class QDigestTest
                     q >= actualRank[0] - eps && q <= actualRank[1] + eps);
         }
     }
+    
+    @Test
+    public void testSerializationBug(){
+        long[] samples = {0,20};
+        QDigest digestA = new QDigest(2);
+        
+        for(int i = 0; i < samples.length;i++){
+            digestA.offer(samples[i]);
+        }
+        byte[] serialized = QDigest.serialize(digestA);
+        
+        QDigest deserializedA = QDigest.deserialize(serialized);
+        
+        QDigest digestB = new QDigest(2);
+        for(int i = 0; i < samples.length;i++){
+            digestB.offer(samples[i]);
+        }
+        
+        QDigest.unionOf(digestA, deserializedA);
+        
+        
+    }
 }

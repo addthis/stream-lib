@@ -397,7 +397,7 @@ public class QDigest implements IQuantileEstimator
         try
         {
             long size = s.readLong();
-            double compressionFactor = s.readLong();
+            double compressionFactor = s.readDouble();
             long capacity = s.readLong();
             int count = s.readInt();
             QDigest d = new QDigest(compressionFactor);
