@@ -468,10 +468,6 @@ public class TestHyperLogLogPlus
           b.offer(in);
         }
 
-        // This seems to be the only way I can actually see what test fails
-        // given how extremely verbose the other tests are to stdout?
-        System.out.println("Expect exact cardinality estimate of 14.");
-
         assertEquals(14, testSet.size());
         assertEquals(9, a.cardinality());
         assertEquals(6, b.cardinality());
