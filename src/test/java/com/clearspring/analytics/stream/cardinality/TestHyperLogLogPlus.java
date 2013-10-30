@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Clearspring Technologies, Inc. 
+ * Copyright (C) 2011 Clearspring Technologies, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -444,5 +444,39 @@ public class TestHyperLogLogPlus
 
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
+    }
+
+    @Test
+    public void testMerge_SparseIntersection() throws CardinalityMergeException
+    {
+        HyperLogLogPlus a = new HyperLogLogPlus(11, 16);
+        HyperLogLogPlus b = new HyperLogLogPlus(11, 16);
+
+        // Note that only one element, 41, is shared amongst the two sets,
+        // and so the number of total unique elements is 14.
+        int[] aInput = new int[]{ 12, 13, 22, 34, 38, 40, 41, 46, 49 };
+        int[] bInput = new int[]{ 2, 6, 19, 29, 41, 48 };
+
+        Set<Integer> testSet = new HashSet<Integer>();
+        for (Integer in : aInput) {
+          testSet.add(in);
+          a.offer(in);
+        }
+
+        for (Integer in : bInput) {
+          testSet.add(in);
+          b.offer(in);
+        }
+
+        // This seems to be the only way I can actually see what test fails
+        // given how extremely verbose the other tests are to stdout?
+        System.out.println("Expect exact cardinality estimate of 14.");
+
+        assertEquals(14, testSet.size());
+        assertEquals(9, a.cardinality());
+        assertEquals(6, b.cardinality());
+
+        a.addAll(b);
+        assertEquals(14, a.cardinality());
     }
 }
