@@ -771,7 +771,7 @@ public class HyperLogLogPlus implements ICardinality
                     tmpi++;
                     seti++;
                 }
-                else if (setVal < tmpVal)
+                else if (getSparseIndex(setVal) < getSparseIndex(tmpVal))
                 {
                     newSet.add(setVal);
                     seti++;
