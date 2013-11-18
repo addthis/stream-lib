@@ -16,11 +16,24 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 
-import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import com.clearspring.analytics.hash.MurmurHash;
+import com.clearspring.analytics.util.Bits;
+import com.clearspring.analytics.util.IBuilder;
+import com.clearspring.analytics.util.Varint;
 
 
 /**
@@ -588,42 +601,6 @@ public class HyperLogLogPlus implements ICardinality
     }
 
     /**
-     * Returns the next element in sequence. It does the compression here,
-     * the sorting is on you. And by you, I mean the merge function.
-     * <p/>
-     * In general, the delta encoding just uses the difference from the new element
-     * and the last element added.
-     * <p/>
-     * This is also where the variable length int compression is called. See the Varint class
-     * for details, but smaller int values lead to fewer bytes being returned is the
-     * general idea.
-     *
-     * @param next the encoded value to compress and add
-     */
-    private static byte[] deltaAdd(int next, int prevMergedDelta)
-    {
-        return Varint.writeUnsignedVarInt(next - prevMergedDelta);
-    }
-
-    /**
-     * Read from a delta encoded and varint compressed list. Since we are using
-     * delta encoding, you probably want to start from 0 and work your way up the list one
-     * at a time. One old value is kept around for a bit of convenience so you can say
-     * deltaRead(list, 4); and then deltaRead(list,4) again but not deltaRead(list,3);
-     *
-     * @param deltaValue - the value read from the delta encoded list
-     * @param prevDeltaRead - the previous value read from the delta encoded list
-     * @return uncompressed list entry
-     */
-    private static int deltaRead(int deltaValue, int prevDeltaRead)
-    {
-        int returnVal = deltaValue;
-        returnVal += prevDeltaRead;
-        return returnVal;
-    }
-
-
-    /**
      * Batch merges the sparse set with the temporary list. Usually called when the temporary
      * list fills up, but may also be needed when suddenly converting to normal or producing a
      * cardinality estimate.
@@ -804,26 +781,26 @@ public class HyperLogLogPlus implements ICardinality
         DataOutputStream dos = new DataOutputStream(baos);
         // write version flag (always negative)
         dos.writeInt(-VERSION);
-        dos.write(Varint.writeUnsignedVarInt(p));
-        dos.write(Varint.writeUnsignedVarInt(sp));
+        Varint.writeUnsignedVarInt(p, dos);
+        Varint.writeUnsignedVarInt(sp, dos);
         switch (format)
         {
             case NORMAL:
-                dos.write(Varint.writeUnsignedVarInt(0));
-                dos.write(Varint.writeUnsignedVarInt(registerSet.size * 4));
+                Varint.writeUnsignedVarInt(0, dos);
+                Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
                 for (int x : registerSet.bits())
                 {
                     dos.writeInt(x);
                 }
                 break;
             case SPARSE:
-                dos.write(Varint.writeUnsignedVarInt(1));
+                Varint.writeUnsignedVarInt(1, dos);
                 mergeTempList();
-                dos.write(Varint.writeUnsignedVarInt(sparseSet.length));
+                Varint.writeUnsignedVarInt(sparseSet.length, dos);
                 int prevMergedDelta = 0;
                 for (int k : sparseSet)
                 {
-                    dos.write(deltaAdd(k, prevMergedDelta));
+                    Varint.writeUnsignedVarInt(k - prevMergedDelta, dos);
                     prevMergedDelta = k;
                 }
                 break;
@@ -1113,7 +1090,7 @@ public class HyperLogLogPlus implements ICardinality
                 int prevDeltaRead = 0;
                 for (int i = 0; i < rehydratedSparseSet.length; i++)
                 {
-                    int nextVal = HyperLogLogPlus.deltaRead(Varint.readUnsignedVarInt(oi), prevDeltaRead);
+                    int nextVal = Varint.readUnsignedVarInt(oi) + prevDeltaRead;
                     rehydratedSparseSet[i] = nextVal;
                     prevDeltaRead = nextVal;
                 }
