@@ -76,7 +76,7 @@ public class RegisterSet
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
         return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
     }
-    
+
     public boolean updateIfGreater(int position, int value)
     {
         int bucket = position / LOG2_BITS_PER_WORD;
@@ -109,6 +109,11 @@ public class RegisterSet
             }
             this.M[bucket] = word;
         }
+    }
+
+    int[] readOnlyBits()
+    {
+        return M;
     }
 
     public int[] bits()

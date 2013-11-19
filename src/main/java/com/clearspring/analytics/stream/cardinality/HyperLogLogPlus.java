@@ -788,7 +788,7 @@ public class HyperLogLogPlus implements ICardinality
             case NORMAL:
                 Varint.writeUnsignedVarInt(0, dos);
                 Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
-                for (int x : registerSet.bits())
+                for (int x : registerSet.readOnlyBits())
                 {
                     dos.writeInt(x);
                 }

@@ -207,7 +207,7 @@ public class HyperLogLog implements ICardinality
 
         dos.writeInt(log2m);
         dos.writeInt(registerSet.size * 4);
-        for (int x : registerSet.bits())
+        for (int x : registerSet.readOnlyBits())
         {
             dos.writeInt(x);
         }

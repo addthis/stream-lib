@@ -353,7 +353,7 @@ public class TestHyperLogLogPlus
         dos.writeInt(25);
         dos.writeInt(0);
         dos.writeInt(baseline.getRegisterSet().size * 4);
-        for (int x : baseline.getRegisterSet().bits())
+        for (int x : baseline.getRegisterSet().readOnlyBits())
         {
             dos.writeInt(x);
         }
