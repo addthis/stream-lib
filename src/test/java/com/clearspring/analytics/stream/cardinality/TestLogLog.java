@@ -57,7 +57,7 @@ public class TestLogLog
         long estimate = loglog.cardinality();
         double err = Math.abs(estimate - size) / (double) size;
         System.out.println(err);
-        assertTrue(err < .1);
+        assertTrue(err < .11);
     }
 
     @Test
