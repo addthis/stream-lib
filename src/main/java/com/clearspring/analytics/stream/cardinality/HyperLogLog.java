@@ -104,7 +104,7 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(int log2m)
     {
-        this(log2m, new RegisterSet((int) Math.pow(2, log2m)));
+        this(log2m, new RegisterSet(1 << log2m));
     }
 
     /**
@@ -115,9 +115,14 @@ public class HyperLogLog implements ICardinality
      */
     public HyperLogLog(int log2m, RegisterSet registerSet)
     {
+        if (log2m < 0 || log2m > 30)
+        {
+            throw new IllegalArgumentException("log2m argument is "
+                + log2m + " and is outside the range [0, 30]");
+        }
         this.registerSet = registerSet;
         this.log2m = log2m;
-        int m = (int) Math.pow(2, this.log2m);
+        int m = 1 << this.log2m;
 
         // See the paper.
         switch (log2m)
@@ -157,7 +162,7 @@ public class HyperLogLog implements ICardinality
         return registerSet.updateIfGreater(j, r);
     }
 
-	@Override
+    @Override
     public boolean offer(Object o)
     {
         final int x = MurmurHash.hash(o);
@@ -214,7 +219,7 @@ public class HyperLogLog implements ICardinality
 
         return baos.toByteArray();
     }
-    
+
     /** Add all the elements of the other set to this set.
      * 
      * This operation does not imply a loss of precision.
@@ -227,7 +232,7 @@ public class HyperLogLog implements ICardinality
         {
             throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
         }
-        
+
         registerSet.merge(other.registerSet);
     }
 
@@ -241,7 +246,7 @@ public class HyperLogLog implements ICardinality
         {
             return merged;
         }
-        
+
         for (ICardinality estimator : estimators)
         {
             if (!(estimator instanceof HyperLogLog))
@@ -251,7 +256,7 @@ public class HyperLogLog implements ICardinality
             HyperLogLog hll = (HyperLogLog) estimator;
             merged.addAll(hll);
         }
-        
+
         return merged;
     }
 
@@ -274,7 +279,7 @@ public class HyperLogLog implements ICardinality
         public int sizeof()
         {
             int log2m = log2m(rsd);
-            int k = (int) Math.pow(2, log2m);
+            int k = 1 << log2m;
             return RegisterSet.getBits(k) * 4;
         }
 
@@ -286,7 +291,7 @@ public class HyperLogLog implements ICardinality
             int size = oi.readInt();
             byte[] longArrayBytes = new byte[size];
             oi.readFully(longArrayBytes);
-            return new HyperLogLog(log2m, new RegisterSet((int) Math.pow(2, log2m), Bits.getBits(longArrayBytes)));
+            return new HyperLogLog(log2m, new RegisterSet(1 << log2m, Bits.getBits(longArrayBytes)));
         }
     }
 
