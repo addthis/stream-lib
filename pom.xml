@@ -12,7 +12,7 @@
   <version>2.6.0-SNAPSHOT</version>
   <name>stream-lib</name>
   <description>A library for summarizing data in streams for which it is infeasible to store all events</description>
-  <url>https://github.com/clearspring/stream-lib</url>
+  <url>https://github.com/addthis/stream-lib</url>
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -191,8 +191,8 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git@github.com:clearspring/stream-lib.git</connection>
-    <developerConnection>scm:git:git@github.com:clearspring/stream-lib.git</developerConnection>
-    <url>https://github.com/clearspring/stream-lib</url>
+    <connection>scm:git:git@github.com:addthis/stream-lib.git</connection>
+    <developerConnection>scm:git:git@github.com:addthis/stream-lib.git</developerConnection>
+    <url>https://github.com/addthis/stream-lib</url>
   </scm>
 </project>
