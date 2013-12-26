@@ -136,7 +136,7 @@ public class HyperLogLogPlus implements ICardinality
     };
 
     private Format format;
-    private final RegisterSet registerSet;
+    private RegisterSet registerSet;
     private final int m;
     private final int p;
 
@@ -180,7 +180,7 @@ public class HyperLogLogPlus implements ICardinality
      */
     public HyperLogLogPlus(int p, int sp)
     {
-        this(p, sp, null, new RegisterSet((int) Math.pow(2, p)));
+        this(p, sp, null, null);
     }
 
     /**
@@ -204,11 +204,13 @@ public class HyperLogLogPlus implements ICardinality
         }
     }
 
+    // for constructing a sparse mode hllp
     private HyperLogLogPlus(int p, int sp, int[] sparseSet)
     {
-        this(p, sp, sparseSet, new RegisterSet((int) Math.pow(2, p)));
+        this(p, sp, sparseSet, null);
     }
 
+    // for constructing a normal mode hllp
     private HyperLogLogPlus(int p, int sp, RegisterSet registerSet)
     {
         this(p, sp, null, registerSet);
@@ -227,17 +229,22 @@ public class HyperLogLogPlus implements ICardinality
 
         this.p = p;
         m = (int) Math.pow(2, p);
-        this.registerSet = registerSet;
         format = Format.NORMAL;
-        if (sp > 0) // Use sparse representation
-        {
-            format = Format.SPARSE;
-            this.sp = sp;
-            sm = (int) Math.pow(2, sp);
-            this.sparseSet = sparseSet;
-            sparseSetThreshold = (int) (m * 0.75);
-            sortThreshold = sparseSetThreshold / 4;
-            tmpSet = new int[sortThreshold+1];
+        this.registerSet = registerSet;
+        if (registerSet == null) {
+            if (sp > 0) // Use sparse representation
+            {
+                format = Format.SPARSE;
+                this.sp = sp;
+                sm = (int) Math.pow(2, sp);
+                this.sparseSet = sparseSet;
+                sparseSetThreshold = (int) (m * 0.75);
+                sortThreshold = sparseSetThreshold / 4;
+                tmpSet = new int[sortThreshold+1];
+            }
+            else {
+                this.registerSet = new RegisterSet((int) Math.pow(2, p));
+            }
         }
 
         // See the paper.
@@ -320,6 +327,7 @@ public class HyperLogLogPlus implements ICardinality
     private void convertToNormal()
     {
         mergeTempList();
+        this.registerSet = new RegisterSet((int) Math.pow(2, p));
         for (int k : sparseSet)
         {
             int idx = getIndex(k, p);
@@ -770,6 +778,9 @@ public class HyperLogLogPlus implements ICardinality
     @Override
     public int sizeof()
     {
+        if (registerSet == null) {
+            return 4 * RegisterSet.getSizeForCount((int) Math.pow(2, p));
+        }
         return registerSet.size * 4;
     }
 

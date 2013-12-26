@@ -34,22 +34,10 @@ public class RegisterSet
     public RegisterSet(int count, int[] initialValues)
     {
         this.count = count;
-        int bits = getBits(count);
 
         if (initialValues == null)
         {
-            if (bits == 0)
-            {
-                this.M = new int[1];
-            }
-            else if (bits % Integer.SIZE == 0)
-            {
-                this.M = new int[bits];
-            }
-            else
-            {
-                this.M = new int[bits + 1];
-            }
+            this.M = new int[getSizeForCount(count)];
         }
         else
         {
@@ -61,6 +49,23 @@ public class RegisterSet
     public static int getBits(int count)
     {
         return count / LOG2_BITS_PER_WORD;
+    }
+
+    public static int getSizeForCount(int count)
+    {
+        int bits = getBits(count);
+        if (bits == 0)
+        {
+            return 1;
+        }
+        else if (bits % Integer.SIZE == 0)
+        {
+            return bits;
+        }
+        else
+        {
+            return bits + 1;
+        }
     }
 
     public void set(int position, int value)
