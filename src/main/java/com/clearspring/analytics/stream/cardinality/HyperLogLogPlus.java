@@ -151,7 +151,6 @@ public class HyperLogLogPlus implements ICardinality
     //How big the temp list is allowed to get before we batch merge it into the sparse set
     private int sortThreshold;
 
-    // -----------  NOT THREAD SAFE --------------
     private int[] tmpSet;
     private int tmpIndex = 0;
     private int[] sparseSet;
