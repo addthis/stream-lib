@@ -87,6 +87,33 @@ public class TestStreamSummary
     }
 
     @Test
+    public void testTopKWithIncrementOutOfOrder()
+    {
+        StreamSummary<String> vs_increment = new StreamSummary<String>(3);
+        StreamSummary<String> vs_single = new StreamSummary<String>(3);
+        String[] stream = {"A","B","C","D","A"};
+        Integer[] increments = {15,20,25,30,1};
+
+        for (int i=0;i<stream.length;i++) {
+            vs_increment.offer(stream[i],increments[i]);
+            for (int k=0;k<increments[i];k++) {
+                vs_single.offer(stream[i]);
+            }
+        }
+        System.out.println("Insert with counts vs. single inserts:");
+        System.out.println(vs_increment);
+        System.out.println(vs_single);
+
+        List<Counter<String>> topK_increment = vs_increment.topK(3);
+        List<Counter<String>> topK_single = vs_single.topK(3);
+
+        for (int i=0;i<topK_increment.size();i++) {
+            assertEquals(topK_increment.get(i).getItem(),
+                    topK_single.get(i).getItem());
+        }
+    }
+
+    @Test
     public void testGeometricDistribution()
     {
         StreamSummary<Integer> vs = new StreamSummary<Integer>(10);
