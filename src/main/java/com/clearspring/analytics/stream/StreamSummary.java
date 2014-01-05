@@ -143,32 +143,40 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     protected void incrementCounter(ListNode2<Counter<T>> counterNode, int incrementCount)
     {
         Counter<T> counter = counterNode.getValue();       // count_i
-        ListNode2<Bucket> bucketNode = counter.bucketNode;
-        Bucket bucket = bucketNode.getValue();         // Let Bucket_i be the bucket of count_i
-        ListNode2<Bucket> bucketNodeNext = bucketNode.getNext();
-        Bucket bucketNext = bucketNodeNext == null ? null : bucketNodeNext.getValue(); // Let Bucket_i^+ be Bucket_i's neighbor of larger value
+        ListNode2<Bucket> oldNode = counter.bucketNode;
+        Bucket bucket = oldNode.getValue();         // Let Bucket_i be the bucket of count_i
         bucket.counterList.remove(counterNode);            // Detach count_i from Bucket_i's child-list
         counter.count = counter.count + incrementCount;
 
         // Finding the right bucket for count_i
-        if (bucketNext != null && counter.count == bucketNext.count)
-        {
-            bucketNext.counterList.add(counterNode);       // Attach count_i to Bucket_i^+'s child-list
-        }
-        else // A new bucket has to be created
-        {
-            bucketNext = new Bucket(counter.count);        // Create a new Bucket Bucket_new
-            // Assign Bucket_new the value of count_i
-            bucketNext.counterList.add(counterNode);       // Attach count_i to Bucket_new's child-list
-            bucketNodeNext = bucketList.addAfter(bucketNode, bucketNext);  // Insert Bucket_new after Bucket_i
+        // Because we allow a single call to increment count more than once, this may not be the adjacent bucket. 
+        ListNode2<Bucket> bucketNodePrev = oldNode;
+        ListNode2<Bucket> bucketNodeNext = bucketNodePrev.getNext();
+        while (bucketNodeNext != null) {
+            Bucket bucketNext = bucketNodeNext.getValue(); // Let Bucket_i^+ be Bucket_i's neighbor of larger value
+            if (counter.count == bucketNext.count) {
+                bucketNext.counterList.add(counterNode);    // Attach count_i to Bucket_i^+'s child-list
+                break;
+            } else if (counter.count > bucketNext.count) {
+                bucketNodePrev = bucketNodeNext;
+                bucketNodeNext = bucketNodePrev.getNext();  // Continue hunting for an appropriate bucket
+            } else {
+                // A new bucket has to be created
+                bucketNodeNext = null;
+            }
         }
 
+        if (bucketNodeNext == null) {
+            Bucket bucketNext = new Bucket(counter.count);
+            bucketNext.counterList.add(counterNode);
+            bucketNodeNext = bucketList.addAfter(bucketNodePrev, bucketNext);
+        }
         counter.bucketNode = bucketNodeNext;
 
         //Cleaning up
         if (bucket.counterList.isEmpty())           // If Bucket_i's child-list is empty
         {
-            bucketList.remove(bucketNode);         // Detach Bucket_i from the Stream-Summary
+            bucketList.remove(oldNode);         // Detach Bucket_i from the Stream-Summary
         }
     }
 
