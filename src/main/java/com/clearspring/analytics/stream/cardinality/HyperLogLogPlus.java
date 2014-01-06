@@ -660,7 +660,7 @@ public class HyperLogLogPlus implements ICardinality
                     tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
                     seti++;
                 }
-                else if (setVal < tmpVal)
+                else if (getSparseIndex(setVal) < getSparseIndex(tmpVal))
                 {
                     newSet.add(setVal);
                     seti++;
