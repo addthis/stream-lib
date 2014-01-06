@@ -291,8 +291,6 @@ public class HyperLogLogPlus implements ICardinality
                     }
                 }
                 return true;
-            default:
-                break;
         }
         return false;
     }
@@ -461,15 +459,13 @@ public class HyperLogLogPlus implements ICardinality
         return (k << p + (31 - sp));
     }
 
-
     /**
      * Get the idx' from an encoding
      *
      * @param k encoded data
      * @return idx'
      */
-
-    private int getSparseIndex(int k)
+    private static int getSparseIndex(int k)
     {
         if ((k & 1) == 1)
         {
@@ -488,7 +484,6 @@ public class HyperLogLogPlus implements ICardinality
      * @param p 'normal' precision
      * @return
      */
-
     private int getIndex(int k, int p)
     {
         k = getSparseIndex(k);
@@ -548,14 +543,11 @@ public class HyperLogLogPlus implements ICardinality
             case SPARSE:
                 mergeTempList();
                 return linearCounting(sm, (sm - sparseSet.length));
-            default:
-                //TODO
-                break;
         }
         return 0;
     }
 
-    private double getEstimateBias(double estimate, int p)
+    private static double getEstimateBias(double estimate, int p)
     {
         // get nearest neighbors for this estimate and precision
         // above p = 18 there is no bias correction
@@ -566,12 +558,11 @@ public class HyperLogLogPlus implements ICardinality
         double[] estimateVector = rawEstimateData[p - 4];
         SortedMap<Double, Integer> estimateDistances = calcDistances(estimate, estimateVector);
         int[] nearestNeighbors = getNearestNeighbors(estimateDistances);
-        return getBias(nearestNeighbors);
+        return getBias(nearestNeighbors, p);
     }
 
-    private double getBias(int[] nearestNeighbors)
+    private static double getBias(int[] nearestNeighbors, int p)
     {
-
         double[] biasVector = biasData[p - 4];
         double biasTotal = 0.0d;
         for (int nearestNeighbor : nearestNeighbors)
@@ -581,7 +572,7 @@ public class HyperLogLogPlus implements ICardinality
         return biasTotal / (nearestNeighbors.length);
     }
 
-    private int[] getNearestNeighbors(SortedMap<Double, Integer> distanceMap)
+    private static int[] getNearestNeighbors(SortedMap<Double, Integer> distanceMap)
     {
         int[] nearest = new int[6];
         int i = 0;
@@ -596,7 +587,7 @@ public class HyperLogLogPlus implements ICardinality
         return nearest;
     }
 
-    private SortedMap<Double, Integer> calcDistances(double estimate, double[] estimateVector)
+    private static SortedMap<Double, Integer> calcDistances(double estimate, double[] estimateVector)
     {
         SortedMap<Double, Integer> distances = new TreeMap<Double, Integer>();
         int index = 0;
@@ -676,7 +667,7 @@ public class HyperLogLogPlus implements ICardinality
         return toIntArray(newSet);
     }
 
-    private int[] toIntArray(List<Integer> list){
+    private static int[] toIntArray(List<Integer> list){
         int[] ret = new int[list.size()];
         for(int i = 0;i < ret.length;i++)
         {
@@ -770,7 +761,7 @@ public class HyperLogLogPlus implements ICardinality
         return toIntArray(newSet);
     }
 
-    private int linearCounting(int m, double V)
+    private static int linearCounting(int m, double V)
     {
         return (int) Math.round((m * Math.log(m / V)));
     }

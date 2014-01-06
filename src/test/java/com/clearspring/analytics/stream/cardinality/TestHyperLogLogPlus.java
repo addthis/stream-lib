@@ -16,13 +16,21 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import com.clearspring.analytics.util.Varint;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+
+import com.clearspring.analytics.util.Varint;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -454,8 +462,8 @@ public class TestHyperLogLogPlus
 
         // Note that only one element, 41, is shared amongst the two sets,
         // and so the number of total unique elements is 14.
-        int[] aInput = new int[]{ 12, 13, 22, 34, 38, 40, 41, 46, 49 };
-        int[] bInput = new int[]{ 2, 6, 19, 29, 41, 48 };
+        int[] aInput = { 12, 13, 22, 34, 38, 40, 41, 46, 49 };
+        int[] bInput = { 2, 6, 19, 29, 41, 48 };
 
         Set<Integer> testSet = new HashSet<Integer>();
         for (Integer in : aInput) {
