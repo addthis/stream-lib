@@ -282,13 +282,13 @@ public class HyperLogLogPlus implements ICardinality
                 int k = encodeHash(hashedLong, p, sp);
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
-                if (tmpIndex > sortThreshold)
+                if (sparseSet != null && sparseSet.length > sparseSetThreshold)
                 {
                     mergeTempList();
-                    if (sparseSet != null && sparseSet.length > sparseSetThreshold)
-                    {
-                        convertToNormal();
-                    }
+                    convertToNormal();
+                } else if (tmpIndex > sortThreshold)
+                {
+                    mergeTempList();
                 }
                 return true;
         }
