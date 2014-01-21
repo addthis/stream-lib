@@ -103,20 +103,24 @@ Algorithm.  Proceedings of the EDBT 2013 Conference, ACM, Genoa, Italy
 
  * Graham Cormode and S. Muthukrishnan. An improved data stream
 summary: The Count-Min sketch and its applications. pages 29–38.
-2004.
+2004. 10.1016/j.jalgor.2003.12.001
+http://dl.acm.org/citation.cfm?id=1073718
 
  * Cheqing Jin, Weining Qian, Chaofeng Sha, Jeffrey X. Yu, and Aoying
 Zhou. Dynamically maintaining frequent items over a data stream. In
 CIKM ’03: Proceedings of the twelfth international conference on
 Information and knowledge management, pages 287–294, New York,
-NY, USA, 2003. ACM.
+NY, USA, 2003. ACM. 10.1145/956863.956918
+http://dl.acm.org/citation.cfm?id=956918
 
  * Ahmed Metwally, Divyakant Agrawal, and Amr Abbadi. Efficient
 computation of frequent and top-k elements in data streams. pages
-398–412. 2005.
+398–412. 2005. 10.1007/978-3-540-30570-5_27
+http://link.springer.com/chapter/10.1007/978-3-540-30570-5_27
 
 #### Frequency
 
  * Graham Cormode and S. Muthukrishnan. An improved data stream
-summary: The Count-Min sketch and its applications. 2004.
+summary: The Count-Min sketch and its applications. 2004. 10.1016/j.jalgor.2003.12.001
+http://dl.acm.org/citation.cfm?id=1073718
 
