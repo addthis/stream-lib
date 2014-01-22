@@ -61,6 +61,25 @@ public class TestLogLog
     }
 
     @Test
+    public void testHighCardinalityHighOrder()
+    {
+        long start = System.currentTimeMillis();
+        LogLog loglog = new LogLog(25);
+        int size = 100000000;
+        for (int i = 0; i < size; i++)
+        {
+            loglog.offer(TestICardinality.streamElement(i));
+        }
+        System.out.println("time: " + (System.currentTimeMillis() - start));
+        long estimate = loglog.cardinality();
+        double err = Math.abs(estimate - size) / (double) size;
+        System.out.println(size);
+        System.out.println(estimate);
+        System.out.println(err);
+        assertTrue(err < .06);
+    }
+
+    @Test
     public void testMerge() throws CardinalityMergeException
     {
         int numToMerge = 5;
