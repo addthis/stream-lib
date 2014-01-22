@@ -129,6 +129,18 @@ public class TestHyperLogLog
         assertEquals(mergedEstimate, baselineEstimate);
     }
 
+    /**
+     * should not fail with HyperLogLogMergeException: "Cannot merge estimators of different sizes"
+     * */
+    @Test
+    public void testMergeWithRegisterSet() throws CardinalityMergeException {
+        HyperLogLog first = new HyperLogLog(16, new RegisterSet(1 << 20));
+        HyperLogLog second = new HyperLogLog(16, new RegisterSet(1 << 20));
+        first .offer(0);
+        second.offer(1);
+        first.merge(second);
+    }
+
     @Test
     @Ignore
     public void testPrecise() throws CardinalityMergeException
