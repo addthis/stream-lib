@@ -239,7 +239,7 @@ public class HyperLogLog implements ICardinality
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException
     {
-        HyperLogLog merged = new HyperLogLog(log2m);
+        HyperLogLog merged = new HyperLogLog(log2m, new RegisterSet(this.registerSet.count));
         merged.addAll(this);
 
         if (estimators == null)
