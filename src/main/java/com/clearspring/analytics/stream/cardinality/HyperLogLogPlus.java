@@ -240,7 +240,6 @@ public class HyperLogLogPlus implements ICardinality
                 this.sparseSet = sparseSet;
                 sparseSetThreshold = (int) (m * 0.75);
                 sortThreshold = sparseSetThreshold / 4;
-                tmpSet = new int[sortThreshold+1];
             }
             else {
                 this.registerSet = new RegisterSet((int) Math.pow(2, p));
@@ -280,6 +279,9 @@ public class HyperLogLogPlus implements ICardinality
             case SPARSE:
                 //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
                 int k = encodeHash(hashedLong, p, sp);
+                if (tmpSet == null) {
+                    tmpSet = new int[sortThreshold+1];
+                }
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
                 if (sparseSet != null && sparseSet.length > sparseSetThreshold)
@@ -618,7 +620,7 @@ public class HyperLogLogPlus implements ICardinality
      * @param tmp list to be merged
      * @return the new sparse set
      */
-    private int[] merge(int[] set, int[] tmp)
+    private static int[] merge(int[] set, int[] tmp)
     {
         List<Integer> newSet = new ArrayList<Integer>();
         // iterate over each set and merge the result values
@@ -684,8 +686,7 @@ public class HyperLogLogPlus implements ICardinality
      * @param tmpi   the current tmp list index
      * @return the new tmp list index
      */
-
-    private int consumeDuplicates(int[] tmp, int tmpIdx, int tmpi)
+    private static int consumeDuplicates(int[] tmp, int tmpIdx, int tmpi)
     {
         while (tmpi < tmp.length)
         {
@@ -711,7 +712,6 @@ public class HyperLogLogPlus implements ICardinality
      * @param other
      * @return the new sparse set
      */
-
     private int[] mergeEstimators(HyperLogLogPlus other)
     {
         other.mergeTempList();
@@ -823,18 +823,17 @@ public class HyperLogLogPlus implements ICardinality
         int[] retSet = sparseSet;
         if (tmpIndex > 0)
         {
-            tmpSet = sortEncodedSet(tmpSet, tmpIndex);
-            retSet = merge(sparseSet, tmpSet);
-            tmpSet = new int[sortThreshold+1];
+            int[] sortedSet = sortEncodedSet(tmpSet, tmpIndex);
+            retSet = merge(sparseSet, sortedSet);
             tmpIndex = 0;
         }
         sparseSet = retSet == null ? new int[0] : retSet;
     }
 
     // exposed for testing
-    public int[] sortEncodedSet(int[] encodedSet, int validIndex)
+    int[] sortEncodedSet(int[] encodedSet, int validIndex)
     {
-        List<Integer> sortedList = new ArrayList<Integer>();
+        List<Integer> sortedList = new ArrayList<Integer>(validIndex);
         for (int i = 0; i < validIndex; i++)
         {
             int k = encodedSet[i];
