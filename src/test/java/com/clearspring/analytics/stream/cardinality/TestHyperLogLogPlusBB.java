@@ -72,7 +72,7 @@ public class TestHyperLogLogPlusBB {
         System.out.println("Duration: " + ((System.currentTimeMillis() - startTime) / 1000) + "s");
     }
 
-    @Test
+   @Test
     public void testComputeCount() {
         HyperLogLogPlusBB hyperLogLogPlus = new HyperLogLogPlusBB(14, 25);
         int count = 70000;
@@ -232,7 +232,7 @@ public class TestHyperLogLogPlusBB {
                         hllPlus.offer(Math.random());
                     }
 
-                    ByteBuffer buff = ByteBuffer.allocate(hllPlus.getBytes().length*4);
+                    ByteBuffer buff = ByteBuffer.allocate(hllPlus.getBytes().length * 4);
                     buff.put(hllPlus.getBytes());
 
                     HyperLogLogPlusBB deserialized = HyperLogLogPlusBB.Builder.build(buff);
@@ -460,4 +460,32 @@ public class TestHyperLogLogPlusBB {
         a.addAll(b);
         assertEquals(14, a.cardinality());
     }
+
+      @Test
+     public void testHll() {
+     HyperLogLogPlusBB hll = new HyperLogLogPlusBB(11, 16);
+     hll.offer(1);
+     hll.offer(2);
+     HyperLogLogPlusBB anotherHll = new HyperLogLogPlusBB(hll.getUnderlyingByteBuffer());
+     assert hll.cardinality() == anotherHll.cardinality();
+
+     anotherHll.offer(3);
+     assert anotherHll.cardinality() == new HyperLogLogPlusBB(anotherHll.getUnderlyingByteBuffer()).cardinality();
+     }
+    
+    @Test
+    public void testAA() throws IOException {
+        ByteBuffer a = ByteBuffer.allocate(8);
+        a.putInt(0, 11);
+        a.putInt(4, 16);
+        HyperLogLogPlusBB hll = new HyperLogLogPlusBB(a);
+        hll.offer(5);
+        hll.offer(1);
+        hll.offer(6);
+
+
+        HyperLogLogPlusBB hll1 = new HyperLogLogPlusBB(hll.getUnderlyingByteBuffer());
+        assertEquals(hll1.cardinality(), hll.cardinality());
+    }
+
 }

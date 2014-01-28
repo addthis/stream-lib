@@ -156,7 +156,7 @@ public class HyperLogLogPlusBB implements ICardinality {
     private ByteBuffer tmpSet;
     private int tmpIndex = 0;
     private ByteBuffer sparseSet;
-
+    private ByteBuffer sparseSetAll;
     /**
      * This constructor disables the sparse set. If the counter is likely to
      * exceed the sparse set thresholds than using this constructor will help
@@ -194,14 +194,66 @@ public class HyperLogLogPlusBB implements ICardinality {
      */
     public HyperLogLogPlusBB(int p, int sp, List<byte[]> deltaByteSet) {
         this(p, sp);
-        sparseSet = ByteBuffer.allocate(deltaByteSet.size()*4);
+        sparseSet = ByteBuffer.allocate(deltaByteSet.size() * 4);
         int previousValue = 0;
         for (int i = 0; i < deltaByteSet.size(); i++) {
             int nextValue = Varint.readUnsignedVarInt(deltaByteSet.get(i));
-            sparseSet.putInt(i*4, nextValue + previousValue);
-            previousValue = sparseSet.getInt(i*4);
+            sparseSet.putInt(i * 4, nextValue + previousValue);
+            previousValue = sparseSet.getInt(i * 4);
         }
     }
+
+    public HyperLogLogPlusBB(ByteBuffer sparseSet) {
+        this.sparseSetAll=sparseSet;
+        int p=sparseSet.getInt(0);
+        int sp=sparseSet.getInt(4);
+        
+        System.out.println(p + " "+sp);
+        
+        ByteBuffer sparseSetAux = sparseSet.duplicate();
+        sparseSetAux.position(8);
+        
+         if (p < 4 || (p > sp && sp != 0)) {
+            throw new IllegalArgumentException("p must be between 4 and sp (inclusive)");
+        }
+        if (sp > 32) {
+            throw new IllegalArgumentException("sp values greater than 32 not supported");
+        }
+
+        this.p = p;
+        m = (int) Math.pow(2, p);
+        format = Format.NORMAL;
+        this.registerSet = null;
+        if (registerSet == null) {
+            if (sp > 0) // Use sparse representation
+            {
+                format = Format.SPARSE;
+                this.sp = sp;
+                sm = (int) Math.pow(2, sp);
+                this.sparseSet = sparseSetAux.slice();
+                sparseSetThreshold = (int) (m * 0.75);
+                sortThreshold = sparseSetThreshold / 4;
+            } else {
+                this.registerSet = new RegisterSetBB((int) Math.pow(2, p));
+            }
+        }
+
+        // See the paper.
+        switch (p) {
+            case 4:
+                alphaMM = 0.673 * m * m;
+                break;
+            case 5:
+                alphaMM = 0.697 * m * m;
+                break;
+            case 6:
+                alphaMM = 0.709 * m * m;
+                break;
+            default:
+                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
+        }
+    }
+    
 
     // for constructing a sparse mode hllp
     private HyperLogLogPlusBB(int p, int sp, ByteBuffer sparseSet) {
@@ -214,6 +266,12 @@ public class HyperLogLogPlusBB implements ICardinality {
     }
 
     private HyperLogLogPlusBB(int p, int sp, ByteBuffer sparseSet, RegisterSetBB registerSet) {
+        
+        ByteBuffer sparseSetAux = ByteBuffer.allocate(8);
+        sparseSetAux.putInt(p);
+        sparseSetAux.putInt(sp);
+        this.sparseSetAll=sparseSetAux.duplicate();
+        
         if (p < 4 || (p > sp && sp != 0)) {
             throw new IllegalArgumentException("p must be between 4 and sp (inclusive)");
         }
@@ -270,13 +328,13 @@ public class HyperLogLogPlusBB implements ICardinality {
                 //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
                 int k = encodeHash(hashedLong, p, sp);
                 if (tmpSet == null) {
-                    tmpSet = ByteBuffer.allocate((sortThreshold + 1)*4);
+                    tmpSet = ByteBuffer.allocate((sortThreshold + 1) * 4);
                 }
                 //Put the encoded data into the temp set
-                tmpSet.putInt(tmpIndex*4,k);
+                tmpSet.putInt(tmpIndex * 4, k);
                 tmpIndex++;
-                
-                if (sparseSet != null && sparseSet.capacity()/4 > sparseSetThreshold) {
+
+                if (sparseSet != null && sparseSet.capacity() / 4 > sparseSetThreshold) {
                     mergeTempList();
                     convertToNormal();
                 } else if (tmpIndex > sortThreshold) {
@@ -315,8 +373,8 @@ public class HyperLogLogPlusBB implements ICardinality {
     private void convertToNormal() {
         mergeTempList();
         this.registerSet = new RegisterSetBB((int) Math.pow(2, p));
-        for (int i=0; i<sparseSet.capacity()/4;i++) {
-            int k = sparseSet.getInt(i*4);
+        for (int i = 0; i < sparseSet.capacity() / 4; i++) {
+            int k = sparseSet.getInt(i * 4);
             int idx = getIndex(k, p);
             int r = decodeRunLength(k);
             registerSet.updateIfGreater(idx, r);
@@ -365,8 +423,7 @@ public class HyperLogLogPlusBB implements ICardinality {
      * ********************************* <- smaller length of bits (half, but
      * not to scale) | empty || sp bits ||F| | p bits || has 1 ||0| <p/>
      * <p/> or if the run length was needed (ie 'all 0s?' was indeed all 0s):
-     * <p/>
-     * *
+     * <p/> *
      **
      **
      **
@@ -512,7 +569,7 @@ public class HyperLogLogPlusBB implements ICardinality {
                 }
             case SPARSE:
                 mergeTempList();
-                return linearCounting(sm, (sm - sparseSet.capacity()/4));
+                return linearCounting(sm, (sm - sparseSet.capacity() / 4));
         }
         return 0;
     }
@@ -588,21 +645,21 @@ public class HyperLogLogPlusBB implements ICardinality {
         List<Integer> newSet = new ArrayList<Integer>();
         // iterate over each set and merge the result values
 
-        int setLength = (set == null ? 0 : set.capacity()/4);
+        int setLength = (set == null ? 0 : set.capacity() / 4);
         int seti = 0;
         int tmpi = 0;
-        while (seti < setLength || tmpi < tmp.capacity()/4) {
+        while (seti < setLength || tmpi < tmp.capacity() / 4) {
             if (seti >= setLength) {
-                int tmpVal = tmp.getInt(tmpi*4);
+                int tmpVal = tmp.getInt(tmpi * 4);
                 newSet.add(tmpVal);
                 tmpi++;
                 tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
-            } else if (tmpi >= tmp.capacity()/4) {
-                newSet.add(set.getInt(seti*4));
+            } else if (tmpi >= tmp.capacity() / 4) {
+                newSet.add(set.getInt(seti * 4));
                 seti++;
             } else {
-                int setVal = set.getInt(seti*4);
-                int tmpVal = tmp.getInt(tmpi*4);
+                int setVal = set.getInt(seti * 4);
+                int tmpVal = tmp.getInt(tmpi * 4);
 
                 if (getSparseIndex(setVal) == getSparseIndex(tmpVal)) {
                     newSet.add(Math.min(setVal, tmpVal));
@@ -623,9 +680,9 @@ public class HyperLogLogPlusBB implements ICardinality {
     }
 
     private static ByteBuffer toIntArray(List<Integer> list) {
-        ByteBuffer ret = ByteBuffer.allocate(list.size()*4);
-        for (int i = 0; i < ret.capacity()/4; i++) {
-            ret.putInt(i*4, list.get(i));
+        ByteBuffer ret = ByteBuffer.allocate(list.size() * 4);
+        for (int i = 0; i < ret.capacity() / 4; i++) {
+            ret.putInt(i * 4, list.get(i));
         }
         return ret;
     }
@@ -639,8 +696,8 @@ public class HyperLogLogPlusBB implements ICardinality {
      * @return the new tmp list index
      */
     private static int consumeDuplicates(ByteBuffer tmp, int tmpIdx, int tmpi) {
-        while (tmpi < tmp.capacity()/4) {
-            int nextTmp = tmp.getInt(tmpi*4);
+        while (tmpi < tmp.capacity() / 4) {
+            int nextTmp = tmp.getInt(tmpi * 4);
             int nextTmpIdx = getSparseIndex(nextTmp);
             if (tmpIdx != nextTmpIdx) {
                 return tmpi;
@@ -672,16 +729,16 @@ public class HyperLogLogPlusBB implements ICardinality {
         // iterate over each set and merge the result values
         int seti = 0;
         int tmpi = 0;
-        while (seti < set.capacity()/4 || tmpi < tmp.capacity()/4) {
-            if (seti >= set.capacity()/4) {
-                newSet.add(tmp.getInt(tmpi*4));
+        while (seti < set.capacity() / 4 || tmpi < tmp.capacity() / 4) {
+            if (seti >= set.capacity() / 4) {
+                newSet.add(tmp.getInt(tmpi * 4));
                 tmpi++;
-            } else if (tmpi >= tmp.capacity()/4) {
-                newSet.add(set.getInt(seti*4));
+            } else if (tmpi >= tmp.capacity() / 4) {
+                newSet.add(set.getInt(seti * 4));
                 seti++;
             } else {
-                int setVal = set.getInt(seti*4);
-                int tmpVal = tmp.getInt(tmpi*4);
+                int setVal = set.getInt(seti * 4);
+                int tmpVal = tmp.getInt(tmpi * 4);
 
                 if (getSparseIndex(setVal) == getSparseIndex(tmpVal)) {
                     newSet.add(Math.min(setVal, tmpVal));
@@ -723,20 +780,20 @@ public class HyperLogLogPlusBB implements ICardinality {
             case NORMAL:
                 Varint.writeUnsignedVarInt(0, dos);
                 Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
-                
+
                 for (int x = 0; x < registerSet.readOnlyBits().capacity() / 4; x++) {
                     int i = registerSet.readOnlyBits().getInt(x * 4);
                     dos.writeInt(i);
                 }
-                
+
                 break;
             case SPARSE:
                 Varint.writeUnsignedVarInt(1, dos);
                 mergeTempList();
-                Varint.writeUnsignedVarInt(sparseSet.capacity()/4, dos);
+                Varint.writeUnsignedVarInt(sparseSet.capacity() / 4, dos);
                 int prevMergedDelta = 0;
-                for (int i=0;i<sparseSet.capacity()/4;i++) {
-                    int k=sparseSet.getInt(i*4);
+                for (int i = 0; i < sparseSet.capacity() / 4; i++) {
+                    int k = sparseSet.getInt(i * 4);
                     Varint.writeUnsignedVarInt(k - prevMergedDelta, dos);
                     prevMergedDelta = k;
                 }
@@ -769,7 +826,7 @@ public class HyperLogLogPlusBB implements ICardinality {
     ByteBuffer sortEncodedSet(ByteBuffer encodedSet, int validIndex) {
         List<Integer> sortedList = new ArrayList<Integer>(validIndex);
         for (int i = 0; i < validIndex; i++) {
-            int k = encodedSet.getInt(i*4);
+            int k = encodedSet.getInt(i * 4);
             sortedList.add(k);
         }
 
@@ -826,7 +883,7 @@ public class HyperLogLogPlusBB implements ICardinality {
             // Since offer trigger the switch to the normal mode on only when 
             // the tmpSet is full and the threshold is reached, we follow the same 
             // behavior here to ease testing
-            if (sparseSet.capacity()/4 > sparseSetThreshold + sortThreshold) {
+            if (sparseSet.capacity() / 4 > sparseSetThreshold + sortThreshold) {
                 convertToNormal();
             }
             return;
@@ -844,8 +901,8 @@ public class HyperLogLogPlusBB implements ICardinality {
             // and converting other to normal mode. This use case is quite common since
             // we tend to aggregate small sets to large sets.
             other.mergeTempList();
-            for (int i = 0; i < other.sparseSet.capacity()/4; i++) {
-                int k = other.sparseSet.getInt(i*4);
+            for (int i = 0; i < other.sparseSet.capacity() / 4; i++) {
+                int k = other.sparseSet.getInt(i * 4);
                 int idx = other.getIndex(k, p);
                 int r = other.decodeRunLength(k);
                 registerSet.updateIfGreater(idx, r);
@@ -854,6 +911,40 @@ public class HyperLogLogPlusBB implements ICardinality {
         }
 
         throw new IllegalStateException("Unhandled HLL++ merge combination");
+    }
+
+    public ByteBuffer getUnderlyingByteBuffer() {
+        ByteBuffer aux=null;
+   switch (format) {
+            case NORMAL:
+               // Varint.writeUnsignedVarInt(0, dos);
+               // Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
+                aux = ByteBuffer.allocate(registerSet.size*4);
+                for (int x = 0; x < registerSet.readOnlyBits().capacity() / 4; x++) {
+                    int i = registerSet.readOnlyBits().getInt(x * 4);
+                    aux.putInt(x*4, i);
+                }
+                break;
+            case SPARSE:
+                mergeTempList();
+                aux = ByteBuffer.allocate(sparseSet.capacity()+8);
+                int prevMergedDelta = 0;
+                for (int i = 0; i < aux.capacity()/4; i++) {
+                    if(i<2)
+                    {
+                        aux.putInt(i*4,sparseSetAll.getInt(i * 4));
+                    }
+                    else
+                    {
+                    int k = sparseSet.getInt((i-2) * 4);
+                    aux.putInt(i*4,k-prevMergedDelta);
+                    prevMergedDelta = k;
+                    }
+                }
+                break;
+        }
+
+        return aux;
     }
 
     /**
@@ -931,7 +1022,7 @@ public class HyperLogLogPlusBB implements ICardinality {
         public static HyperLogLogPlusBB build(ByteBuffer bytes) throws IOException {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes.array());
             DataInputStream oi = new DataInputStream(bais);
-            
+
             int version = oi.readInt();
             // the new encoding scheme includes a version field
             // that is always negative.  If the version field
@@ -986,11 +1077,11 @@ public class HyperLogLogPlusBB implements ICardinality {
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             } else {
-                ByteBuffer rehydratedSparseSet = ByteBuffer.allocate(Varint.readUnsignedVarInt(oi)*4);
+                ByteBuffer rehydratedSparseSet = ByteBuffer.allocate(Varint.readUnsignedVarInt(oi) * 4);
                 int prevDeltaRead = 0;
-                for (int i = 0; i < rehydratedSparseSet.capacity()/4; i++) {
+                for (int i = 0; i < rehydratedSparseSet.capacity() / 4; i++) {
                     int nextVal = Varint.readUnsignedVarInt(oi) + prevDeltaRead;
-                    rehydratedSparseSet.putInt(i*4, nextVal) ;
+                    rehydratedSparseSet.putInt(i * 4, nextVal);
                     prevDeltaRead = nextVal;
                 }
                 HyperLogLogPlusBB hyperLogLogPlus = new HyperLogLogPlusBB(p, sp, rehydratedSparseSet);
