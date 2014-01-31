@@ -208,7 +208,6 @@ public class HyperLogLogPlusBB implements ICardinality {
         int p=sparseSet.getInt(0);
         int sp=sparseSet.getInt(4);
         
-        System.out.println(p + " "+sp);
         
         ByteBuffer sparseSetAux = sparseSet.duplicate();
         sparseSetAux.position(8);
