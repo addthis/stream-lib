@@ -17,6 +17,7 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 public interface ICardinality
@@ -56,8 +57,15 @@ public interface ICardinality
     /**
      * @return
      * @throws IOException
+     * @deprecated use getBuffer
      */
     byte[] getBytes() throws IOException;
+
+    /**
+     * @return
+     * @throws IOException
+     */
+    ByteBuffer getBuffer();
 
     /**
      * Merges estimators to produce a new estimator for the combined streams

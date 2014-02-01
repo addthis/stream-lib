@@ -20,6 +20,7 @@ import com.clearspring.analytics.util.ExternalizableUtil;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -186,6 +187,21 @@ public class CountThenEstimate implements ICardinality, Externalizable
     public byte[] getBytes() throws IOException
     {
         return ExternalizableUtil.toBytes(this);
+    }
+
+    @Override
+    public ByteBuffer getBuffer() {
+        try
+        {
+            //TODO: replace with pure buffer?
+            byte[] bytes = getBytes();
+            ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+            buffer.put(bytes);
+            return buffer;
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @SuppressWarnings("unchecked")

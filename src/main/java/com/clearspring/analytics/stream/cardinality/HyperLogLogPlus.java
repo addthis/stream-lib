@@ -16,13 +16,13 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import com.clearspring.analytics.hash.MurmurHash;
+import com.clearspring.analytics.util.IBuilder;
+import com.clearspring.analytics.util.Varint;
+
 import java.io.IOException;
 import java.io.Serializable;
-
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,10 +30,6 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bits;
-import com.clearspring.analytics.util.IBuilder;
-import com.clearspring.analytics.util.Varint;
 
 
 /**
@@ -776,38 +772,57 @@ public class HyperLogLogPlus implements ICardinality
     }
 
     @Override
-    public byte[] getBytes() throws IOException
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-        // write version flag (always negative)
-        dos.writeInt(-VERSION);
-        Varint.writeUnsignedVarInt(p, dos);
-        Varint.writeUnsignedVarInt(sp, dos);
+    public ByteBuffer getBuffer() {
+        byte[] pByte = Varint.writeUnsignedVarInt(p);
+        byte[] spByte = Varint.writeUnsignedVarInt(sp);
+        ByteBuffer buffer;
         switch (format)
         {
             case NORMAL:
-                Varint.writeUnsignedVarInt(0, dos);
-                Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
-                for (int x : registerSet.readOnlyBits())
-                {
-                    dos.writeInt(x);
-                }
-                break;
+                byte[] zero = Varint.writeUnsignedVarInt(0);
+                byte[] size = Varint.writeUnsignedVarInt(registerSet.size * 4);
+                buffer = ByteBuffer.allocate(4 + pByte.length + spByte.length
+                        + zero.length + size.length + registerSet.readOnlyBits().capacity());
+                buffer.putInt(-VERSION);
+                buffer.put(pByte);
+                buffer.put(spByte);
+                buffer.put(zero);
+                buffer.put(size);
+                buffer.put(registerSet.bits());
+                return buffer;
             case SPARSE:
-                Varint.writeUnsignedVarInt(1, dos);
                 mergeTempList();
-                Varint.writeUnsignedVarInt(sparseSet.length, dos);
+                byte[] one = Varint.writeUnsignedVarInt(1);
+                // write version flag (always negative)
+                buffer = ByteBuffer.allocate(4 + pByte.length + spByte.length
+                        + one.length + (sparseSet.length * 4)*4);
+                buffer.putInt(-VERSION);
+                buffer.put(pByte);
+                buffer.put(spByte);
+                buffer.put(one);
+                buffer.put(Varint.writeUnsignedVarInt(sparseSet.length));
                 int prevMergedDelta = 0;
                 for (int k : sparseSet)
                 {
-                    Varint.writeUnsignedVarInt(k - prevMergedDelta, dos);
+                    buffer.put(Varint.writeUnsignedVarInt(k - prevMergedDelta));
                     prevMergedDelta = k;
                 }
-                break;
+                ByteBuffer retBuffer = ByteBuffer.allocate(buffer.position());
+                for (int i = 0; i < buffer.position(); i++)
+                {
+                    retBuffer.put(buffer.get(i));
+                }
+                return retBuffer;
+            default:
+                throw new RuntimeException("Unexpected format: " + format);
         }
+    }
 
-        return baos.toByteArray();
+    @Override
+    @Deprecated
+    public byte[] getBytes() throws IOException
+    {
+         return getBuffer().array();
     }
 
     /**
@@ -877,7 +892,7 @@ public class HyperLogLogPlus implements ICardinality
 
     /**
      * Add all the elements of the other set to this set.
-     * 
+     *
      * If possible, the sparse mode is protected. A switch to the normal mode
      * is triggered only if the resulting set exceed the threshold.
      *
@@ -892,13 +907,13 @@ public class HyperLogLogPlus implements ICardinality
         {
             throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
         }
-        
+
         if (format == Format.NORMAL && other.format == Format.NORMAL)
         {
             registerSet.merge(other.registerSet);
             return;
         }
-        
+
         if (format == Format.SPARSE && other.format == Format.SPARSE)
         {
             sparseSet = mergeEstimators(other);
@@ -912,14 +927,14 @@ public class HyperLogLogPlus implements ICardinality
             }
             return;
         }
-        
+
         if (format == Format.SPARSE && other.format == Format.NORMAL)
         {
             convertToNormal();
             registerSet.merge(other.registerSet);
             return;
         }
-        
+
         if (format == Format.NORMAL && other.format == Format.SPARSE)
         {
             // Iterating over other's sparse set and updating only required indexes
@@ -936,10 +951,10 @@ public class HyperLogLogPlus implements ICardinality
             }
             return;
         }
-        
+
         throw new IllegalStateException("Unhandled HLL++ merge combination");
     }
-    
+
     /**
      * Merge this HLL++ with a bunch of others! The power of minions!
      * <p/>
@@ -960,12 +975,12 @@ public class HyperLogLogPlus implements ICardinality
     {
         HyperLogLogPlus merged = new HyperLogLogPlus(p, sp);
         merged.addAll(this);
-        
+
         if (estimators == null)
         {
             return merged;
         }
-        
+
         for (ICardinality estimator : estimators)
         {
             if (!(estimator instanceof HyperLogLogPlus))
@@ -975,7 +990,7 @@ public class HyperLogLogPlus implements ICardinality
             HyperLogLogPlus hll = (HyperLogLogPlus) estimator;
             merged.addAll(hll);
         }
-        
+
         return merged;
     }
 
@@ -1016,81 +1031,52 @@ public class HyperLogLogPlus implements ICardinality
             return RegisterSet.getBits(k) * 5;
         }
 
-        public static HyperLogLogPlus build(byte[] bytes) throws IOException
+        public static HyperLogLogPlus build(ByteBuffer buffer)
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            DataInputStream oi = new DataInputStream(bais);
-            int version = oi.readInt();
+            int version = buffer.getInt();
             // the new encoding scheme includes a version field
             // that is always negative.  If the version field
             // is not present then we'll use the legacy
             // decoding method
             if (version < 0)
             {
-                return decodeBytes(oi);
+                return decodeBytes(buffer);
             }
             else
             {
-                // need to re-create this stream
-                // because the first int read above
-                // is not present in the legacy codec
-                bais = new ByteArrayInputStream(bytes);
-                oi = new DataInputStream(bais);
-                return legacyDecode(oi);
+                throw new RuntimeException("Legacy Encoding No Longer Supported, Use an older version of StreamLib");
             }
         }
 
-        private static HyperLogLogPlus legacyDecode(DataInputStream oi) throws IOException
+        public static HyperLogLogPlus build(byte[] bytes)
         {
-            int p = oi.readInt();
-            int sp = oi.readInt();
-            int formatType = oi.readInt();
+            ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+            buffer.put(bytes);
+            buffer.position(0);
+            return build(buffer);
+        }
+
+        private static HyperLogLogPlus decodeBytes(ByteBuffer buffer)
+        {
+            int p = Varint.readUnsignedVarInt(buffer);
+            int sp = Varint.readUnsignedVarInt(buffer);
+            int formatType = Varint.readUnsignedVarInt(buffer);
             if (formatType == 0)
             {
-                int size = oi.readInt();
-                byte[] longArrayBytes = new byte[size];
-                oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+                // size is unused but we need to read to skip over
+                int size = Varint.readUnsignedVarInt(buffer);
+                ByteBuffer slice = buffer.slice();
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), slice));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             }
             else
             {
-                int l;
-                List<byte[]> deltaByteSet = new ArrayList<byte[]>();
-                while ((l = oi.readInt()) > 0)
-                {
-                    byte[] longArrayBytes = new byte[l];
-                    oi.read(longArrayBytes, 0, l);
-                    deltaByteSet.add(longArrayBytes);
-                }
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, deltaByteSet);
-                hyperLogLogPlus.format = Format.SPARSE;
-                return hyperLogLogPlus;
-            }
-        }
-
-        private static HyperLogLogPlus decodeBytes(DataInputStream oi) throws IOException
-        {
-            int p = Varint.readUnsignedVarInt(oi);
-            int sp = Varint.readUnsignedVarInt(oi);
-            int formatType = Varint.readUnsignedVarInt(oi);
-            if (formatType == 0)
-            {
-                int size = Varint.readUnsignedVarInt(oi);
-                byte[] longArrayBytes = new byte[size];
-                oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
-                hyperLogLogPlus.format = Format.NORMAL;
-                return hyperLogLogPlus;
-            }
-            else
-            {
-                int[] rehydratedSparseSet = new int[Varint.readUnsignedVarInt(oi)];
+                int[] rehydratedSparseSet = new int[Varint.readUnsignedVarInt(buffer)];
                 int prevDeltaRead = 0;
                 for (int i = 0; i < rehydratedSparseSet.length; i++)
                 {
-                    int nextVal = Varint.readUnsignedVarInt(oi) + prevDeltaRead;
+                    int nextVal = Varint.readUnsignedVarInt(buffer) + prevDeltaRead;
                     rehydratedSparseSet[i] = nextVal;
                     prevDeltaRead = nextVal;
                 }
