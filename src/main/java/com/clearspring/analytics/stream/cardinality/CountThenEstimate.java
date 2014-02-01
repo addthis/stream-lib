@@ -214,7 +214,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
                     estimator = HyperLogLogPlus.Builder.build(bytes);
                     break;
                 case LLC:
-                    estimator = new LinearCounting(bytes);
+                    estimator = new LogLog(bytes);
                     break;
                 default:
                     throw new IOException("Unrecognized estimator type: " + type);
