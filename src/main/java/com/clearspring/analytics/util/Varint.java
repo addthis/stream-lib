@@ -21,6 +21,7 @@ package com.clearspring.analytics.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -206,6 +207,29 @@ public final class Varint
         int i = 0;
         int b;
         while (((b = in.readByte()) & 0x80) != 0)
+        {
+            value |= (b & 0x7F) << i;
+            i += 7;
+            if (i > 35)
+            {
+                throw new IllegalArgumentException("Variable length quantity is too long");
+            }
+        }
+        return value | (b << i);
+    }
+
+    /**
+     * @throws IllegalArgumentException if variable-length value does not terminate
+     *                                  after 5 bytes have been read
+     * @throws IOException              if {@link DataInput} throws {@link IOException}
+     * @see #readUnsignedVarLong(DataInput)
+     */
+    public static int readUnsignedVarInt(ByteBuffer in)
+    {
+        int value = 0;
+        int i = 0;
+        int b;
+        while (((b = in.get()) & 0x80) != 0)
         {
             value |= (b & 0x7F) << i;
             i += 7;

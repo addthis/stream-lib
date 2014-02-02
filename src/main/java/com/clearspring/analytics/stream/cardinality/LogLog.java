@@ -19,6 +19,7 @@ package com.clearspring.analytics.stream.cardinality;
 import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.IBuilder;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class LogLog implements ICardinality
@@ -100,6 +101,14 @@ public class LogLog implements ICardinality
     public byte[] getBytes()
     {
         return M;
+    }
+
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(M.length);
+        buffer.put(M);
+        return buffer;
     }
 
     public int sizeof()

@@ -17,15 +17,11 @@
 package com.clearspring.analytics.stream.cardinality;
 
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bits;
 import com.clearspring.analytics.util.IBuilder;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
  * Java implementation of HyperLogLog (HLL) algorithm from this paper:
@@ -207,17 +203,18 @@ public class HyperLogLog implements ICardinality
     @Override
     public byte[] getBytes() throws IOException
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
+        return getBuffer().array();
+    }
 
-        dos.writeInt(log2m);
-        dos.writeInt(registerSet.size * 4);
-        for (int x : registerSet.readOnlyBits())
-        {
-            dos.writeInt(x);
-        }
-
-        return baos.toByteArray();
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(8 + registerSet.size * 4);
+        buffer.putInt(log2m);
+        buffer.putInt(registerSet.size * 4);
+        buffer.put(registerSet.readOnlyBits());
+        buffer.flip();
+        return buffer;
     }
 
     /** Add all the elements of the other set to this set.
@@ -283,16 +280,24 @@ public class HyperLogLog implements ICardinality
             return RegisterSet.getBits(k) * 4;
         }
 
-        public static HyperLogLog build(byte[] bytes) throws IOException
+        @Deprecated
+        public static HyperLogLog build(byte[] bytes)
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            DataInputStream oi = new DataInputStream(bais);
-            int log2m = oi.readInt();
-            int size = oi.readInt();
-            byte[] longArrayBytes = new byte[size];
-            oi.readFully(longArrayBytes);
-            return new HyperLogLog(log2m, new RegisterSet(1 << log2m, Bits.getBits(longArrayBytes)));
+            ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
+            buffer.put(bytes);
+            buffer.flip();
+            return build(buffer);
         }
+
+        public static HyperLogLog build(ByteBuffer buffer)
+        {
+            int log2m = buffer.getInt();
+            // skip unused but we need to read it out
+            buffer.position(buffer.position() + 4);
+            ByteBuffer slice = buffer.slice();
+            return new HyperLogLog(log2m, new RegisterSet(1 << log2m, slice));
+        }
+
     }
 
     @SuppressWarnings("serial")

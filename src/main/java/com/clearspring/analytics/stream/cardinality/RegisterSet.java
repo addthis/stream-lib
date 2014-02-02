@@ -16,6 +16,8 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.nio.ByteBuffer;
+
 public class RegisterSet
 {
     public final static int LOG2_BITS_PER_WORD = 6;
@@ -24,26 +26,26 @@ public class RegisterSet
     public final int count;
     public final int size;
 
-    private final int[] M;
+    private final ByteBuffer M;
 
     public RegisterSet(int count)
     {
         this(count, null);
     }
 
-    public RegisterSet(int count, int[] initialValues)
+    public RegisterSet(int count, ByteBuffer initialValues)
     {
         this.count = count;
 
         if (initialValues == null)
         {
-            this.M = new int[getSizeForCount(count)];
+            this.M = ByteBuffer.allocate(getSizeForCount(count)*4);
         }
         else
         {
             this.M = initialValues;
         }
-        this.size = this.M.length;
+        this.size = this.M.capacity()/4;
     }
 
     public static int getBits(int count)
@@ -72,27 +74,28 @@ public class RegisterSet
     {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
+        this.M.putInt(bucketPos*4, (this.M.getInt(bucketPos*4) & ~(0x1f << shift)) | (value << shift));
     }
 
     public int get(int position)
     {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
+        return (this.M.getInt(bucketPos*4) & (0x1f << shift)) >>> shift;
     }
 
     public boolean updateIfGreater(int position, int value)
     {
         int bucket = position / LOG2_BITS_PER_WORD;
+        int bucketPos = bucket * 4;
         int shift  = REGISTER_SIZE * (position - (bucket * LOG2_BITS_PER_WORD));
         int mask = 0x1f << shift;
 
         // Use long to avoid sign issues with the left-most shift
-        long curVal = this.M[bucket] & mask;
+        long curVal = this.M.getInt(bucketPos) & mask;
         long newVal = value << shift;
         if (curVal < newVal) {
-            this.M[bucket] = (int)((this.M[bucket] & ~mask) | newVal);
+            this.M.putInt(bucketPos,(int) ((this.M.getInt(bucketPos) & ~mask) | newVal));
             return true;
         } else {
             return false;
@@ -101,30 +104,29 @@ public class RegisterSet
 
     public void merge(RegisterSet that)
     {
-        for (int bucket = 0; bucket < M.length; bucket++)
+        for (int bucket = 0; bucket < M.capacity()/4; bucket++)
         {
             int word = 0;
+            int bucketPos = bucket*4;
             for (int j = 0; j < LOG2_BITS_PER_WORD; j++)
             {
                 int mask = 0x1f << (REGISTER_SIZE * j);
 
-                int thisVal = (this.M[bucket] & mask);
-                int thatVal = (that.M[bucket] & mask);
+                int thisVal = (this.M.getInt(bucketPos) & mask);
+                int thatVal = (that.M.getInt(bucketPos) & mask);
                 word |= (thisVal < thatVal) ? thatVal : thisVal;
             }
-            this.M[bucket] = word;
+            this.M.putInt(bucketPos, word);
         }
     }
 
-    int[] readOnlyBits()
+    ByteBuffer readOnlyBits()
     {
         return M;
     }
 
-    public int[] bits()
+    public ByteBuffer bits()
     {
-        int[] copy = new int[size];
-        System.arraycopy(M, 0, copy, 0, M.length);
-        return copy;
+        return M.duplicate();
     }
 }

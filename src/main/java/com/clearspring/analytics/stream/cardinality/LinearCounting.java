@@ -21,6 +21,7 @@ import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.IBuilder;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
@@ -68,13 +69,21 @@ public class LinearCounting implements ICardinality
     @Override
     public long cardinality()
     {
-        return (long) (Math.round(length * Math.log(length / ((double) count))));
+        return (Math.round(length * Math.log(length / ((double) count))));
     }
 
     @Override
     public byte[] getBytes()
     {
         return map;
+    }
+
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(map.length);
+        buffer.put(map);
+        return buffer;
     }
 
     @Override

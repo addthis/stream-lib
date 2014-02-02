@@ -16,21 +16,13 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import org.junit.Test;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
-
-import com.clearspring.analytics.util.Varint;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,46 +31,46 @@ import static org.junit.Assert.assertTrue;
 public class TestHyperLogLogPlus
 {
 
-    public static void main(final String[] args) throws Throwable
-    {
-        long startTime = System.currentTimeMillis();
-
-        int numSets = 10;
-        int setSize = 1 * 1000 * 1000;
-        int repeats = 5;
-
-        HyperLogLogPlus[] counters = new HyperLogLogPlus[numSets];
-        for (int i = 0; i < numSets; i++)
-        {
-            counters[i] = new HyperLogLogPlus(15, 15);
-        }
-        for (int i = 0; i < numSets; i++)
-        {
-            for (int j = 0; j < setSize; j++)
-            {
-                String val = UUID.randomUUID().toString();
-                for (int z = 0; z < repeats; z++)
-                {
-                    counters[i].offer(val);
-                }
-            }
-        }
-
-        ICardinality merged = counters[0];
-        long sum = merged.cardinality();
-        for (int i = 1; i < numSets; i++)
-        {
-            sum += counters[i].cardinality();
-            merged = merged.merge(counters[i]);
-        }
-
-        long trueSize = numSets * setSize;
-        System.out.println("True Cardinality: " + trueSize);
-        System.out.println("Summed Cardinality: " + sum);
-        System.out.println("Merged Cardinality: " + merged.cardinality());
-        System.out.println("Merged Error: " + (merged.cardinality() - trueSize) / (float) trueSize);
-        System.out.println("Duration: " + ((System.currentTimeMillis() - startTime) / 1000) + "s");
-    }
+//    public static void main(final String[] args) throws Throwable
+//    {
+//        long startTime = System.currentTimeMillis();
+//
+//        int numSets = 10;
+//        int setSize = 1 * 1000 * 1000;
+//        int repeats = 5;
+//
+//        HyperLogLogPlus[] counters = new HyperLogLogPlus[numSets];
+//        for (int i = 0; i < numSets; i++)
+//        {
+//            counters[i] = new HyperLogLogPlus(15, 15);
+//        }
+//        for (int i = 0; i < numSets; i++)
+//        {
+//            for (int j = 0; j < setSize; j++)
+//            {
+//                String val = UUID.randomUUID().toString();
+//                for (int z = 0; z < repeats; z++)
+//                {
+//                    counters[i].offer(val);
+//                }
+//            }
+//        }
+//
+//        ICardinality merged = counters[0];
+//        long sum = merged.cardinality();
+//        for (int i = 1; i < numSets; i++)
+//        {
+//            sum += counters[i].cardinality();
+//            merged = merged.merge(counters[i]);
+//        }
+//
+//        long trueSize = numSets * setSize;
+//        System.out.println("True Cardinality: " + trueSize);
+//        System.out.println("Summed Cardinality: " + sum);
+//        System.out.println("Merged Cardinality: " + merged.cardinality());
+//        System.out.println("Merged Error: " + (merged.cardinality() - trueSize) / (float) trueSize);
+//        System.out.println("Duration: " + ((System.currentTimeMillis() - startTime) / 1000) + "s");
+//    }
 
     @Test
     public void testComputeCount()
@@ -152,6 +144,19 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testSerialization_Normal_BB() throws IOException
+    {
+        HyperLogLogPlus hll = new HyperLogLogPlus(5, 25);
+        for (int i = 0; i < 100000; i++)
+        {
+            hll.offer("" + i);
+        }
+        System.out.println(hll.cardinality());
+        HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
+        assertEquals(hll.cardinality(), hll2.cardinality());
+    }
+
+    @Test
     public void testSerialization_Sparse() throws IOException
     {
         HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
@@ -162,6 +167,20 @@ public class TestHyperLogLogPlus
         hll.offer("e");
 
         HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
+        assertEquals(hll.cardinality(), hll2.cardinality());
+    }
+
+    @Test
+    public void testSerialization_Sparse_BB() throws IOException
+    {
+        HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
+        hll.offer("a");
+        hll.offer("b");
+        hll.offer("c");
+        hll.offer("d");
+        hll.offer("e");
+
+        HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBuffer());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
@@ -222,9 +241,33 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testMergeSelf_forceNormal_BB() throws CardinalityMergeException, IOException
+    {
+        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+        for (int cardinality : cardinalities)
+        {
+            for (int j = 4; j < 24; j++)
+            {
+                System.out.println("p=" + j);
+                HyperLogLogPlus hllPlus = new HyperLogLogPlus(j, 0);
+                for (int l = 0; l < cardinality; l++)
+                {
+                    hllPlus.offer(Math.random());
+                }
+                System.out.println("hllcardinality=" + hllPlus.cardinality() + " cardinality=" + cardinality);
+                HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBuffer());
+                assertEquals(hllPlus.cardinality(), deserialized.cardinality());
+                ICardinality merged = hllPlus.merge(deserialized);
+                System.out.println(merged.cardinality() + " : " + hllPlus.cardinality());
+                assertEquals(hllPlus.cardinality(), merged.cardinality());
+            }
+        }
+    }
+
+    @Test
     public void testMergeSelf() throws CardinalityMergeException, IOException
     {
-        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000 };
+        final int[] cardinalities = { 1, 10, 100, 1000, 10000, 100000 };
         final int[] ps = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
         final int[] sps = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
 
@@ -255,6 +298,39 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testMergeSelf_BB() throws CardinalityMergeException, IOException
+    {
+        final int[] cardinalities = { 1, 10, 100, 1000, 10000, 100000 };
+        final int[] ps = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+        final int[] sps = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+
+        for (int cardinality : cardinalities)
+        {
+            for (int j = 0; j < ps.length; j++)
+            {
+                for (int sp : sps)
+                {
+                    if (sp < ps[j])
+                    {
+                        continue;
+                    }
+                    System.out.println(ps[j] + "-" + sp + ": " + cardinality);
+                    HyperLogLogPlus hllPlus = new HyperLogLogPlus(ps[j], sp);
+                    for (int l = 0; l < cardinality; l++)
+                    {
+                        hllPlus.offer(Math.random());
+                    }
+                    HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBuffer());
+                    assertEquals(hllPlus.cardinality(), deserialized.cardinality());
+                    ICardinality merged = hllPlus.merge(deserialized);
+                    assertEquals(hllPlus.cardinality(), merged.cardinality());
+                }
+            }
+        }
+
+    }
+
+    @Test
     public void testOne() throws IOException
     {
         HyperLogLogPlus one = new HyperLogLogPlus(8,25);
@@ -269,7 +345,7 @@ public class TestHyperLogLogPlus
         for (int i = 0; i < 10000 ; i++) {
             hllp.offer(i );
         }
-        System.out.println("Size: " + hllp.getBytes().length);
+        assertEquals(hllp.getBytes().length, hllp.getBuffer().capacity());
     }
 
     @Test
@@ -339,87 +415,6 @@ public class TestHyperLogLogPlus
 
         assertTrue(mergedEstimate >= expectedCardinality - (3 * se));
         assertTrue(mergedEstimate <= expectedCardinality + (3 * se));
-    }
-
-    @Test
-    public void testLegacyCodec_normal() throws IOException
-    {
-        int bits = 18;
-        int cardinality = 1000000;
-
-        HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int j = 0; j < cardinality; j++)
-        {
-            double val = Math.random();
-            baseline.offer(val);
-        }
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-
-        dos.writeInt(bits);
-        dos.writeInt(25);
-        dos.writeInt(0);
-        dos.writeInt(baseline.getRegisterSet().size * 4);
-        for (int x : baseline.getRegisterSet().readOnlyBits())
-        {
-            dos.writeInt(x);
-        }
-
-        byte[] legacyBytes = baos.toByteArray();
-
-        // decode legacy
-        HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
-        assertEquals(baseline.cardinality(), decoded.cardinality());
-        byte[] newBytes = baseline.getBytes();
-        assertTrue(newBytes.length < legacyBytes.length);
-
-    }
-
-    @Test
-    public void testLegacyCodec_sparse() throws IOException
-    {
-        int bits = 18;
-        int cardinality = 5000;
-
-        HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int j = 0; j < cardinality; j++)
-        {
-            double val = Math.random();
-            baseline.offer(val);
-        }
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-
-        dos.writeInt(bits);
-        dos.writeInt(25);
-        dos.writeInt(1);
-        baseline.mergeTempList();
-        int[] sparseSet = baseline.getSparseSet();
-        List<byte[]> sparseBytes = new ArrayList<byte[]>(sparseSet.length);
-
-        int prevDelta = 0;
-        for (int k : sparseSet)
-        {
-            sparseBytes.add(Varint.writeUnsignedVarInt(k - prevDelta));
-            prevDelta = k;
-        }
-        for (byte[] bytes : sparseBytes)
-        {
-            dos.writeInt(bytes.length);
-            dos.write(bytes);
-        }
-        dos.writeInt(-1);
-
-        byte[] legacyBytes = baos.toByteArray();
-
-        //  decode legacy
-        HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
-        assertEquals(baseline.cardinality(), decoded.cardinality());
-        byte[] newBytes = baseline.getBytes();
-        assertTrue(newBytes.length < legacyBytes.length);
-
     }
 
     @Test
