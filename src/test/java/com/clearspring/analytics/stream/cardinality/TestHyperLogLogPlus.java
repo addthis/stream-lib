@@ -16,21 +16,13 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import org.junit.Test;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
-import com.clearspring.analytics.util.Varint;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -152,6 +144,19 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testSerialization_Normal_BB() throws IOException
+    {
+        HyperLogLogPlus hll = new HyperLogLogPlus(5, 25);
+        for (int i = 0; i < 100000; i++)
+        {
+            hll.offer("" + i);
+        }
+        System.out.println(hll.cardinality());
+        HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
+        assertEquals(hll.cardinality(), hll2.cardinality());
+    }
+
+    @Test
     public void testSerialization_Sparse() throws IOException
     {
         HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
@@ -162,6 +167,20 @@ public class TestHyperLogLogPlus
         hll.offer("e");
 
         HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
+        assertEquals(hll.cardinality(), hll2.cardinality());
+    }
+
+    @Test
+    public void testSerialization_Sparse_BB() throws IOException
+    {
+        HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
+        hll.offer("a");
+        hll.offer("b");
+        hll.offer("c");
+        hll.offer("d");
+        hll.offer("e");
+
+        HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBuffer());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
@@ -222,6 +241,30 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testMergeSelf_forceNormal_BB() throws CardinalityMergeException, IOException
+    {
+        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+        for (int cardinality : cardinalities)
+        {
+            for (int j = 4; j < 24; j++)
+            {
+                System.out.println("p=" + j);
+                HyperLogLogPlus hllPlus = new HyperLogLogPlus(j, 0);
+                for (int l = 0; l < cardinality; l++)
+                {
+                    hllPlus.offer(Math.random());
+                }
+                System.out.println("hllcardinality=" + hllPlus.cardinality() + " cardinality=" + cardinality);
+                HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBuffer());
+                assertEquals(hllPlus.cardinality(), deserialized.cardinality());
+                ICardinality merged = hllPlus.merge(deserialized);
+                System.out.println(merged.cardinality() + " : " + hllPlus.cardinality());
+                assertEquals(hllPlus.cardinality(), merged.cardinality());
+            }
+        }
+    }
+
+    @Test
     public void testMergeSelf() throws CardinalityMergeException, IOException
     {
         final int[] cardinalities = { 1, 10, 100, 1000, 10000, 100000 };
@@ -255,6 +298,39 @@ public class TestHyperLogLogPlus
     }
 
     @Test
+    public void testMergeSelf_BB() throws CardinalityMergeException, IOException
+    {
+        final int[] cardinalities = { 1, 10, 100, 1000, 10000, 100000 };
+        final int[] ps = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+        final int[] sps = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+
+        for (int cardinality : cardinalities)
+        {
+            for (int j = 0; j < ps.length; j++)
+            {
+                for (int sp : sps)
+                {
+                    if (sp < ps[j])
+                    {
+                        continue;
+                    }
+                    System.out.println(ps[j] + "-" + sp + ": " + cardinality);
+                    HyperLogLogPlus hllPlus = new HyperLogLogPlus(ps[j], sp);
+                    for (int l = 0; l < cardinality; l++)
+                    {
+                        hllPlus.offer(Math.random());
+                    }
+                    HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBuffer());
+                    assertEquals(hllPlus.cardinality(), deserialized.cardinality());
+                    ICardinality merged = hllPlus.merge(deserialized);
+                    assertEquals(hllPlus.cardinality(), merged.cardinality());
+                }
+            }
+        }
+
+    }
+
+    @Test
     public void testOne() throws IOException
     {
         HyperLogLogPlus one = new HyperLogLogPlus(8,25);
@@ -269,7 +345,7 @@ public class TestHyperLogLogPlus
         for (int i = 0; i < 10000 ; i++) {
             hllp.offer(i );
         }
-        System.out.println("Size: " + hllp.getBytes().length);
+        assertEquals(hllp.getBytes().length, hllp.getBuffer().capacity());
     }
 
     @Test

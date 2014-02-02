@@ -213,6 +213,7 @@ public class HyperLogLog implements ICardinality
         buffer.putInt(log2m);
         buffer.putInt(registerSet.size * 4);
         buffer.put(registerSet.readOnlyBits());
+        buffer.flip();
         return buffer;
     }
 
@@ -284,7 +285,7 @@ public class HyperLogLog implements ICardinality
         {
             ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
             buffer.put(bytes);
-            buffer.position(0);
+            buffer.flip();
             return build(buffer);
         }
 

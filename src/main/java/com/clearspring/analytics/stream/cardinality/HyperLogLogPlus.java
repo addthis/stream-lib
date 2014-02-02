@@ -135,6 +135,8 @@ public class HyperLogLogPlus implements ICardinality
     private RegisterSet registerSet;
     private final int m;
     private final int p;
+    private static final byte[] ONE = Varint.writeUnsignedVarInt(1);
+    private static final byte[] ZERO = Varint.writeUnsignedVarInt(0);
 
     //Sparse versions of m and p
     private int sm;
@@ -779,40 +781,41 @@ public class HyperLogLogPlus implements ICardinality
         switch (format)
         {
             case NORMAL:
-                byte[] zero = Varint.writeUnsignedVarInt(0);
                 byte[] size = Varint.writeUnsignedVarInt(registerSet.size * 4);
                 buffer = ByteBuffer.allocate(4 + pByte.length + spByte.length
-                        + zero.length + size.length + registerSet.readOnlyBits().capacity());
+                        + ZERO.length + size.length + registerSet.readOnlyBits().capacity());
                 buffer.putInt(-VERSION);
                 buffer.put(pByte);
                 buffer.put(spByte);
-                buffer.put(zero);
+                buffer.put(ZERO);
                 buffer.put(size);
                 buffer.put(registerSet.bits());
+                buffer.flip();
                 return buffer;
             case SPARSE:
                 mergeTempList();
-                byte[] one = Varint.writeUnsignedVarInt(1);
+
                 // write version flag (always negative)
-                buffer = ByteBuffer.allocate(4 + pByte.length + spByte.length
-                        + one.length + (sparseSet.length * 4)*4);
+                int prevMergedDelta = 0;
+                ByteBuffer tmpBuffer = ByteBuffer.allocate(sparseSet.length * 4 * 4);
+                for (int k : sparseSet)
+                {
+                    tmpBuffer.put(Varint.writeUnsignedVarInt(k - prevMergedDelta));
+                    prevMergedDelta = k;
+                }
+                byte[] sparseSetLength = Varint.writeUnsignedVarInt(sparseSet.length);
+                buffer = ByteBuffer.allocate(4 + pByte.length + spByte.length + sparseSetLength.length
+                        + ONE.length + tmpBuffer.position());
                 buffer.putInt(-VERSION);
                 buffer.put(pByte);
                 buffer.put(spByte);
-                buffer.put(one);
-                buffer.put(Varint.writeUnsignedVarInt(sparseSet.length));
-                int prevMergedDelta = 0;
-                for (int k : sparseSet)
-                {
-                    buffer.put(Varint.writeUnsignedVarInt(k - prevMergedDelta));
-                    prevMergedDelta = k;
-                }
-                ByteBuffer retBuffer = ByteBuffer.allocate(buffer.position());
-                for (int i = 0; i < buffer.position(); i++)
-                {
-                    retBuffer.put(buffer.get(i));
-                }
-                return retBuffer;
+                buffer.put(ONE);
+                buffer.put(sparseSetLength);
+                tmpBuffer.limit(tmpBuffer.position());
+                tmpBuffer.flip();
+                buffer.put(tmpBuffer);
+                buffer.flip();
+                return buffer;
             default:
                 throw new RuntimeException("Unexpected format: " + format);
         }
@@ -1052,7 +1055,7 @@ public class HyperLogLogPlus implements ICardinality
         {
             ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
             buffer.put(bytes);
-            buffer.position(0);
+            buffer.flip();
             return build(buffer);
         }
 

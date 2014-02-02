@@ -197,6 +197,7 @@ public class CountThenEstimate implements ICardinality, Externalizable
             byte[] bytes = getBytes();
             ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
             buffer.put(bytes);
+            buffer.flip();
             return buffer;
         } catch (IOException e)
         {
