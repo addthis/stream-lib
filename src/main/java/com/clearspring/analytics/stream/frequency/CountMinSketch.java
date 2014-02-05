@@ -14,15 +14,16 @@
 
 package com.clearspring.analytics.stream.frequency;
 
-import com.clearspring.analytics.stream.membership.Filter;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.Random;
+
+import com.clearspring.analytics.stream.membership.Filter;
 
 /**
  * Count-Min Sketch datastructure.
@@ -32,15 +33,16 @@ import java.util.Random;
 public class CountMinSketch implements IFrequency
 {
     public static final long PRIME_MODULUS = (1L << 31) - 1;
-    private int depth;
-    private int width;
-    private long[][] table;
-    private long[] hashA;
-    private long size;
-    private double eps;
-    private double confidence;
 
-    private CountMinSketch()
+    int depth;
+    int width;
+    long[][] table;
+    long[] hashA;
+    long size;
+    double eps;
+    double confidence;
+
+    CountMinSketch()
     {
     }
 
@@ -64,7 +66,7 @@ public class CountMinSketch implements IFrequency
         initTablesWith(depth, width, seed);
     }
 
-    private CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table)
+    CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table)
     {
         this.depth = depth;
         this.width = width;
@@ -102,7 +104,7 @@ public class CountMinSketch implements IFrequency
         return confidence;
     }
 
-    private int hash(long item, int i)
+    int hash(long item, int i)
     {
         long hash = hashA[i] * item;
         // A super fast way of computing x mod 2^p-1
