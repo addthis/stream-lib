@@ -21,8 +21,6 @@ package com.clearspring.analytics.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -114,10 +112,9 @@ public final class Varint
      *      This one does not use streams and is much faster.
      *      Makes a single object each time, and that object is a primitive array.
      */
-    static byte[] byteArrayList = new byte[10];
-
     public static byte[] writeUnsignedVarInt(int value)
     {
+        byte[] byteArrayList = new byte[10];
         int i = 0;
         while ((value & 0xFFFFFF80) != 0L)
         {
