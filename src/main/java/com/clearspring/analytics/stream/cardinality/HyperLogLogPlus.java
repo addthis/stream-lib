@@ -527,7 +527,7 @@ public class HyperLogLogPlus implements ICardinality
                 double H;
                 if (zeros > 0)
                 {
-                    H = count * Math.log(count / zeros);
+                    H = linearCounting(count, zeros);
                 }
                 else
                 {
@@ -544,7 +544,7 @@ public class HyperLogLogPlus implements ICardinality
                 }
             case SPARSE:
                 mergeTempList();
-                return linearCounting(sm, (sm - sparseSet.length));
+                return Math.round(linearCounting(sm, (sm - sparseSet.length)));
         }
         return 0;
     }
@@ -761,9 +761,9 @@ public class HyperLogLogPlus implements ICardinality
         return toIntArray(newSet);
     }
 
-    private static int linearCounting(int m, double V)
+    private static double linearCounting(int m, double V)
     {
-        return (int) Math.round((m * Math.log(m / V)));
+        return m * Math.log(m / V);
     }
 
     @Override
