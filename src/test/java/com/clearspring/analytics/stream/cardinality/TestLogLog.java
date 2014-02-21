@@ -16,6 +16,7 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.junit.Ignore;
@@ -124,7 +125,7 @@ public class TestLogLog
             Double val = Math.random();
             String valString = val.toString();
             baseline.offer(valString);
-            guava128.offerHashed(hf128.hashString(valString).asLong());
+            guava128.offerHashed(hf128.hashString(valString, Charsets.UTF_8).asLong());
             if (j > 0 && j % 1000000 == 0)
             {
                 System.out.println("current count: " + j);
