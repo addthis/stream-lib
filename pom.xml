@@ -165,6 +165,19 @@
           <stagingRepository>sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2</stagingRepository>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.3.1</version>
+        <configuration>
+          <rules>
+            <DependencyConvergence />
+          </rules>
+          <fail>true</fail>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 
