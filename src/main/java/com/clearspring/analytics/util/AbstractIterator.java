@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
  * just use quava.
  */
 public abstract class AbstractIterator<T> implements Iterator<T> {
+
     private enum State {
         NOT_STARTED, DONE, HAS_DATA, EMPTY
     }

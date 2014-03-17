@@ -17,10 +17,9 @@
 package com.clearspring.analytics.stream.frequency;
 
 @SuppressWarnings("serial")
-public abstract class FrequencyMergeException extends Exception
-{
-    public FrequencyMergeException(String message)
-    {
+public abstract class FrequencyMergeException extends Exception {
+
+    public FrequencyMergeException(String message) {
         super(message);
     }
 }

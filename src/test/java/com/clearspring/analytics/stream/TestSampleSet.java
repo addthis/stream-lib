@@ -19,16 +19,18 @@
  */
 package com.clearspring.analytics.stream;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-public class TestSampleSet
-{
+
+public class TestSampleSet {
+
     private SampleSet<String> set;
     private String[] e;
 
@@ -36,41 +38,33 @@ public class TestSampleSet
      * @throws java.lang.Exception
      */
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         set = new SampleSet<String>();
 
         e = new String[3];
-        for (int i = 0; i < e.length; i++)
-        {
+        for (int i = 0; i < e.length; i++) {
             e[i] = "Element_" + i;
         }
     }
 
 
     @Test
-    public void testPeekK()
-    {
+    public void testPeekK() {
         set.put(e[0]);
-        for (int i = 0; i < 2; i++)
-        {
+        for (int i = 0; i < 2; i++) {
             set.put(e[1]);
         }
 
-        for (int i = 0; i < 3; i++)
-        {
+        for (int i = 0; i < 3; i++) {
             set.put(e[2]);
         }
 
         List<String> top = null;
         // Negative
         boolean caught = false;
-        try
-        {
+        try {
             top = set.peek(-1);
-        }
-        catch (IllegalArgumentException e)
-        {
+        } catch (IllegalArgumentException e) {
             caught = true;
         }
         assertTrue(caught);
@@ -87,31 +81,27 @@ public class TestSampleSet
         // 2 (more than one but less than size)
         top = set.peek(2);
         assertEquals(2, top.size());
-        for (int i = 0; i < 2; i++)
-        {
+        for (int i = 0; i < 2; i++) {
             assertEquals(e[2 - i], top.get(i));
         }
 
         // 3 (size)
         top = set.peek(3);
         assertEquals(3, top.size());
-        for (int i = 0; i < 3; i++)
-        {
+        for (int i = 0; i < 3; i++) {
             assertEquals(e[2 - i], top.get(i));
         }
 
         // 4 (more than size)
         top = set.peek(4);
         assertEquals(3, top.size());
-        for (int i = 0; i < 3; i++)
-        {
+        for (int i = 0; i < 3; i++) {
             assertEquals(e[2 - i], top.get(i));
         }
     }
 
     @Test
-    public void testPut()
-    {
+    public void testPut() {
         // Empty set
         assertEquals(1L, set.put(e[0]));
         assertEquals(e[0], set.peek());
@@ -119,8 +109,7 @@ public class TestSampleSet
     }
 
     @Test
-    public void testPutWithIncrement()
-    {
+    public void testPutWithIncrement() {
         // Empty set
         assertEquals(10L, set.put(e[0], 10));
         assertEquals(e[0], set.peek());
@@ -129,8 +118,7 @@ public class TestSampleSet
     }
 
     @Test
-    public void testRemoveMin()
-    {
+    public void testRemoveMin() {
         // Empty set
         assertNull(set.removeMin());
         assertEquals(0, set.size());
@@ -138,13 +126,11 @@ public class TestSampleSet
 
         // Maintaining order        
         set.put(e[0]);
-        for (int i = 0; i < 2; i++)
-        {
+        for (int i = 0; i < 2; i++) {
             set.put(e[1]);
         }
 
-        for (int i = 0; i < 3; i++)
-        {
+        for (int i = 0; i < 3; i++) {
             set.put(e[2]);
         }
 

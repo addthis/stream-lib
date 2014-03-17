@@ -16,8 +16,6 @@
 
 package com.clearspring.analytics.stream;
 
-import static org.junit.Assert.*;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -32,19 +31,19 @@ import org.junit.Test;
 
 import cern.jet.random.Distributions;
 import cern.jet.random.engine.RandomEngine;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
-public class TestStreamSummary
-{
+public class TestStreamSummary {
+
     private static final int NUM_ITERATIONS = 100000;
 
     @Test
-    public void testStreamSummary()
-    {
+    public void testStreamSummary() {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "A", "A"};
-        for (String i : stream)
-        {
+        for (String i : stream) {
             vs.offer(i);
             /*
         for(String s : vs.poll(3))
@@ -55,48 +54,41 @@ public class TestStreamSummary
     }
 
     @Test
-    public void testTopK()
-    {
+    public void testTopK() {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for (String i : stream)
-        {
+        for (String i : stream) {
             vs.offer(i);
         }
         List<Counter<String>> topK = vs.topK(3);
-        for (Counter<String> c : topK)
-        {
+        for (Counter<String> c : topK) {
             assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
         }
     }
 
     @Test
-    public void testTopKWithIncrement()
-    {
+    public void testTopKWithIncrement() {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for (String i : stream)
-        {
+        for (String i : stream) {
             vs.offer(i, 10);
         }
         List<Counter<String>> topK = vs.topK(3);
-        for (Counter<String> c : topK)
-        {
+        for (Counter<String> c : topK) {
             assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
         }
     }
 
     @Test
-    public void testTopKWithIncrementOutOfOrder()
-    {
+    public void testTopKWithIncrementOutOfOrder() {
         StreamSummary<String> vs_increment = new StreamSummary<String>(3);
         StreamSummary<String> vs_single = new StreamSummary<String>(3);
-        String[] stream = {"A","B","C","D","A"};
-        Integer[] increments = {15,20,25,30,1};
+        String[] stream = {"A", "B", "C", "D", "A"};
+        Integer[] increments = {15, 20, 25, 30, 1};
 
-        for (int i=0;i<stream.length;i++) {
-            vs_increment.offer(stream[i],increments[i]);
-            for (int k=0;k<increments[i];k++) {
+        for (int i = 0; i < stream.length; i++) {
+            vs_increment.offer(stream[i], increments[i]);
+            for (int k = 0; k < increments[i]; k++) {
                 vs_single.offer(stream[i]);
             }
         }
@@ -107,28 +99,25 @@ public class TestStreamSummary
         List<Counter<String>> topK_increment = vs_increment.topK(3);
         List<Counter<String>> topK_single = vs_single.topK(3);
 
-        for (int i=0;i<topK_increment.size();i++) {
+        for (int i = 0; i < topK_increment.size(); i++) {
             assertEquals(topK_increment.get(i).getItem(),
                     topK_single.get(i).getItem());
         }
     }
 
     @Test
-    public void testGeometricDistribution()
-    {
+    public void testGeometricDistribution() {
         StreamSummary<Integer> vs = new StreamSummary<Integer>(10);
         RandomEngine re = RandomEngine.makeDefault();
 
-        for (int i = 0; i < NUM_ITERATIONS; i++)
-        {
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
             int z = Distributions.nextGeometric(0.25, re);
             vs.offer(z);
         }
 
         List<Integer> top = vs.peek(5);
         System.out.println("Geometric:");
-        for (Integer e : top)
-        {
+        for (Integer e : top) {
             System.out.println(e);
         }
 
@@ -139,17 +128,14 @@ public class TestStreamSummary
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCounterSerialization() throws IOException, ClassNotFoundException
-    {
+    public void testCounterSerialization() throws IOException, ClassNotFoundException {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for (String i : stream)
-        {
+        for (String i : stream) {
             vs.offer(i);
         }
         List<Counter<String>> topK = vs.topK(3);
-        for (Counter<String> c : topK)
-        {
+        for (Counter<String> c : topK) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutput oo = new ObjectOutputStream(baos);
             oo.writeObject(c);
@@ -166,12 +152,10 @@ public class TestStreamSummary
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testSerialization() throws IOException, ClassNotFoundException
-    {
+    public void testSerialization() throws IOException, ClassNotFoundException {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for (String i : stream)
-        {
+        for (String i : stream) {
             vs.offer(i);
         }
 
@@ -188,12 +172,10 @@ public class TestStreamSummary
 
 
     @Test
-    public void testByteSerialization() throws IOException, ClassNotFoundException
-    {
+    public void testByteSerialization() throws IOException, ClassNotFoundException {
         StreamSummary<String> vs = new StreamSummary<String>(3);
         String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-        for (String i : stream)
-        {
+        for (String i : stream) {
             vs.offer(i);
         }
 
@@ -204,8 +186,7 @@ public class TestStreamSummary
         testSerialization(vs);
     }
 
-    private void testSerialization(StreamSummary<?> vs) throws IOException, ClassNotFoundException
-    {
+    private void testSerialization(StreamSummary<?> vs) throws IOException, ClassNotFoundException {
         byte[] bytes = vs.toBytes();
         StreamSummary<String> clone = new StreamSummary<String>(bytes);
 

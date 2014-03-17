@@ -27,8 +27,7 @@ package com.clearspring.analytics.stream.membership;
  * Filter class by helping to choose correct values of 'bits per element' and
  * 'number of hash functions, k'.
  */
-public class BloomCalculations
-{
+public class BloomCalculations {
 
     private static final int maxBuckets = 15;
     private static final int minBuckets = 2;
@@ -36,8 +35,8 @@ public class BloomCalculations
     private static final int maxK = 8;
     private static final int[] optKPerBuckets =
             new int[]{1, // dummy K for 0 buckets per element
-                    1, // dummy K for 1 buckets per element
-                    1, 2, 3, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 12, 13, 14};
+                      1, // dummy K for 1 buckets per element
+                      1, 2, 3, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 12, 13, 14};
 
     /**
      * In the following table, the row 'i' shows false positive rates if i buckets
@@ -77,11 +76,9 @@ public class BloomCalculations
      * @param bucketsPerElement
      * @return The number of hash functions that minimize the false positive rate.
      */
-    public static int computeBestK(int bucketsPerElement)
-    {
+    public static int computeBestK(int bucketsPerElement) {
         assert bucketsPerElement >= 0;
-        if (bucketsPerElement >= optKPerBuckets.length)
-        {
+        if (bucketsPerElement >= optKPerBuckets.length) {
             return optKPerBuckets[optKPerBuckets.length - 1];
         }
         return optKPerBuckets[bucketsPerElement];
@@ -91,13 +88,12 @@ public class BloomCalculations
      * A wrapper class that holds two key parameters for a Bloom Filter: the
      * number of hash functions used, and the number of buckets per element used.
      */
-    public static final class BloomSpecification
-    {
+    public static final class BloomSpecification {
+
         final int K; // number of hash functions.
         final int bucketsPerElement;
 
-        public BloomSpecification(int k, int bucketsPerElement)
-        {
+        public BloomSpecification(int k, int bucketsPerElement) {
             K = k;
             this.bucketsPerElement = bucketsPerElement;
         }
@@ -113,32 +109,27 @@ public class BloomCalculations
      *
      * @param maxFalsePosProb The maximum tolerable false positive rate.
      * @return A Bloom Specification which would result in a false positive rate
-     *         less than specified by the function call.
+     * less than specified by the function call.
      */
-    public static BloomSpecification computeBucketsAndK(double maxFalsePosProb)
-    {
+    public static BloomSpecification computeBucketsAndK(double maxFalsePosProb) {
         // Handle the trivial cases
-        if (maxFalsePosProb >= probs[minBuckets][minK])
-        {
+        if (maxFalsePosProb >= probs[minBuckets][minK]) {
             return new BloomSpecification(2, optKPerBuckets[2]);
         }
-        if (maxFalsePosProb < probs[maxBuckets][maxK])
-        {
+        if (maxFalsePosProb < probs[maxBuckets][maxK]) {
             return new BloomSpecification(maxK, maxBuckets);
         }
 
         // First find the minimal required number of buckets:
         int bucketsPerElement = 2;
         int K = optKPerBuckets[2];
-        while (probs[bucketsPerElement][K] > maxFalsePosProb)
-        {
+        while (probs[bucketsPerElement][K] > maxFalsePosProb) {
             bucketsPerElement++;
             K = optKPerBuckets[bucketsPerElement];
         }
         // Now that the number of buckets is sufficient, see if we can relax K
         // without losing too much precision.
-        while (probs[bucketsPerElement][K - 1] <= maxFalsePosProb)
-        {
+        while (probs[bucketsPerElement][K - 1] <= maxFalsePosProb) {
             K--;
         }
 
@@ -153,8 +144,7 @@ public class BloomCalculations
      * @param hashCount
      * @return probability of a false positive.
      */
-    public static double getFalsePositiveProbability(int bucketsPerElement, int hashCount)
-    {
+    public static double getFalsePositiveProbability(int bucketsPerElement, int hashCount) {
         // (1 - e^(-k * n / m)) ^ k
         return Math.pow(1 - Math.exp(-hashCount * (1 / (double) bucketsPerElement)), hashCount);
 

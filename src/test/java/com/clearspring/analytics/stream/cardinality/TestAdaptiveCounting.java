@@ -16,19 +16,19 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import static org.junit.Assert.*;
-
 import java.util.Arrays;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
-public class TestAdaptiveCounting
-{
+
+public class TestAdaptiveCounting {
+
     @Test
-    public void testRho()
-    {
+    public void testRho() {
         assertEquals(17, LogLog.rho(0, 16));
         assertEquals(16, LogLog.rho(1, 16));
         assertEquals(15, LogLog.rho(2, 16));
@@ -41,8 +41,7 @@ public class TestAdaptiveCounting
     }
 
     @Test
-    public void testRhoL()
-    {
+    public void testRhoL() {
         assertEquals(49, AdaptiveCounting.rho(0L, 16));
         assertEquals(48, AdaptiveCounting.rho(1L, 16));
         assertEquals(47, AdaptiveCounting.rho(2L, 16));
@@ -57,8 +56,7 @@ public class TestAdaptiveCounting
     }
 
     @Test
-    public void testJ()
-    {
+    public void testJ() {
         long x = 0xDEADBEEFFEEDCAFEL;
         int k = 12;
         int j = (int) (x >>> (Long.SIZE - k));
@@ -66,18 +64,15 @@ public class TestAdaptiveCounting
     }
 
     @Test
-    public void testMerge() throws CardinalityMergeException
-    {
+    public void testMerge() throws CardinalityMergeException {
         int numToMerge = 10;
         int cardinality = 10000;
 
         AdaptiveCounting[] lcs = new AdaptiveCounting[numToMerge];
         AdaptiveCounting baseline = new AdaptiveCounting(16);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             lcs[i] = new AdaptiveCounting(16);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 lcs[i].offer(val);
                 baseline.offer(val);
@@ -100,14 +95,11 @@ public class TestAdaptiveCounting
 
     @Ignore
     @Test
-    public void testLongCardinality()
-    {
+    public void testLongCardinality() {
         ICardinality ac = new AdaptiveCounting(16);
-        for (long i = 0; i < 5000000000L; i++)
-        {
+        for (long i = 0; i < 5000000000L; i++) {
             ac.offer(Long.valueOf(i));
-            if (i % 10000000 == 0)
-            {
+            if (i % 10000000 == 0) {
                 System.out.println("actual: " + i + ", estimated: " + ac.cardinality());
             }
         }
@@ -118,29 +110,25 @@ public class TestAdaptiveCounting
     }
 
     @Test
-    public void testSerialization()
-    {
+    public void testSerialization() {
         AdaptiveCounting ac = new AdaptiveCounting(10);
         testSerialization(ac);
     }
 
-    private void testSerialization(AdaptiveCounting ac)
-    {
+    private void testSerialization(AdaptiveCounting ac) {
         AdaptiveCounting clone = new AdaptiveCounting(ac.getBytes());
         assertAdaptiveCountingEquals(ac, clone);
 
         assertEquals(0, ac.cardinality());
 
-        for (int i = 0; i < 100; i++)
-        {
+        for (int i = 0; i < 100; i++) {
             ac.offer(i);
         }
 
         clone = new AdaptiveCounting(ac.getBytes());
         assertAdaptiveCountingEquals(ac, clone);
 
-        for (int i = 0; i < 1000000; i++)
-        {
+        for (int i = 0; i < 1000000; i++) {
             ac.offer(i);
         }
 
@@ -148,8 +136,7 @@ public class TestAdaptiveCounting
         assertAdaptiveCountingEquals(ac, clone);
     }
 
-    private void assertAdaptiveCountingEquals(AdaptiveCounting expected, AdaptiveCounting actual)
-    {
+    private void assertAdaptiveCountingEquals(AdaptiveCounting expected, AdaptiveCounting actual) {
         assertArrayEquals(expected.M, actual.M);
         assertEquals(expected.k, actual.k);
         assertEquals(expected.m, actual.m);

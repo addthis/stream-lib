@@ -18,29 +18,25 @@
 
 package com.clearspring.analytics.util;
 
-public class Pair<T1, T2>
-{
+public class Pair<T1, T2> {
+
     public final T1 left;
     public final T2 right;
 
-    public Pair(T1 left, T2 right)
-    {
+    public Pair(T1 left, T2 right) {
         this.left = left;
         this.right = right;
     }
 
     @Override
-    public final int hashCode()
-    {
+    public final int hashCode() {
         int hashCode = 31 + (left == null ? 0 : left.hashCode());
         return 31 * hashCode + (right == null ? 0 : right.hashCode());
     }
 
     @Override
-    public final boolean equals(Object o)
-    {
-        if (!(o instanceof Pair))
-        {
+    public final boolean equals(Object o) {
+        if (!(o instanceof Pair)) {
             return false;
         }
         Pair that = (Pair) o;
@@ -49,20 +45,17 @@ public class Pair<T1, T2>
     }
 
     // From Apache Licensed guava:
-    private boolean equal(Object a, Object b)
-    {
+    private boolean equal(Object a, Object b) {
         return a == b || (a != null && a.equals(b));
     }
 
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "(" + left + "," + right + ")";
     }
 
-    public static <X, Y> Pair<X, Y> create(X x, Y y)
-    {
+    public static <X, Y> Pair<X, Y> create(X x, Y y) {
         return new Pair<X, Y>(x, y);
     }
 }

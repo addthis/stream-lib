@@ -17,15 +17,16 @@
 
 package com.clearspring.analytics.stream.quantile;
 
-import com.clearspring.analytics.util.Lists;
-import com.clearspring.analytics.util.Preconditions;
-
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import java.nio.ByteBuffer;
+
+import com.clearspring.analytics.util.Lists;
+import com.clearspring.analytics.util.Preconditions;
 
 /**
  * Adaptive histogram based on something like streaming k-means crossed with Q-digest.
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * g) easy to adapt for use with map-reduce
  */
 public class TDigest {
+
     private Random gen;
 
     private double compression = 100;
@@ -473,6 +475,7 @@ public class TDigest {
     }
 
     public static class Group implements Comparable<Group> {
+
         private static final AtomicInteger uniqueCount = new AtomicInteger(1);
 
         private double centroid = 0;
@@ -531,9 +534,9 @@ public class TDigest {
         @Override
         public String toString() {
             return "Group{" +
-                    "centroid=" + centroid +
-                    ", count=" + count +
-                    '}';
+                   "centroid=" + centroid +
+                   ", count=" + count +
+                   '}';
         }
 
         @Override

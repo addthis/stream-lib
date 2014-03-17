@@ -18,7 +18,8 @@
 
 package com.clearspring.analytics.stream.membership;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 
 
 /**
@@ -26,35 +27,30 @@ import java.io.*;
  * unsafe.
  */
 
-public final class DataInputBuffer extends DataInputStream
-{
-    private static class Buffer extends ByteArrayInputStream
-    {
-        public Buffer()
-        {
+public final class DataInputBuffer extends DataInputStream {
+
+    private static class Buffer extends ByteArrayInputStream {
+
+        public Buffer() {
             super(new byte[]{});
         }
 
-        public void reset(byte[] input, int start, int length)
-        {
+        public void reset(byte[] input, int start, int length) {
             this.buf = input;
             this.count = start + length;
             this.mark = start;
             this.pos = start;
         }
 
-        public int getPosition()
-        {
+        public int getPosition() {
             return pos;
         }
 
-        public void setPosition(int position)
-        {
+        public void setPosition(int position) {
             pos = position;
         }
 
-        public int getLength()
-        {
+        public int getLength() {
             return count;
         }
     }
@@ -64,13 +60,11 @@ public final class DataInputBuffer extends DataInputStream
     /**
      * Constructs a new empty buffer.
      */
-    public DataInputBuffer()
-    {
+    public DataInputBuffer() {
         this(new Buffer());
     }
 
-    private DataInputBuffer(Buffer buffer)
-    {
+    private DataInputBuffer(Buffer buffer) {
         super(buffer);
         this.buffer_ = buffer;
     }
@@ -78,29 +72,25 @@ public final class DataInputBuffer extends DataInputStream
     /**
      * Resets the data that the buffer reads.
      */
-    public void reset(byte[] input, int length)
-    {
+    public void reset(byte[] input, int length) {
         buffer_.reset(input, 0, length);
     }
 
     /**
      * Resets the data that the buffer reads.
      */
-    public void reset(byte[] input, int start, int length)
-    {
+    public void reset(byte[] input, int start, int length) {
         buffer_.reset(input, start, length);
     }
 
     /**
      * Returns the length of the input.
      */
-    public int getLength()
-    {
+    public int getLength() {
         return buffer_.getLength();
     }
 
-    public int getPosition()
-    {
+    public int getPosition() {
         return buffer_.getPosition();
     }
 }

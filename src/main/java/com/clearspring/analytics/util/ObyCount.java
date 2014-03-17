@@ -35,37 +35,31 @@ import com.clearspring.analytics.stream.cardinality.ICardinality;
  * Example:
  * > cat elements.txt | obycount
  */
-public class ObyCount
-{
-    public static void usage()
-    {
+public class ObyCount {
+
+    public static void usage() {
         System.err.println
                 (
                         "obycount [update-rate]\n" +
-                                "\n" +
-                                "update-rate: output results after every update-rate elements/lines" +
-                                "\n" +
-                                "Example:" +
-                                "> cat elements.txt | obycount" +
-                                "\n"
+                        "\n" +
+                        "update-rate: output results after every update-rate elements/lines" +
+                        "\n" +
+                        "Example:" +
+                        "> cat elements.txt | obycount" +
+                        "\n"
                 );
 
         System.exit(-1);
     }
 
-    public static void main(String[] args) throws IOException
-    {
+    public static void main(String[] args) throws IOException {
         long updateRate = -1;
         long count = 0;
 
-        if (args.length > 0)
-        {
-            try
-            {
+        if (args.length > 0) {
+            try {
                 updateRate = Long.parseLong(args[0]);
-            }
-            catch (NumberFormatException e)
-            {
+            } catch (NumberFormatException e) {
                 System.err.print("Bad update rate: '" + args[0] + "'  Update rate must be an integer.");
                 usage();
             }
@@ -76,13 +70,11 @@ public class ObyCount
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
         String line = null;
-        while ((line = in.readLine()) != null)
-        {
+        while ((line = in.readLine()) != null) {
             card.offer(line);
             count++;
 
-            if (updateRate > 0 && count % updateRate == 0)
-            {
+            if (updateRate > 0 && count % updateRate == 0) {
                 System.out.println(formatSummary(count, card.cardinality()));
             }
         }
@@ -90,8 +82,7 @@ public class ObyCount
         System.out.println(formatSummary(count, card.cardinality()));
     }
 
-    protected static String formatSummary(long count, long cardinality)
-    {
+    protected static String formatSummary(long count, long cardinality) {
         String cntStr = Long.toString(count);
         int len = cntStr.length();
         int l1 = Math.max(len, 10);

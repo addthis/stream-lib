@@ -22,81 +22,70 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Eric Vlaanderen
  */
-public class ScoredItem<T> implements Comparable<ScoredItem<T>>
-{
-	private final AtomicLong error;
-	private final AtomicLong count;
-	private final AtomicBoolean newItem;
-	private final T item;
+public class ScoredItem<T> implements Comparable<ScoredItem<T>> {
 
-	public ScoredItem(final T item, final long count, final long error)
-	{
-		this.item = item;
-		this.error = new AtomicLong(error);
-		this.count = new AtomicLong(count);
-		this.newItem = new AtomicBoolean(true);
-	}
+    private final AtomicLong error;
+    private final AtomicLong count;
+    private final AtomicBoolean newItem;
+    private final T item;
 
-	public ScoredItem(final T item, final long count)
-	{
-		 this(item, count, 0L);
-	}
+    public ScoredItem(final T item, final long count, final long error) {
+        this.item = item;
+        this.error = new AtomicLong(error);
+        this.count = new AtomicLong(count);
+        this.newItem = new AtomicBoolean(true);
+    }
 
-	public long addAndGetCount(final long delta)
-	{
-		return this.count.addAndGet(delta);
-	}
+    public ScoredItem(final T item, final long count) {
+        this(item, count, 0L);
+    }
 
-	public void setError(final long newError)
-	{
-		this.error.set(newError);
-	}
+    public long addAndGetCount(final long delta) {
+        return this.count.addAndGet(delta);
+    }
 
-	public long getError()
-	{
-		return error.get();
-	}
+    public void setError(final long newError) {
+        this.error.set(newError);
+    }
 
-	public T getItem()
-	{
-		return item;
-	}
+    public long getError() {
+        return error.get();
+    }
 
-	public boolean isNewItem()
-	{
-		return newItem.get();
-	}
+    public T getItem() {
+        return item;
+    }
 
-	public long getCount()
-	{
-		return count.get();
-	}
+    public boolean isNewItem() {
+        return newItem.get();
+    }
 
-	@Override
-	public int compareTo(final ScoredItem<T> o)
-	{
-		long x = o.count.get();
-		long y = count.get();
-		return (x < y) ? -1 : ((x == y) ? 0 : 1);
-	}
+    public long getCount() {
+        return count.get();
+    }
 
-	public String toString()
-	{
-		StringBuilder sb = new StringBuilder();
-		sb.append("Value: ");
-		sb.append(item);
-		sb.append(", Count: ");
-		sb.append(count);
-		sb.append(", Error: ");
-		sb.append(error);
-		sb.append(", object: ");
-		sb.append(super.toString());
-		return sb.toString();
-	}
+    @Override
+    public int compareTo(final ScoredItem<T> o) {
+        long x = o.count.get();
+        long y = count.get();
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Value: ");
+        sb.append(item);
+        sb.append(", Count: ");
+        sb.append(count);
+        sb.append(", Error: ");
+        sb.append(error);
+        sb.append(", object: ");
+        sb.append(super.toString());
+        return sb.toString();
+    }
 
 
-	public void setNewItem(final boolean newItem)
-	{
-		this.newItem.set(newItem);
-	}
+    public void setNewItem(final boolean newItem) {
+        this.newItem.set(newItem);
+    }
 }

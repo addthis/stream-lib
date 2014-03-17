@@ -19,6 +19,7 @@ package com.clearspring.analytics.util;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
 import java.util.List;
 
 import com.clearspring.analytics.stream.Counter;
@@ -37,52 +38,42 @@ import com.clearspring.analytics.stream.StreamSummary;
  * Example:
  * > cat elements.txt | topk 10
  */
-public class TopK
-{
-    public static void usage()
-    {
+public class TopK {
+
+    public static void usage() {
         System.err.println
                 (
                         "topk [capacity] [update-rate]\n" +
-                                "\n" +
-                                "capacity   : size of top / k (defaults to 1000)" +
-                                "update-rate: output results after every update-rate elements/lines" +
-                                "\n" +
-                                "Example:" +
-                                "> cat elements.txt | topk 10" +
-                                "\n"
+                        "\n" +
+                        "capacity   : size of top / k (defaults to 1000)" +
+                        "update-rate: output results after every update-rate elements/lines" +
+                        "\n" +
+                        "Example:" +
+                        "> cat elements.txt | topk 10" +
+                        "\n"
                 );
 
         System.exit(-1);
     }
 
-    public static void main(String[] args) throws IOException
-    {
+    public static void main(String[] args) throws IOException {
         long updateRate = -1;
         long count = 0;
         int capacity = 1000;
 
-        if (args.length > 0)
-        {
-            try
-            {
+        if (args.length > 0) {
+            try {
                 capacity = Integer.parseInt(args[0]);
-            }
-            catch (NumberFormatException e)
-            {
+            } catch (NumberFormatException e) {
                 System.err.print("Bad capacity: '" + args[0] + "'  Capacity must be an integer.");
                 usage();
             }
         }
 
-        if (args.length > 1)
-        {
-            try
-            {
+        if (args.length > 1) {
+            try {
                 updateRate = Long.parseLong(args[1]);
-            }
-            catch (NumberFormatException e)
-            {
+            } catch (NumberFormatException e) {
                 System.err.print("Bade update rate: '" + args[1] + "'  Update rate must be an integer.");
                 usage();
             }
@@ -93,13 +84,11 @@ public class TopK
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
         String line = null;
-        while ((line = in.readLine()) != null)
-        {
+        while ((line = in.readLine()) != null) {
             topk.offer(line);
             count++;
 
-            if (updateRate > 0 && count % updateRate == 0)
-            {
+            if (updateRate > 0 && count % updateRate == 0) {
                 System.out.println(formatSummary(topk));
                 System.out.println("Item count: " + count);
                 System.out.println();
@@ -110,8 +99,7 @@ public class TopK
         System.out.println("Item count: " + count);
     }
 
-    public static String formatSummary(StreamSummary<String> topk)
-    {
+    public static String formatSummary(StreamSummary<String> topk) {
         StringBuilder sb = new StringBuilder();
 
         List<Counter<String>> counters = topk.topK(topk.getCapacity());
@@ -123,8 +111,7 @@ public class TopK
         int maxCountLen = countHeader.length();
         int maxErrorLen = errorHeader.length();
 
-        for (Counter<String> counter : counters)
-        {
+        for (Counter<String> counter : counters) {
             maxItemLen = Math.max(counter.getItem().length(), maxItemLen);
             maxCountLen = Math.max(Long.toString(counter.getCount()).length(), maxCountLen);
             maxErrorLen = Math.max(Long.toString(counter.getError()).length(), maxErrorLen);
@@ -135,8 +122,7 @@ public class TopK
         sb.append(String.format("%" + maxItemLen + "s %" + maxCountLen + "s %" + maxErrorLen + "s", string('-', maxItemLen), string('-', maxCountLen), string('-', maxErrorLen)));
         sb.append('\n');
 
-        for (Counter<String> counter : counters)
-        {
+        for (Counter<String> counter : counters) {
             sb.append(String.format("%" + maxItemLen + "s %" + maxCountLen + "d %" + maxErrorLen + "d", counter.getItem(), counter.getCount(), counter.getError()));
             sb.append('\n');
         }
@@ -144,11 +130,9 @@ public class TopK
         return sb.toString();
     }
 
-    public static String string(char c, int len)
-    {
+    public static String string(char c, int len) {
         StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             sb.append(c);
         }
         return sb.toString();

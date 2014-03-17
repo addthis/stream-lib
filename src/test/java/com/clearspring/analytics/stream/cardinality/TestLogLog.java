@@ -16,23 +16,24 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.io.IOException;
+
+import java.util.Arrays;
+
 import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestLogLog
-{
+public class TestLogLog {
+
     @Test
-    public void testSerialization() throws IOException
-    {
+    public void testSerialization() throws IOException {
         LogLog hll = new LogLog(8);
         hll.offer("a");
         hll.offer("b");
@@ -45,13 +46,11 @@ public class TestLogLog
     }
 
     @Test
-    public void testHighCardinality()
-    {
+    public void testHighCardinality() {
         long start = System.currentTimeMillis();
         LogLog loglog = new LogLog(10);
         int size = 10000000;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             loglog.offer(TestICardinality.streamElement(i));
         }
         System.out.println("time: " + (System.currentTimeMillis() - start));
@@ -62,13 +61,11 @@ public class TestLogLog
     }
 
     @Test
-    public void testHighCardinalityHighOrder()
-    {
+    public void testHighCardinalityHighOrder() {
         long start = System.currentTimeMillis();
         LogLog loglog = new LogLog(25);
         int size = 100000000;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             loglog.offer(TestICardinality.streamElement(i));
         }
         System.out.println("time: " + (System.currentTimeMillis() - start));
@@ -81,19 +78,16 @@ public class TestLogLog
     }
 
     @Test
-    public void testMerge() throws CardinalityMergeException
-    {
+    public void testMerge() throws CardinalityMergeException {
         int numToMerge = 5;
         int bits = 16;
         int cardinality = 1000000;
 
         LogLog[] loglogs = new LogLog[numToMerge];
         LogLog baseline = new LogLog(bits);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             loglogs[i] = new LogLog(bits);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 loglogs[i].offer(val);
                 baseline.offer(val);
@@ -113,21 +107,18 @@ public class TestLogLog
 
     @Test
     @Ignore
-    public void testPrecise() throws CardinalityMergeException
-    {
+    public void testPrecise() throws CardinalityMergeException {
         int cardinality = 1000000000;
         int b = 12;
         LogLog baseline = new LogLog(b);
         LogLog guava128 = new LogLog(b);
         HashFunction hf128 = Hashing.murmur3_128();
-        for (int j = 0; j < cardinality; j++)
-        {
+        for (int j = 0; j < cardinality; j++) {
             Double val = Math.random();
             String valString = val.toString();
             baseline.offer(valString);
             guava128.offerHashed(hf128.hashString(valString, Charsets.UTF_8).asLong());
-            if (j > 0 && j % 1000000 == 0)
-            {
+            if (j > 0 && j % 1000000 == 0) {
                 System.out.println("current count: " + j);
             }
         }
@@ -136,8 +127,8 @@ public class TestLogLog
         long baselineEstimate = baseline.cardinality();
         long g128Estimate = guava128.cardinality();
         double se = cardinality * (1.04 / Math.sqrt(Math.pow(2, b)));
-        double baselineError = (baselineEstimate-cardinality)/(double)cardinality;
-        double g128Error = (g128Estimate-cardinality)/(double)cardinality;
+        double baselineError = (baselineEstimate - cardinality) / (double) cardinality;
+        double g128Error = (g128Estimate - cardinality) / (double) cardinality;
         System.out.format("b: %f g128 %f", baselineError, g128Error);
         assertTrue("baseline estimate bigger than expected", baselineEstimate >= cardinality - (2 * se));
         assertTrue("baseline estimate smaller than expected", baselineEstimate <= cardinality + (2 * se));

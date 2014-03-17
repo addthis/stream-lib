@@ -16,31 +16,28 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.io.IOException;
+
+import org.junit.Test;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
+public class TestCountThenEstimate {
 
-import org.junit.Test;
-
-public class TestCountThenEstimate
-{
     @Test
-    public void testMerge() throws CardinalityMergeException
-    {
+    public void testMerge() throws CardinalityMergeException {
         int numToMerge = 10;
         int tippingPoint = 100;
         int cardinality = 1000;
 
         CountThenEstimate[] ctes = new CountThenEstimate[numToMerge];
 
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             ctes[i] = new CountThenEstimate(tippingPoint, AdaptiveCounting.Builder.obyCount(100000));
-            for (int j = 0; j < tippingPoint - 1; j++)
-            {
+            for (int j = 0; j < tippingPoint - 1; j++) {
                 ctes[i].offer(Math.random());
             }
         }
@@ -50,10 +47,8 @@ public class TestCountThenEstimate
         double error = Math.abs(mergedEstimate - expectedCardinality) / (double) expectedCardinality;
         assertEquals(0.01, error, 0.01);
 
-        for (int i = 0; i < numToMerge / 2; i++)
-        {
-            for (int j = tippingPoint - 1; j < cardinality; j++)
-            {
+        for (int i = 0; i < numToMerge / 2; i++) {
+            for (int j = tippingPoint - 1; j < cardinality; j++) {
                 ctes[i].offer(Math.random());
             }
         }
@@ -64,10 +59,8 @@ public class TestCountThenEstimate
         assertEquals(0.01, error, 0.01);
 
 
-        for (int i = numToMerge / 2; i < numToMerge; i++)
-        {
-            for (int j = tippingPoint - 1; j < cardinality; j++)
-            {
+        for (int i = numToMerge / 2; i < numToMerge; i++) {
+            for (int j = tippingPoint - 1; j < cardinality; j++) {
                 ctes[i].offer(Math.random());
             }
         }
@@ -81,8 +74,7 @@ public class TestCountThenEstimate
     }
 
     @Test
-    public void testSmallMerge() throws CardinalityMergeException
-    {
+    public void testSmallMerge() throws CardinalityMergeException {
 
         // Untipped test case
         int numToMerge = 1000;
@@ -90,11 +82,9 @@ public class TestCountThenEstimate
 
         CountThenEstimate[] ctes = new CountThenEstimate[numToMerge];
 
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             ctes[i] = new CountThenEstimate(10000, AdaptiveCounting.Builder.obyCount(100000));
-            for (int j = 0; j < cardinalityPer; j++)
-            {
+            for (int j = 0; j < cardinalityPer; j++) {
                 ctes[i].offer(Math.random());
             }
         }
@@ -111,11 +101,9 @@ public class TestCountThenEstimate
 
         ctes = new CountThenEstimate[numToMerge];
 
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             ctes[i] = new CountThenEstimate(cardinalityPer + 1, AdaptiveCounting.Builder.obyCount(100000));
-            for (int j = 0; j < cardinalityPer; j++)
-            {
+            for (int j = 0; j < cardinalityPer; j++) {
                 ctes[i].offer(Math.random());
             }
         }
@@ -130,14 +118,12 @@ public class TestCountThenEstimate
     }
 
     @Test
-    public void testTip() throws IOException, ClassNotFoundException
-    {
+    public void testTip() throws IOException, ClassNotFoundException {
         CountThenEstimate cte = new CountThenEstimate(10000, new LinearCounting.Builder(1024));
         CountThenEstimate clone = new CountThenEstimate(cte.getBytes());
         assertCountThenEstimateEquals(cte, clone);
 
-        for (int i = 0; i < 128; i++)
-        {
+        for (int i = 0; i < 128; i++) {
             cte.offer(Integer.toString(i));
         }
 
@@ -145,8 +131,7 @@ public class TestCountThenEstimate
         assertEquals(128, cte.cardinality());
         assertCountThenEstimateEquals(cte, clone);
 
-        for (int i = 128; i < 256; i++)
-        {
+        for (int i = 128; i < 256; i++) {
             cte.offer(Integer.toString(i));
         }
 
@@ -160,8 +145,7 @@ public class TestCountThenEstimate
     }
 
     @Test
-    public void testLinearCountingSerialization() throws IOException, ClassNotFoundException
-    {
+    public void testLinearCountingSerialization() throws IOException, ClassNotFoundException {
         CountThenEstimate cte = new CountThenEstimate(3, new LinearCounting.Builder(1024));
         CountThenEstimate clone = new CountThenEstimate(cte.getBytes());
         assertCountThenEstimateEquals(cte, clone);
@@ -181,8 +165,7 @@ public class TestCountThenEstimate
     }
 
     @Test
-    public void testHyperLogLogSerialization() throws IOException, ClassNotFoundException
-    {
+    public void testHyperLogLogSerialization() throws IOException, ClassNotFoundException {
         CountThenEstimate cte = new CountThenEstimate(3, new HyperLogLog.Builder(0.05));
         CountThenEstimate clone = new CountThenEstimate(cte.getBytes());
         assertCountThenEstimateEquals(cte, clone);
@@ -202,8 +185,7 @@ public class TestCountThenEstimate
     }
 
     @Test
-    public void testAdaptiveCountingSerialization() throws IOException, ClassNotFoundException
-    {
+    public void testAdaptiveCountingSerialization() throws IOException, ClassNotFoundException {
         CountThenEstimate cte = new CountThenEstimate(3, new AdaptiveCounting.Builder(10));
         CountThenEstimate clone = new CountThenEstimate(cte.getBytes());
         assertCountThenEstimateEquals(cte, clone);
@@ -223,8 +205,7 @@ public class TestCountThenEstimate
     }
 
     @Test
-    public void testAdaptiveCountingSerialization_withHyperLogLog() throws IOException, ClassNotFoundException
-    {
+    public void testAdaptiveCountingSerialization_withHyperLogLog() throws IOException, ClassNotFoundException {
         CountThenEstimate cte = new CountThenEstimate(3, new HyperLogLog.Builder(0.01));
         CountThenEstimate clone = new CountThenEstimate(cte.getBytes());
         assertCountThenEstimateEquals(cte, clone);
@@ -248,22 +229,15 @@ public class TestCountThenEstimate
     }
 
 
-    private void assertCountThenEstimateEquals(CountThenEstimate expected, CountThenEstimate actual) throws IOException
-    {
+    private void assertCountThenEstimateEquals(CountThenEstimate expected, CountThenEstimate actual) throws IOException {
         assertEquals(expected.tipped, actual.tipped);
-        if (expected.tipped)
-        {
+        if (expected.tipped) {
             assertArrayEquals(expected.estimator.getBytes(), actual.estimator.getBytes());
-        }
-        else
-        {
+        } else {
             assertEquals(expected.tippingPoint, actual.tippingPoint);
-            if (expected.builder instanceof LinearCounting.Builder)
-            {
+            if (expected.builder instanceof LinearCounting.Builder) {
                 assertEquals(((LinearCounting.Builder) expected.builder).size, ((LinearCounting.Builder) actual.builder).size);
-            }
-            else if (expected.builder instanceof AdaptiveCounting.Builder)
-            {
+            } else if (expected.builder instanceof AdaptiveCounting.Builder) {
                 assertEquals(((AdaptiveCounting.Builder) expected.builder).k, ((AdaptiveCounting.Builder) actual.builder).k);
             }
             assertEquals(expected.estimator, actual.estimator);

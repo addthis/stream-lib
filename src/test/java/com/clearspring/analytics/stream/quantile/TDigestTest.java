@@ -17,23 +17,37 @@
 
 package com.clearspring.analytics.stream.quantile;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import org.apache.mahout.common.RandomUtils;
-import org.apache.mahout.math.jet.random.AbstractContinousDistribution;
-import org.apache.mahout.math.jet.random.Gamma;
-import org.apache.mahout.math.jet.random.Normal;
-import org.apache.mahout.math.jet.random.Uniform;
-import org.junit.*;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 
-import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import java.nio.ByteBuffer;
+
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
+import org.apache.mahout.common.RandomUtils;
+import org.apache.mahout.math.jet.random.AbstractContinousDistribution;
+import org.apache.mahout.math.jet.random.Gamma;
+import org.apache.mahout.math.jet.random.Normal;
+import org.apache.mahout.math.jet.random.Uniform;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class TDigestTest {

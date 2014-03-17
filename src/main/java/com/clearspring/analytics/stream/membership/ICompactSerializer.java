@@ -18,16 +18,16 @@
 
 package com.clearspring.analytics.stream.membership;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.DataInputStream;
 
 /**
  * Allows for the controlled serialization/deserialization of a given type.
  */
 
-public interface ICompactSerializer<T>
-{
+public interface ICompactSerializer<T> {
+
     /**
      * Serialize the specified type into the specified DataOutputStream instance.
      *

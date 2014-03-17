@@ -16,23 +16,24 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.io.IOException;
+
+import java.util.Arrays;
+
 import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestHyperLogLog
-{
+public class TestHyperLogLog {
+
     @Test
-    public void testComputeCount()
-    {
+    public void testComputeCount() {
         HyperLogLog hyperLogLog = new HyperLogLog(16);
         hyperLogLog.offer(0);
         hyperLogLog.offer(1);
@@ -47,8 +48,7 @@ public class TestHyperLogLog
     }
 
     @Test
-    public void testSerialization() throws IOException
-    {
+    public void testSerialization() throws IOException {
         HyperLogLog hll = new HyperLogLog(8);
         hll.offer("a");
         hll.offer("b");
@@ -61,13 +61,11 @@ public class TestHyperLogLog
     }
 
     @Test
-    public void testHighCardinality()
-    {
+    public void testHighCardinality() {
         long start = System.currentTimeMillis();
         HyperLogLog hyperLogLog = new HyperLogLog(10);
         int size = 10000000;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             hyperLogLog.offer(TestICardinality.streamElement(i));
         }
         System.out.println("time: " + (System.currentTimeMillis() - start));
@@ -78,13 +76,11 @@ public class TestHyperLogLog
     }
 
     @Test
-    public void testHighCardinality_withDefinedRSD()
-    {
+    public void testHighCardinality_withDefinedRSD() {
         long start = System.currentTimeMillis();
         HyperLogLog hyperLogLog = new HyperLogLog(0.01);
         int size = 100000000;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             hyperLogLog.offer(TestICardinality.streamElement(i));
         }
         System.out.println("time: " + (System.currentTimeMillis() - start));
@@ -95,19 +91,16 @@ public class TestHyperLogLog
     }
 
     @Test
-    public void testMerge() throws CardinalityMergeException
-    {
+    public void testMerge() throws CardinalityMergeException {
         int numToMerge = 5;
         int bits = 16;
         int cardinality = 1000000;
 
         HyperLogLog[] hyperLogLogs = new HyperLogLog[numToMerge];
         HyperLogLog baseline = new HyperLogLog(bits);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             hyperLogLogs[i] = new HyperLogLog(bits);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 hyperLogLogs[i].offer(val);
                 baseline.offer(val);
@@ -132,33 +125,30 @@ public class TestHyperLogLog
 
     /**
      * should not fail with HyperLogLogMergeException: "Cannot merge estimators of different sizes"
-     * */
+     */
     @Test
     public void testMergeWithRegisterSet() throws CardinalityMergeException {
         HyperLogLog first = new HyperLogLog(16, new RegisterSet(1 << 20));
         HyperLogLog second = new HyperLogLog(16, new RegisterSet(1 << 20));
-        first .offer(0);
+        first.offer(0);
         second.offer(1);
         first.merge(second);
     }
 
     @Test
     @Ignore
-    public void testPrecise() throws CardinalityMergeException
-    {
+    public void testPrecise() throws CardinalityMergeException {
         int cardinality = 1000000000;
         int b = 12;
         HyperLogLog baseline = new HyperLogLog(b);
         HyperLogLog guava128 = new HyperLogLog(b);
         HashFunction hf128 = Hashing.murmur3_128();
-        for (int j = 0; j < cardinality; j++)
-        {
+        for (int j = 0; j < cardinality; j++) {
             Double val = Math.random();
             String valString = val.toString();
             baseline.offer(valString);
             guava128.offerHashed(hf128.hashString(valString, Charsets.UTF_8).asLong());
-            if (j > 0 && j % 1000000 == 0)
-            {
+            if (j > 0 && j % 1000000 == 0) {
                 System.out.println("current count: " + j);
             }
         }
@@ -167,8 +157,8 @@ public class TestHyperLogLog
         long baselineEstimate = baseline.cardinality();
         long g128Estimate = guava128.cardinality();
         double se = cardinality * (1.04 / Math.sqrt(Math.pow(2, b)));
-        double baselineError = (baselineEstimate-cardinality)/(double)cardinality;
-        double g128Error = (g128Estimate-cardinality)/(double)cardinality;
+        double baselineError = (baselineEstimate - cardinality) / (double) cardinality;
+        double g128Error = (g128Estimate - cardinality) / (double) cardinality;
         System.out.format("b: %f g128 %f", baselineError, g128Error);
         assertTrue("baseline estimate bigger than expected", baselineEstimate >= cardinality - (2 * se));
         assertTrue("baseline estimate smaller than expected", baselineEstimate <= cardinality + (2 * se));

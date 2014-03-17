@@ -16,19 +16,21 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import com.clearspring.analytics.stream.cardinality.LinearCounting.Builder;
-import com.clearspring.analytics.stream.cardinality.LinearCounting.LinearCountingMergeException;
-import org.junit.Test;
-
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import com.clearspring.analytics.stream.cardinality.LinearCounting.Builder;
+import com.clearspring.analytics.stream.cardinality.LinearCounting.LinearCountingMergeException;
 
-public class TestLinearCounting
-{
+import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class TestLinearCounting {
+
     @Test
-    public void testComputeCount()
-    {
+    public void testComputeCount() {
         LinearCounting lc = new LinearCounting(4);
         lc.offer(0);
         lc.offer(1);
@@ -42,11 +44,9 @@ public class TestLinearCounting
     }
 
     @Test
-    public void testSaturation()
-    {
+    public void testSaturation() {
         LinearCounting lc = new LinearCounting(1);
-        for (int i = 0; i < 27; i++)
-        {
+        for (int i = 0; i < 27; i++) {
             lc.offer(i);
         }
 
@@ -56,8 +56,7 @@ public class TestLinearCounting
     }
 
     @Test
-    public void testBuilder()
-    {
+    public void testBuilder() {
         assertEquals(630, Builder.onePercentError(1).size);
         assertEquals(630, Builder.onePercentError(99).size);
         assertEquals(630, Builder.onePercentError(100).size);
@@ -84,8 +83,7 @@ public class TestLinearCounting
     }
 
     @Test
-    public void testArbitraryStdErrorSize()
-    {
+    public void testArbitraryStdErrorSize() {
         // Some sanity check with 1% error
         assertEquals(630, Builder.withError(0.01, 100).size);
         assertEquals(759, Builder.withError(0.01, 3375).size);
@@ -101,20 +99,17 @@ public class TestLinearCounting
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testBuilderIllegalArgumentZero()
-    {
+    public void testBuilderIllegalArgumentZero() {
         Builder.onePercentError(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testBuilderIllegalArgumentNegative()
-    {
+    public void testBuilderIllegalArgumentNegative() {
         Builder.onePercentError(-1);
     }
 
     @Test
-    public void testSerialization()
-    {
+    public void testSerialization() {
         LinearCounting lc = new LinearCounting(4);
         lc.offer("a");
         lc.offer("b");
@@ -129,19 +124,16 @@ public class TestLinearCounting
     }
 
     @Test
-    public void testMerge() throws LinearCountingMergeException
-    {
+    public void testMerge() throws LinearCountingMergeException {
         int numToMerge = 5;
         int size = 65536;
         int cardinality = 1000;
 
         LinearCounting[] lcs = new LinearCounting[numToMerge];
         LinearCounting baseline = new LinearCounting(size);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             lcs[i] = new LinearCounting(size);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 lcs[i].offer(val);
                 baseline.offer(val);

@@ -22,6 +22,7 @@ package com.clearspring.analytics.util;
  * extra depenency.
  */
 public class Preconditions {
+
     public static void checkState(boolean condition, String msg) {
         if (!condition) {
             throw new IllegalStateException(msg);

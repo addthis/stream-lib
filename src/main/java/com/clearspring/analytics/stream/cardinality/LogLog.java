@@ -16,18 +16,18 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.util.Arrays;
+
 import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.IBuilder;
 
-import java.util.Arrays;
+public class LogLog implements ICardinality {
 
-public class LogLog implements ICardinality
-{
     /**
      * Gamma function computed using Mathematica
      * AccountingForm[
-     *  N[With[{m = 2^Range[0, 31]}, 
-     *     m (Gamma[-1/m]*(1 - 2^(1/m))/Log[2])^-m], 14]]
+     * N[With[{m = 2^Range[0, 31]},
+     * m (Gamma[-1/m]*(1 - 2^(1/m))/Log[2])^-m], 14]]
      */
     protected static final double[] mAlpha = {
             0,
@@ -70,10 +70,8 @@ public class LogLog implements ICardinality
     protected byte[] M;
     protected int Rsum = 0;
 
-    public LogLog(int k)
-    {
-        if (k >= (mAlpha.length - 1))
-        {
+    public LogLog(int k) {
+        if (k >= (mAlpha.length - 1)) {
             throw new IllegalArgumentException(String.format("Max k (%d) exceeded: k=%d", mAlpha.length - 1, k));
         }
 
@@ -83,33 +81,28 @@ public class LogLog implements ICardinality
         this.M = new byte[m];
     }
 
-    public LogLog(byte[] M)
-    {
+    public LogLog(byte[] M) {
         this.M = M;
         this.m = M.length;
         this.k = Integer.numberOfTrailingZeros(m);
         assert (m == (1 << k)) : "Invalid array size: M.length must be a power of 2";
         this.Ca = mAlpha[k];
-        for (byte b : M)
-        {
+        for (byte b : M) {
             Rsum += b;
         }
     }
 
     @Override
-    public byte[] getBytes()
-    {
+    public byte[] getBytes() {
         return M;
     }
 
-    public int sizeof()
-    {
+    public int sizeof() {
         return m;
     }
 
     @Override
-    public long cardinality()
-    {
+    public long cardinality() {
         /*
         for(int j=0; j<m; j++)
             System.out.print(M[j]+"|");
@@ -121,19 +114,16 @@ public class LogLog implements ICardinality
     }
 
     @Override
-    public boolean offerHashed(long hashedLong)
-    {
+    public boolean offerHashed(long hashedLong) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean offerHashed(int hashedInt)
-    {
+    public boolean offerHashed(int hashedInt) {
         boolean modified = false;
         int j = hashedInt >>> (Integer.SIZE - k);
         byte r = (byte) (Integer.numberOfLeadingZeros((hashedInt << k) | (1 << (k - 1))) + 1);
-        if (M[j] < r)
-        {
+        if (M[j] < r) {
             Rsum += r - M[j];
             M[j] = r;
             modified = true;
@@ -143,8 +133,7 @@ public class LogLog implements ICardinality
     }
 
     @Override
-    public boolean offer(Object o)
-    {
+    public boolean offer(Object o) {
         int x = MurmurHash.hash(o);
         return offerHashed(x);
     }
@@ -154,8 +143,7 @@ public class LogLog implements ICardinality
      *
      * @return Integer.SIZE-k if the last k bits are all zero
      */
-    protected static int rho(int x, int k)
-    {
+    protected static int rho(int x, int k) {
         return Integer.numberOfLeadingZeros((x << k) | (1 << (k - 1))) + 1;
     }
 
@@ -164,27 +152,21 @@ public class LogLog implements ICardinality
      * @throws LogLogMergeException if estimators are not mergeable (all estimators must be instances of LogLog of the same size)
      */
     @Override
-    public ICardinality merge(ICardinality... estimators) throws LogLogMergeException
-    {
-        if (estimators == null)
-        {
+    public ICardinality merge(ICardinality... estimators) throws LogLogMergeException {
+        if (estimators == null) {
             return new LogLog(M);
         }
-        
+
         byte[] mergedBytes = Arrays.copyOf(this.M, this.M.length);
-        for (ICardinality estimator : estimators)
-        {
-            if (!(this.getClass().isInstance(estimator)))
-            {
+        for (ICardinality estimator : estimators) {
+            if (!(this.getClass().isInstance(estimator))) {
                 throw new LogLogMergeException("Cannot merge estimators of different class");
             }
-            if (estimator.sizeof() != this.sizeof())
-            {
+            if (estimator.sizeof() != this.sizeof()) {
                 throw new LogLogMergeException("Cannot merge estimators of different sizes");
             }
             LogLog ll = (LogLog) estimator;
-            for (int i = 0; i < mergedBytes.length; ++i)
-            {
+            for (int i = 0; i < mergedBytes.length; ++i) {
                 mergedBytes[i] = (byte) Math.max(mergedBytes[i], ll.M[i]);
             }
         }
@@ -199,10 +181,8 @@ public class LogLog implements ICardinality
      * @return merged estimator or null if no estimators were provided
      * @throws LogLogMergeException if estimators are not mergeable (all estimators must be the same size)
      */
-    public static LogLog mergeEstimators(LogLog... estimators) throws LogLogMergeException
-    {
-        if (estimators == null || estimators.length == 0)
-        {
+    public static LogLog mergeEstimators(LogLog... estimators) throws LogLogMergeException {
+        if (estimators == null || estimators.length == 0) {
             return null;
         }
         return (LogLog) estimators[0].merge(Arrays.copyOfRange(estimators, 1, estimators.length));
@@ -210,37 +190,32 @@ public class LogLog implements ICardinality
 
 
     @SuppressWarnings("serial")
-    protected static class LogLogMergeException extends CardinalityMergeException
-    {
-        public LogLogMergeException(String message)
-        {
+    protected static class LogLogMergeException extends CardinalityMergeException {
+
+        public LogLogMergeException(String message) {
             super(message);
         }
     }
 
-    public static class Builder implements IBuilder<ICardinality>
-    {
+    public static class Builder implements IBuilder<ICardinality> {
+
         protected final int k;
 
-        public Builder()
-        {
+        public Builder() {
             this(16);
         }
 
-        public Builder(int k)
-        {
+        public Builder(int k) {
             this.k = k;
         }
 
         @Override
-        public LogLog build()
-        {
+        public LogLog build() {
             return new LogLog(k);
         }
 
         @Override
-        public int sizeof()
-        {
+        public int sizeof() {
             return 1 << k;
         }
     }

@@ -18,8 +18,8 @@ package com.clearspring.analytics.stream;
 
 import java.util.List;
 
-public interface ITopK<T>
-{
+public interface ITopK<T> {
+
     /**
      * offer a single element to the top.
      *

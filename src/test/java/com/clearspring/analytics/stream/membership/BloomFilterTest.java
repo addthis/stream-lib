@@ -21,66 +21,60 @@ package com.clearspring.analytics.stream.membership;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import com.clearspring.analytics.stream.membership.KeyGenerator.RandomStringGenerator;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.clearspring.analytics.stream.membership.KeyGenerator.RandomStringGenerator;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 
-public class BloomFilterTest
-{
+public class BloomFilterTest {
+
     public BloomFilter bf;
     public BloomCalculations.BloomSpecification spec = BloomCalculations.computeBucketsAndK(0.0001);
     static final int ELEMENTS = 10000;
 
-    public BloomFilterTest()
-    {
+    public BloomFilterTest() {
         bf = new BloomFilter(ELEMENTS, spec.bucketsPerElement);
         assertNotNull(bf);
     }
 
     @Before
-    public void clear()
-    {
+    public void clear() {
         bf.clear();
     }
 
     @Test
-    public void testOne()
-    {
+    public void testOne() {
         bf.add("a");
         assertTrue(bf.isPresent("a"));
         assertFalse(bf.isPresent("b"));
     }
 
     @Test
-    public void testFalsePositivesInt()
-    {
+    public void testFalsePositivesInt() {
         FilterTest.testFalsePositives(bf, FilterTest.intKeys(), FilterTest.randomKeys2());
     }
 
     @Test
-    public void testFalsePositivesRandom()
-    {
+    public void testFalsePositivesRandom() {
         FilterTest.testFalsePositives(bf, FilterTest.randomKeys(), FilterTest.randomKeys2());
     }
 
     @Test
-    public void testWords()
-    {
-        if (KeyGenerator.WordGenerator.WORDS == 0)
-        {
+    public void testWords() {
+        if (KeyGenerator.WordGenerator.WORDS == 0) {
             return;
         }
         BloomFilter bf2 = new BloomFilter(KeyGenerator.WordGenerator.WORDS / 2, FilterTest.spec.bucketsPerElement);
@@ -91,14 +85,12 @@ public class BloomFilterTest
     }
 
     @Test
-    public void testSerialize() throws IOException
-    {
+    public void testSerialize() throws IOException {
         FilterTest.testSerialize(bf);
     }
 
     @Test
-    public void testGetFalsePositiveProbability()
-    {
+    public void testGetFalsePositiveProbability() {
         // These probabilities are taken from the bloom filter probability table at
         // http://pages.cs.wisc.edu/~cao/papers/summary-cache/node8.html
         System.out.println("expectedFalsePositiveProbability");
@@ -133,18 +125,15 @@ public class BloomFilterTest
      * @throws UnsupportedEncodingException
      */
     @Test
-    public void testFalsePositiveRate() throws UnsupportedEncodingException
-    {
+    public void testFalsePositiveRate() throws UnsupportedEncodingException {
         // Numbers are from // http://pages.cs.wisc.edu/~cao/papers/summary-cache/node8.html
 
-        for (int j = 10; j < 21; j++)
-        {
+        for (int j = 10; j < 21; j++) {
             System.out.print(j - 9 + "/11");
             Set<String> v = new HashSet<String>();
             BloomFilter instance = new BloomFilter(100, j);
 
-            for (int i = 0; i < 100; i++)
-            {
+            for (int i = 0; i < 100; i++) {
                 String key = UUID.randomUUID().toString();
                 v.add(key);
                 instance.add(key);
@@ -152,13 +141,10 @@ public class BloomFilterTest
 
             long r = 0;
             double tests = 100000;
-            for (int i = 0; i < tests; i++)
-            {
+            for (int i = 0; i < tests; i++) {
                 String s = UUID.randomUUID().toString();
-                if (instance.isPresent(s))
-                {
-                    if (!v.contains(s))
-                    {
+                if (instance.isPresent(s)) {
+                    if (!v.contains(s)) {
                         r++;
                     }
                 }
@@ -175,8 +161,7 @@ public class BloomFilterTest
      * Test for correct k *
      */
     @Test
-    public void testHashCount()
-    {
+    public void testHashCount() {
         // Numbers are from http://pages.cs.wisc.edu/~cao/papers/summary-cache/node8.html
         BloomFilter instance = null;
 
@@ -219,8 +204,7 @@ public class BloomFilterTest
     }
 
     @Test
-    public void testSizing() throws IOException
-    {
+    public void testSizing() throws IOException {
         BloomFilter f = null;
 
         assertEquals(128, (f = new BloomFilter(10, 0.05)).buckets());
@@ -246,8 +230,7 @@ public class BloomFilterTest
         assertEquals(10000064, (f = new BloomFilter(1000000, 0.01)).buckets());
         assertEquals(1250085, serialize(f).length);
 
-        for (String s : new RandomStringGenerator(new Random().nextInt(), 1000000))
-        {
+        for (String s : new RandomStringGenerator(new Random().nextInt(), 1000000)) {
             f.add(s);
         }
         assertEquals(10000064, f.buckets());
@@ -257,17 +240,14 @@ public class BloomFilterTest
 
     @Ignore
     @Test
-    public void timeSerialize() throws IOException
-    {
-        for (int i = 0; i < 1000; i++)
-        {
+    public void timeSerialize() throws IOException {
+        for (int i = 0; i < 1000; i++) {
             BloomFilter f = new BloomFilter(1000000, 0.01);
             serialize(f);
         }
     }
 
-    private byte[] serialize(BloomFilter f) throws IOException
-    {
+    private byte[] serialize(BloomFilter f) throws IOException {
         DataOutputBuffer out = new DataOutputBuffer();
         f.getSerializer().serialize(f, out);
         out.close();
@@ -278,8 +258,7 @@ public class BloomFilterTest
     @Ignore
     @Test
     // run with -mx1G
-    public void testBigInt()
-    {
+    public void testBigInt() {
         int size = 100 * 1000 * 1000;
         bf = new BloomFilter(size, FilterTest.spec.bucketsPerElement);
         FilterTest.testFalsePositives(bf,
@@ -289,8 +268,7 @@ public class BloomFilterTest
 
     @Ignore
     @Test
-    public void testBigRandom()
-    {
+    public void testBigRandom() {
         int size = 100 * 1000 * 1000;
         bf = new BloomFilter(size, FilterTest.spec.bucketsPerElement);
         FilterTest.testFalsePositives(bf,
@@ -300,12 +278,10 @@ public class BloomFilterTest
 
     @Ignore
     @Test
-    public void timeit()
-    {
+    public void timeit() {
         int size = 300 * FilterTest.ELEMENTS;
         bf = new BloomFilter(size, FilterTest.spec.bucketsPerElement);
-        for (int i = 0; i < 10; i++)
-        {
+        for (int i = 0; i < 10; i++) {
             FilterTest.testFalsePositives(bf,
                     new KeyGenerator.RandomStringGenerator(new Random().nextInt(), size),
                     new KeyGenerator.RandomStringGenerator(new Random().nextInt(), size));

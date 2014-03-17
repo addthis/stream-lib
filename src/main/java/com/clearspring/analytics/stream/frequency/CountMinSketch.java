@@ -30,8 +30,8 @@ import com.clearspring.analytics.stream.membership.Filter;
  * An Improved Data Stream Summary: The Count-Min Sketch and its Applications
  * http://www.eecs.harvard.edu/~michaelm/CS222/countmin.pdf
  */
-public class CountMinSketch implements IFrequency
-{
+public class CountMinSketch implements IFrequency {
+
     public static final long PRIME_MODULUS = (1L << 31) - 1;
 
     int depth;
@@ -42,12 +42,10 @@ public class CountMinSketch implements IFrequency
     double eps;
     double confidence;
 
-    CountMinSketch()
-    {
+    CountMinSketch() {
     }
 
-    public CountMinSketch(int depth, int width, int seed)
-    {
+    public CountMinSketch(int depth, int width, int seed) {
         this.depth = depth;
         this.width = width;
         this.eps = 2.0 / width;
@@ -55,8 +53,7 @@ public class CountMinSketch implements IFrequency
         initTablesWith(depth, width, seed);
     }
 
-    public CountMinSketch(double epsOfTotalCount, double confidence, int seed)
-    {
+    public CountMinSketch(double epsOfTotalCount, double confidence, int seed) {
         // 2/w = eps ; w = 2/eps
         // 1/2^depth <= 1-confidence ; depth >= -log2 (1-confidence)
         this.eps = epsOfTotalCount;
@@ -66,19 +63,17 @@ public class CountMinSketch implements IFrequency
         initTablesWith(depth, width, seed);
     }
 
-    CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table)
-    {
+    CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table) {
         this.depth = depth;
         this.width = width;
-        this.eps   = 2.0 / width;
+        this.eps = 2.0 / width;
         this.confidence = 1 - 1 / Math.pow(2, depth);
         this.hashA = hashA;
         this.table = table;
-        this.size  = size;
+        this.size = size;
     }
 
-    private void initTablesWith(int depth, int width, int seed)
-    {
+    private void initTablesWith(int depth, int width, int seed) {
         this.table = new long[depth][width];
         this.hashA = new long[depth];
         Random r = new Random(seed);
@@ -88,24 +83,20 @@ public class CountMinSketch implements IFrequency
         // However we can set b = 0 as all it does is shift the results
         // without compromising their uniformity or independence with
         // the other hashes.
-        for (int i = 0; i < depth; ++i)
-        {
+        for (int i = 0; i < depth; ++i) {
             hashA[i] = r.nextInt(Integer.MAX_VALUE);
         }
     }
 
-    public double getRelativeError()
-    {
+    public double getRelativeError() {
         return eps;
     }
 
-    public double getConfidence()
-    {
+    public double getConfidence() {
         return confidence;
     }
 
-    int hash(long item, int i)
-    {
+    int hash(long item, int i) {
         long hash = hashA[i] * item;
         // A super fast way of computing x mod 2^p-1
         // See http://www.cs.princeton.edu/courses/archive/fall09/cos521/Handouts/universalclasses.pdf
@@ -117,28 +108,23 @@ public class CountMinSketch implements IFrequency
     }
 
     @Override
-    public void add(long item, long count)
-    {
-        if (count < 0)
-        {
+    public void add(long item, long count) {
+        if (count < 0) {
             // Actually for negative increments we'll need to use the median
             // instead of minimum, and accuracy will suffer somewhat.
             // Probably makes sense to add an "allow negative increments"
             // parameter to constructor.
             throw new IllegalArgumentException("Negative increments not implemented");
         }
-        for (int i = 0; i < depth; ++i)
-        {
+        for (int i = 0; i < depth; ++i) {
             table[i][hash(item, i)] += count;
         }
         size += count;
     }
 
     @Override
-    public void add(String item, long count)
-    {
-        if (count < 0)
-        {
+    public void add(String item, long count) {
+        if (count < 0) {
             // Actually for negative increments we'll need to use the median
             // instead of minimum, and accuracy will suffer somewhat.
             // Probably makes sense to add an "allow negative increments"
@@ -146,16 +132,14 @@ public class CountMinSketch implements IFrequency
             throw new IllegalArgumentException("Negative increments not implemented");
         }
         int[] buckets = Filter.getHashBuckets(item, depth, width);
-        for (int i = 0; i < depth; ++i)
-        {
+        for (int i = 0; i < depth; ++i) {
             table[i][buckets[i]] += count;
         }
         size += count;
     }
 
     @Override
-    public long size()
-    {
+    public long size() {
         return size;
     }
 
@@ -164,23 +148,19 @@ public class CountMinSketch implements IFrequency
      * with probability 'confidence'.
      */
     @Override
-    public long estimateCount(long item)
-    {
+    public long estimateCount(long item) {
         long res = Long.MAX_VALUE;
-        for (int i = 0; i < depth; ++i)
-        {
+        for (int i = 0; i < depth; ++i) {
             res = Math.min(res, table[i][hash(item, i)]);
         }
         return res;
     }
 
     @Override
-    public long estimateCount(String item)
-    {
+    public long estimateCount(String item) {
         long res = Long.MAX_VALUE;
         int[] buckets = Filter.getHashBuckets(item, depth, width);
-        for (int i = 0; i < depth; ++i)
-        {
+        for (int i = 0; i < depth; ++i) {
             res = Math.min(res, table[i][buckets[i]]);
         }
         return res;
@@ -193,11 +173,9 @@ public class CountMinSketch implements IFrequency
      * @return merged estimator or null if no estimators were provided
      * @throws CMSMergeException if estimators are not mergeable (same depth, width and seed)
      */
-    public static CountMinSketch merge(CountMinSketch... estimators) throws CMSMergeException
-    {
+    public static CountMinSketch merge(CountMinSketch... estimators) throws CMSMergeException {
         CountMinSketch merged = null;
-        if (estimators != null && estimators.length > 0)
-        {
+        if (estimators != null && estimators.length > 0) {
             int depth = estimators[0].depth;
             int width = estimators[0].width;
             long[] hashA = Arrays.copyOf(estimators[0].hashA, estimators[0].hashA.length);
@@ -205,25 +183,19 @@ public class CountMinSketch implements IFrequency
             long[][] table = new long[depth][width];
             int size = 0;
 
-            for (CountMinSketch estimator : estimators)
-            {
-                if (estimator.depth != depth)
-                {
+            for (CountMinSketch estimator : estimators) {
+                if (estimator.depth != depth) {
                     throw new CMSMergeException("Cannot merge estimators of different depth");
                 }
-                if (estimator.width != width)
-                {
+                if (estimator.width != width) {
                     throw new CMSMergeException("Cannot merge estimators of different width");
                 }
-                if (!Arrays.equals(estimator.hashA, hashA))
-                {
+                if (!Arrays.equals(estimator.hashA, hashA)) {
                     throw new CMSMergeException("Cannot merge estimators of different seed");
                 }
 
-                for (int i = 0; i < table.length; i++)
-                {
-                    for (int j = 0; j < table[i].length; j++)
-                    {
+                for (int i = 0; i < table.length; i++) {
+                    for (int j = 0; j < table[i].length; j++) {
                         table[i][j] += estimator.table[i][j];
                     }
                 }
@@ -236,38 +208,30 @@ public class CountMinSketch implements IFrequency
         return merged;
     }
 
-    public static byte[] serialize(CountMinSketch sketch)
-    {
+    public static byte[] serialize(CountMinSketch sketch) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream s = new DataOutputStream(bos);
-        try
-        {
+        try {
             s.writeLong(sketch.size);
             s.writeInt(sketch.depth);
             s.writeInt(sketch.width);
-            for (int i = 0; i < sketch.depth; ++i)
-            {
+            for (int i = 0; i < sketch.depth; ++i) {
                 s.writeLong(sketch.hashA[i]);
-                for (int j = 0; j < sketch.width; ++j)
-                {
+                for (int j = 0; j < sketch.width; ++j) {
                     s.writeLong(sketch.table[i][j]);
                 }
             }
             return bos.toByteArray();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             // Shouldn't happen
             throw new RuntimeException(e);
         }
     }
 
-    public static CountMinSketch deserialize(byte[] data)
-    {
+    public static CountMinSketch deserialize(byte[] data) {
         ByteArrayInputStream bis = new ByteArrayInputStream(data);
         DataInputStream s = new DataInputStream(bis);
-        try
-        {
+        try {
             CountMinSketch sketch = new CountMinSketch();
             sketch.size = s.readLong();
             sketch.depth = s.readInt();
@@ -276,28 +240,23 @@ public class CountMinSketch implements IFrequency
             sketch.confidence = 1 - 1 / Math.pow(2, sketch.depth);
             sketch.hashA = new long[sketch.depth];
             sketch.table = new long[sketch.depth][sketch.width];
-            for (int i = 0; i < sketch.depth; ++i)
-            {
+            for (int i = 0; i < sketch.depth; ++i) {
                 sketch.hashA[i] = s.readLong();
-                for (int j = 0; j < sketch.width; ++j)
-                {
+                for (int j = 0; j < sketch.width; ++j) {
                     sketch.table[i][j] = s.readLong();
                 }
             }
             return sketch;
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             // Shouldn't happen
             throw new RuntimeException(e);
         }
     }
 
     @SuppressWarnings("serial")
-    protected static class CMSMergeException extends FrequencyMergeException
-    {
-        public CMSMergeException(String message)
-        {
+    protected static class CMSMergeException extends FrequencyMergeException {
+
+        public CMSMergeException(String message) {
             super(message);
         }
     }
