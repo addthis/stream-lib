@@ -124,21 +124,7 @@ public class HyperLogLog implements ICardinality
         this.log2m = log2m;
         int m = 1 << this.log2m;
 
-        // See the paper.
-        switch (log2m)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        alphaMM = getAlphaMM(log2m, m);
     }
 
 
@@ -190,7 +176,7 @@ public class HyperLogLog implements ICardinality
         if (estimate <= (5.0 / 2.0) * count)
         {
             // Small Range Estimate
-            return Math.round(count * Math.log(count / zeros));
+            return Math.round(linearCounting(count, zeros));
         }
         else
         {
@@ -302,5 +288,25 @@ public class HyperLogLog implements ICardinality
         {
             super(message);
         }
+    }
+
+    protected static double getAlphaMM(final int p, final int m) {
+        // See the paper.
+        switch (p)
+        {
+            case 4:
+                return 0.673 * m * m;
+            case 5:
+                return 0.697 * m * m;
+            case 6:
+                return 0.709 * m * m;
+            default:
+                return (0.7213 / (1 + 1.079 / m)) * m * m;
+        }
+    }
+
+    protected static double linearCounting(int m, double V)
+    {
+        return m * Math.log(m / V);
     }
 }

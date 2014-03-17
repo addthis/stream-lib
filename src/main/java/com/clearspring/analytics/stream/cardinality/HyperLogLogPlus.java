@@ -246,21 +246,7 @@ public class HyperLogLogPlus implements ICardinality
             }
         }
 
-        // See the paper.
-        switch (p)
-        {
-            case 4:
-                alphaMM = 0.673 * m * m;
-                break;
-            case 5:
-                alphaMM = 0.697 * m * m;
-                break;
-            case 6:
-                alphaMM = 0.709 * m * m;
-                break;
-            default:
-                alphaMM = (0.7213 / (1 + 1.079 / m)) * m * m;
-        }
+        this.alphaMM = HyperLogLog.getAlphaMM(p, m);
     }
 
     @Override
@@ -527,7 +513,7 @@ public class HyperLogLogPlus implements ICardinality
                 double H;
                 if (zeros > 0)
                 {
-                    H = count * Math.log(count / zeros);
+                    H = HyperLogLog.linearCounting(count, zeros);
                 }
                 else
                 {
@@ -544,7 +530,7 @@ public class HyperLogLogPlus implements ICardinality
                 }
             case SPARSE:
                 mergeTempList();
-                return linearCounting(sm, (sm - sparseSet.length));
+                return Math.round(HyperLogLog.linearCounting(sm, (sm - sparseSet.length)));
         }
         return 0;
     }
@@ -759,11 +745,6 @@ public class HyperLogLogPlus implements ICardinality
             }
         }
         return toIntArray(newSet);
-    }
-
-    private static int linearCounting(int m, double V)
-    {
-        return (int) Math.round((m * Math.log(m / V)));
     }
 
     @Override
