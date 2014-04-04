@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,16 +40,15 @@ import com.clearspring.analytics.util.Pair;
  *
  * @param <T> type of data in the stream to be summarized
  */
-public class StreamSummary<T> implements ITopK<T>, Externalizable
-{
-    protected class Bucket
-    {
+public class StreamSummary<T> implements ITopK<T>, Externalizable {
+
+    protected class Bucket {
+
         protected DoublyLinkedList<Counter<T>> counterList;
 
         private long count;
 
-        public Bucket(long count)
-        {
+        public Bucket(long count) {
             this.count = count;
             this.counterList = new DoublyLinkedList<Counter<T>>();
         }
@@ -61,15 +61,13 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     /**
      * @param capacity maximum size (larger capacities improve accuracy)
      */
-    public StreamSummary(int capacity)
-    {
+    public StreamSummary(int capacity) {
         this.capacity = capacity;
         counterMap = new HashMap<T, ListNode2<Counter<T>>>();
         bucketList = new DoublyLinkedList<Bucket>();
     }
 
-    public int getCapacity()
-    {
+    public int getCapacity() {
         return capacity;
     }
 
@@ -80,8 +78,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      * @return false if item was already in the stream summary, true otherwise
      */
     @Override
-    public boolean offer(T item)
-    {
+    public boolean offer(T item) {
         return offer(item, 1);
     }
 
@@ -92,8 +89,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      * @return false if item was already in the stream summary, true otherwise
      */
     @Override
-    public boolean offer(T item, int incrementCount)
-    {
+    public boolean offer(T item, int incrementCount) {
         return offerReturnAll(item, incrementCount).left;
     }
 
@@ -101,8 +97,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      * @param item stream element (<i>e</i>)
      * @return item dropped from summary if an item was dropped, null otherwise
      */
-    public T offerReturnDropped(T item, int incrementCount)
-    {
+    public T offerReturnDropped(T item, int incrementCount) {
         return offerReturnAll(item, incrementCount).right;
     }
 
@@ -110,20 +105,15 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      * @param item stream element (<i>e</i>)
      * @return Pair<isNewItem, itemDropped> where isNewItem is the return value of offer() and itemDropped is null if no item was dropped
      */
-    public Pair<Boolean, T> offerReturnAll(T item, int incrementCount)
-    {
+    public Pair<Boolean, T> offerReturnAll(T item, int incrementCount) {
         ListNode2<Counter<T>> counterNode = counterMap.get(item);
         boolean isNewItem = (counterNode == null);
         T droppedItem = null;
-        if (isNewItem)
-        {
+        if (isNewItem) {
 
-            if (size() < capacity)
-            {
+            if (size() < capacity) {
                 counterNode = bucketList.enqueue(new Bucket(0)).getValue().counterList.add(new Counter<T>(bucketList.tail(), item));
-            }
-            else
-            {
+            } else {
                 Bucket min = bucketList.first();
                 counterNode = min.counterList.tail();
                 Counter<T> counter = counterNode.getValue();
@@ -140,8 +130,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
         return new Pair<Boolean, T>(isNewItem, droppedItem);
     }
 
-    protected void incrementCounter(ListNode2<Counter<T>> counterNode, int incrementCount)
-    {
+    protected void incrementCounter(ListNode2<Counter<T>> counterNode, int incrementCount) {
         Counter<T> counter = counterNode.getValue();       // count_i
         ListNode2<Bucket> oldNode = counter.bucketNode;
         Bucket bucket = oldNode.getValue();         // Let Bucket_i be the bucket of count_i
@@ -181,17 +170,13 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     }
 
     @Override
-    public List<T> peek(int k)
-    {
+    public List<T> peek(int k) {
         List<T> topK = new ArrayList<T>(k);
 
-        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
-        {
+        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev()) {
             Bucket b = bNode.getValue();
-            for (Counter<T> c : b.counterList)
-            {
-                if (topK.size() == k)
-                {
+            for (Counter<T> c : b.counterList) {
+                if (topK.size() == k) {
                     return topK;
                 }
                 topK.add(c.item);
@@ -201,17 +186,13 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
         return topK;
     }
 
-    public List<Counter<T>> topK(int k)
-    {
+    public List<Counter<T>> topK(int k) {
         List<Counter<T>> topK = new ArrayList<Counter<T>>(k);
 
-        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
-        {
+        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev()) {
             Bucket b = bNode.getValue();
-            for (Counter<T> c : b.counterList)
-            {
-                if (topK.size() == k)
-                {
+            for (Counter<T> c : b.counterList) {
+                if (topK.size() == k) {
                     return topK;
                 }
                 topK.add(c);
@@ -224,38 +205,32 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     /**
      * @return number of items stored
      */
-    public int size()
-    {
+    public int size() {
         return counterMap.size();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append('[');
-        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev())
-        {
+        for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode.getPrev()) {
             Bucket b = bNode.getValue();
             sb.append('{');
             sb.append(b.count);
             sb.append(":[");
-            for (Counter<T> c : b.counterList)
-            {
+            for (Counter<T> c : b.counterList) {
                 sb.append('{');
                 sb.append(c.item);
                 sb.append(':');
                 sb.append(c.error);
                 sb.append("},");
             }
-            if (b.counterList.size() > 0)
-            {
+            if (b.counterList.size() > 0) {
                 sb.deleteCharAt(sb.length() - 1);
             }
             sb.append("]},");
         }
-        if (bucketList.size() > 0)
-        {
+        if (bucketList.size() > 0) {
             sb.deleteCharAt(sb.length() - 1);
         }
         sb.append(']');
@@ -264,8 +239,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
 
     @SuppressWarnings("unchecked")
     @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
-    {
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.bucketList = new DoublyLinkedList<Bucket>();
         this.capacity = in.readInt();
 
@@ -274,11 +248,9 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
 
         Bucket currentBucket = null;
         ListNode2<Bucket> currentBucketNode = null;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             Counter<T> c = (Counter<T>) in.readObject();
-            if (currentBucket == null || c.count != currentBucket.count)
-            {
+            if (currentBucket == null || c.count != currentBucket.count) {
                 currentBucket = new Bucket(c.count);
                 currentBucketNode = bucketList.add(currentBucket);
             }
@@ -288,15 +260,12 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     }
 
     @Override
-    public void writeExternal(ObjectOutput out) throws IOException
-    {
+    public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(this.capacity);
         out.writeInt(this.size());
-        for (ListNode2<Bucket> bNode = bucketList.tail(); bNode != null; bNode = bNode.getNext())
-        {
+        for (ListNode2<Bucket> bNode = bucketList.tail(); bNode != null; bNode = bNode.getNext()) {
             Bucket b = bNode.getValue();
-            for (Counter<T> c : b.counterList)
-            {
+            for (Counter<T> c : b.counterList) {
                 out.writeObject(c);
             }
         }
@@ -305,8 +274,7 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
     /**
      * For de-serialization
      */
-    public StreamSummary()
-    {
+    public StreamSummary() {
     }
 
     /**
@@ -316,18 +284,15 @@ public class StreamSummary<T> implements ITopK<T>, Externalizable
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    public StreamSummary(byte[] bytes) throws IOException, ClassNotFoundException
-    {
+    public StreamSummary(byte[] bytes) throws IOException, ClassNotFoundException {
         fromBytes(bytes);
     }
 
-    public void fromBytes(byte[] bytes) throws IOException, ClassNotFoundException
-    {
+    public void fromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
         readExternal(new ObjectInputStream(new ByteArrayInputStream(bytes)));
     }
 
-    public byte[] toBytes() throws IOException
-    {
+    public byte[] toBytes() throws IOException {
         return ExternalizableUtil.toBytes(this);
     }
 }

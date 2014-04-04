@@ -16,18 +16,17 @@ package com.clearspring.analytics.hash;
  * limitations under the License.
  */
 
-import junit.framework.Assert;
 import org.junit.Test;
+
+import junit.framework.Assert;
 
 /**
  * @author epollan
  */
-public class TestMurmurHash
-{
+public class TestMurmurHash {
 
     @Test
-    public void testHashByteArrayOverload()
-    {
+    public void testHashByteArrayOverload() {
         String input = "hashthis";
         byte[] inputBytes = input.getBytes();
 
@@ -41,8 +40,7 @@ public class TestMurmurHash
     }
 
     @Test
-    public void testHash64ByteArrayOverload()
-    {
+    public void testHash64ByteArrayOverload() {
         String input = "hashthis";
         byte[] inputBytes = input.getBytes();
 

@@ -18,127 +18,111 @@
 */
 package com.clearspring.analytics.stream.membership;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import java.util.Iterator;
 import java.util.Random;
 
-public class KeyGenerator
-{
-    private static String randomKey(Random r)
-    {
+public class KeyGenerator {
+
+    private static String randomKey(Random r) {
         StringBuilder buffer = new StringBuilder();
-        for (int j = 0; j < 16; j++)
-        {
+        for (int j = 0; j < 16; j++) {
             buffer.append((char) r.nextInt());
         }
         return buffer.toString();
     }
 
-    static class RandomStringGenerator implements ResetableIterator<String>, Iterable<String>
-    {
+    static class RandomStringGenerator implements ResetableIterator<String>, Iterable<String> {
+
         int i, n, seed;
         Random random;
 
-        RandomStringGenerator(int seed, int n)
-        {
+        RandomStringGenerator(int seed, int n) {
             i = 0;
             this.seed = seed;
             this.n = n;
             reset();
         }
 
-        public int size()
-        {
+        public int size() {
             return n;
         }
 
-        public void reset()
-        {
+        public void reset() {
             random = new Random(seed);
         }
 
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return i < n;
         }
 
-        public String next()
-        {
+        public String next() {
             i++;
             return randomKey(random);
         }
 
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Iterator<String> iterator()
-        {
+        public Iterator<String> iterator() {
             return this;
         }
     }
 
-    static class IntGenerator implements ResetableIterator<String>
-    {
+    static class IntGenerator implements ResetableIterator<String> {
+
         private int i, start, n;
 
-        IntGenerator(int n)
-        {
+        IntGenerator(int n) {
             this(0, n);
         }
 
-        IntGenerator(int start, int n)
-        {
+        IntGenerator(int start, int n) {
             this.start = start;
             this.n = n;
             reset();
         }
 
-        public int size()
-        {
+        public int size() {
             return n - start;
         }
 
-        public void reset()
-        {
+        public void reset() {
             i = start;
         }
 
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return i < n;
         }
 
-        public String next()
-        {
+        public String next() {
             return Integer.toString(i++);
         }
 
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
     }
 
-    static class WordGenerator implements ResetableIterator<String>
-    {
+    static class WordGenerator implements ResetableIterator<String> {
+
         static int WORDS;
 
-        static
-        {
-            try
-            {
+        static {
+            try {
                 BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream("/usr/share/dict/words")));
-                while (br.ready())
-                {
+                while (br.ready()) {
                     br.readLine();
                     WORDS++;
                 }
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 WORDS = 0;
             }
         }
@@ -148,66 +132,49 @@ public class KeyGenerator
         private int skip;
         String next;
 
-        WordGenerator(int skip, int modulo)
-        {
+        WordGenerator(int skip, int modulo) {
             this.skip = skip;
             this.modulo = modulo;
             reset();
         }
 
-        public int size()
-        {
+        public int size() {
             return (1 + WORDS - skip) / modulo;
         }
 
-        public void reset()
-        {
-            try
-            {
+        public void reset() {
+            try {
                 reader = new BufferedReader(new InputStreamReader(new FileInputStream("/usr/share/dict/words")));
-            }
-            catch (FileNotFoundException e)
-            {
+            } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
-            for (int i = 0; i < skip; i++)
-            {
-                try
-                {
+            for (int i = 0; i < skip; i++) {
+                try {
                     reader.readLine();
-                }
-                catch (IOException e)
-                {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
             next();
         }
 
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return next != null;
         }
 
-        public String next()
-        {
-            try
-            {
+        public String next() {
+            try {
                 String s = next;
-                for (int i = 0; i < modulo; i++)
-                {
+                for (int i = 0; i < modulo; i++) {
                     next = reader.readLine();
                 }
                 return s;
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        public void remove()
-        {
+        public void remove() {
             throw new UnsupportedOperationException();
         }
     }

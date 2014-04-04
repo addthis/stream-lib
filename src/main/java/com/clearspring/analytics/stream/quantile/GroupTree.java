@@ -17,18 +17,19 @@
 
 package com.clearspring.analytics.stream.quantile;
 
-import com.clearspring.analytics.util.AbstractIterator;
-import com.clearspring.analytics.util.Preconditions;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+
+import com.clearspring.analytics.util.AbstractIterator;
+import com.clearspring.analytics.util.Preconditions;
 
 /**
  * A tree containing TDigest.Group.  This adds to the normal NavigableSet the
  * ability to sum up the size of elements to the left of a particular group.
  */
 public class GroupTree implements Iterable<TDigest.Group> {
+
     private int count;
     private int size;
     private int depth;
@@ -181,7 +182,7 @@ public class GroupTree implements Iterable<TDigest.Group> {
      *
      * @param start The place to start this subset.  Remember that Groups are ordered by mean *and* id.
      * @return An iterator that goes through the groups in order of mean and id starting at or after the
-     *         specified Group.
+     * specified Group.
      */
     private Iterator<TDigest.Group> iterator(final TDigest.Group start) {
         return new AbstractIterator<TDigest.Group>() {

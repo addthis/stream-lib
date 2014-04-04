@@ -21,28 +21,24 @@ package com.clearspring.analytics.stream.membership;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+
 import java.util.BitSet;
 
-import com.clearspring.analytics.stream.membership.ICompactSerializer;
+public class BloomFilter extends Filter {
 
-public class BloomFilter extends Filter
-{
     static ICompactSerializer<BloomFilter> serializer_ = new BloomFilterSerializer();
 
-    public static ICompactSerializer<BloomFilter> serializer()
-    {
+    public static ICompactSerializer<BloomFilter> serializer() {
         return serializer_;
     }
 
     private BitSet filter_;
 
-    public BloomFilter(int numElements, int bucketsPerElement)
-    {
+    public BloomFilter(int numElements, int bucketsPerElement) {
         this(BloomCalculations.computeBestK(bucketsPerElement), new BitSet(numElements * bucketsPerElement + 20));
     }
 
-    public BloomFilter(int numElements, double maxFalsePosProbability)
-    {
+    public BloomFilter(int numElements, double maxFalsePosProbability) {
         BloomCalculations.BloomSpecification spec = BloomCalculations
                 .computeBucketsAndK(maxFalsePosProbability);
         filter_ = new BitSet(numElements * spec.bucketsPerElement + 20);
@@ -52,45 +48,35 @@ public class BloomFilter extends Filter
     /*
      * This version is only used by the deserializer.
      */
-    BloomFilter(int hashes, BitSet filter)
-    {
+    BloomFilter(int hashes, BitSet filter) {
         hashCount = hashes;
         filter_ = filter;
     }
 
-    public void clear()
-    {
+    public void clear() {
         filter_.clear();
     }
 
-    public int buckets()
-    {
+    public int buckets() {
         return filter_.size();
     }
 
-    BitSet filter()
-    {
+    BitSet filter() {
         return filter_;
     }
 
-    public boolean isPresent(String key)
-    {
-        for (int bucketIndex : getHashBuckets(key))
-        {
-            if (!filter_.get(bucketIndex))
-            {
+    public boolean isPresent(String key) {
+        for (int bucketIndex : getHashBuckets(key)) {
+            if (!filter_.get(bucketIndex)) {
                 return false;
             }
         }
         return true;
     }
 
-    public boolean isPresent(byte[] key)
-    {
-        for (int bucketIndex : getHashBuckets(key))
-        {
-            if (!filter_.get(bucketIndex))
-            {
+    public boolean isPresent(byte[] key) {
+        for (int bucketIndex : getHashBuckets(key)) {
+            if (!filter_.get(bucketIndex)) {
                 return false;
             }
         }
@@ -102,39 +88,30 @@ public class BloomFilter extends Filter
      the filter_.
      This is a general purpose API.
      */
-    public void add(String key)
-    {
-        for (int bucketIndex : getHashBuckets(key))
-        {
+    public void add(String key) {
+        for (int bucketIndex : getHashBuckets(key)) {
             filter_.set(bucketIndex);
         }
     }
 
-    public void add(byte[] key)
-    {
-        for (int bucketIndex : getHashBuckets(key))
-        {
+    public void add(byte[] key) {
+        for (int bucketIndex : getHashBuckets(key)) {
             filter_.set(bucketIndex);
         }
     }
 
-    public String toString()
-    {
+    public String toString() {
         return filter_.toString();
     }
 
-    ICompactSerializer tserializer()
-    {
+    ICompactSerializer tserializer() {
         return serializer_;
     }
 
-    int emptyBuckets()
-    {
+    int emptyBuckets() {
         int n = 0;
-        for (int i = 0; i < buckets(); i++)
-        {
-            if (!filter_.get(i))
-            {
+        for (int i = 0; i < buckets(); i++) {
+            if (!filter_.get(i)) {
                 n++;
             }
         }
@@ -144,41 +121,32 @@ public class BloomFilter extends Filter
     /**
      * @return a BloomFilter that always returns a positive match, for testing
      */
-    public static BloomFilter alwaysMatchingBloomFilter()
-    {
+    public static BloomFilter alwaysMatchingBloomFilter() {
         BitSet set = new BitSet(64);
         set.set(0, 64);
         return new BloomFilter(1, set);
     }
 
-    public static byte[] serialize(BloomFilter filter)
-    {
+    public static byte[] serialize(BloomFilter filter) {
         DataOutputBuffer out = new DataOutputBuffer();
-        try
-        {
+        try {
             BloomFilter.serializer().serialize(filter, out);
             out.close();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
         return out.getData();
     }
 
-    public static BloomFilter deserialize(byte[] bytes)
-    {
+    public static BloomFilter deserialize(byte[] bytes) {
         BloomFilter filter = null;
         DataInputBuffer in = new DataInputBuffer();
         in.reset(bytes, bytes.length);
-        try
-        {
+        try {
             filter = BloomFilter.serializer().deserialize(in);
             in.close();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -186,17 +154,15 @@ public class BloomFilter extends Filter
     }
 }
 
-class BloomFilterSerializer implements ICompactSerializer<BloomFilter>
-{
+class BloomFilterSerializer implements ICompactSerializer<BloomFilter> {
+
     public void serialize(BloomFilter bf, DataOutputStream dos)
-            throws IOException
-    {
+            throws IOException {
         dos.writeInt(bf.getHashCount());
         BitSetSerializer.serialize(bf.filter(), dos);
     }
 
-    public BloomFilter deserialize(DataInputStream dis) throws IOException
-    {
+    public BloomFilter deserialize(DataInputStream dis) throws IOException {
         int hashes = dis.readInt();
         BitSet bs = BitSetSerializer.deserialize(dis);
         return new BloomFilter(hashes, bs);

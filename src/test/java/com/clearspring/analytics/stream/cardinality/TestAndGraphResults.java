@@ -18,18 +18,15 @@ package com.clearspring.analytics.stream.cardinality;
 
 import java.io.FileWriter;
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-
 import com.clearspring.analytics.util.IBuilder;
+import com.clearspring.analytics.util.Pair;
+
 import com.googlecode.charts4j.AxisLabelsFactory;
 import com.googlecode.charts4j.Color;
 import com.googlecode.charts4j.Data;
@@ -41,13 +38,17 @@ import com.googlecode.charts4j.Shape;
 import com.googlecode.charts4j.XYLine;
 import com.googlecode.charts4j.XYLineChart;
 
-import com.clearspring.analytics.util.Pair;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 
 @Ignore
 @RunWith(Parameterized.class)
-public class TestAndGraphResults
-{
+public class TestAndGraphResults {
+
     private static int CARDINALITY = 50000000;
     private static int NUM_RESULTS = 10000;
     private static int NUM_TRIALS = 1000;
@@ -55,61 +56,50 @@ public class TestAndGraphResults
     private final int k;
 
     @Parameters
-    public static Collection<Object[]> kValues()
-    {
+    public static Collection<Object[]> kValues() {
         return Arrays.asList(new Object[][]{{15}, {16}, {17}, {10}});
     }
 
-    public TestAndGraphResults(int k)
-    {
+    public TestAndGraphResults(int k) {
         this.k = k;
     }
 
     @Test
-    public void testLogLog()
-    {
+    public void testLogLog() {
         testLogLog(new LogLog.Builder(), "k%2d %8d max:%f avg:%f min:%f");
     }
 
-    private List<Pair<Integer, double[]>> testLogLog(IBuilder<ICardinality> builder, String fmt)
-    {
+    private List<Pair<Integer, double[]>> testLogLog(IBuilder<ICardinality> builder, String fmt) {
         final int outputIncrement = CARDINALITY / NUM_RESULTS;
         List<Pair<Integer, double[]>> maxMeanMin = new ArrayList<Pair<Integer, double[]>>(NUM_RESULTS);
         ICardinality[] estimators = new ICardinality[NUM_TRIALS];
 
-        for (int t = 0; t < NUM_TRIALS; t++)
-        {
+        for (int t = 0; t < NUM_TRIALS; t++) {
             estimators[t] = builder.build();
             //estimators[t] = new AdaptiveCounting(k);
             //estimators[t] = new LinearCounting(1 << k);
         }
 
-        for (int n = 0; n < CARDINALITY; n++)
-        {
+        for (int n = 0; n < CARDINALITY; n++) {
             double[] mmm = {Double.MIN_VALUE, 0, Double.MAX_VALUE};
             int card = n + 1;
             boolean output = card % outputIncrement == 0;
-            for (int t = 0; t < NUM_TRIALS; t++)
-            {
+            for (int t = 0; t < NUM_TRIALS; t++) {
                 estimators[t].offer(TestICardinality.streamElement(0));
 
-                if (output)
-                {
+                if (output) {
                     double err = Math.abs(estimators[t].cardinality() - card) / (double) card;
-                    if (err > mmm[0])
-                    {
+                    if (err > mmm[0]) {
                         mmm[0] = err;
                     }
                     mmm[1] += err;
-                    if (err < mmm[2])
-                    {
+                    if (err < mmm[2]) {
                         mmm[2] = err;
                     }
                 }
             }
 
-            if (output)
-            {
+            if (output) {
                 mmm[1] /= NUM_TRIALS;
                 maxMeanMin.add(new Pair<Integer, double[]>(card, mmm));
                 System.out.println(String.format(fmt, k, card, mmm[0], mmm[1], mmm[2]));
@@ -119,14 +109,10 @@ public class TestAndGraphResults
     }
 
 
-    public static int parseInt(String val, int def, int radix)
-    {
-        try
-        {
+    public static int parseInt(String val, int def, int radix) {
+        try {
             return Integer.parseInt(val, radix);
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             return def;
         }
     }
@@ -137,28 +123,22 @@ public class TestAndGraphResults
      * @throws NoSuchMethodException
      * @throws SecurityException
      */
-    public static void main(String[] args) throws SecurityException, NoSuchMethodException
-    {
+    public static void main(String[] args) throws SecurityException, NoSuchMethodException {
         int k = 16;
         boolean graph = true;
-        if (args.length > 0)
-        {
+        if (args.length > 0) {
             k = parseInt(args[0], k, 10);
         }
-        if (args.length > 1)
-        {
+        if (args.length > 1) {
             CARDINALITY = parseInt(args[1], CARDINALITY, 10);
         }
-        if (args.length > 2)
-        {
+        if (args.length > 2) {
             NUM_TRIALS = parseInt(args[2], NUM_TRIALS, 10);
         }
-        if (args.length > 3)
-        {
+        if (args.length > 3) {
             NUM_RESULTS = parseInt(args[3], NUM_RESULTS, 10);
         }
-        if (args.length > 4)
-        {
+        if (args.length > 4) {
             graph = Boolean.parseBoolean(args[4]);
         }
 
@@ -178,14 +158,12 @@ public class TestAndGraphResults
         System.out.println(String.format("%8s %-8s %-8s %-8s", "n", "max", "avg", "min"));
         List<Pair<Integer, double[]>> results = new TestAndGraphResults(k).testLogLog(builder, "%2$8d %3$8f %4$8f %5$8f");
 
-        if (graph)
-        {
+        if (graph) {
             graphResults(results, k, estimator);
         }
     }
 
-    private static void graphResults(List<Pair<Integer, double[]>> results, int k, String estimator)
-    {
+    private static void graphResults(List<Pair<Integer, double[]>> results, int k, String estimator) {
         double[] xData = new double[results.size()];
         double[] maxData = new double[results.size()];
         double[] meanData = new double[results.size()];
@@ -194,8 +172,7 @@ public class TestAndGraphResults
         double maxMax = Double.MIN_VALUE;
         double minMin = Double.MAX_VALUE;
 
-        for (int r = 0; r < results.size(); r++)
-        {
+        for (int r = 0; r < results.size(); r++) {
             Pair<Integer, double[]> result = results.get(r);
             xData[r] = result.left;
             maxData[r] = result.right[0];
@@ -258,16 +235,13 @@ public class TestAndGraphResults
         double bad = DataUtil.scaleWithinRange(minMin, maxMax, new double[]{0.03}).getData()[0];
         double wrong = DataUtil.scaleWithinRange(minMin, maxMax, new double[]{0.05}).getData()[0];
 
-        if (0 <= good && good < 100)
-        {
+        if (0 <= good && good < 100) {
             chart.addHorizontalRangeMarker(good, Math.min(bad, 100), Color.LIGHTGREEN);
         }
-        if (0 <= bad && bad < 100)
-        {
+        if (0 <= bad && bad < 100) {
             chart.addHorizontalRangeMarker(bad, Math.min(wrong, 100), Color.LIGHTGOLDENRODYELLOW);
         }
-        if (wrong < 100)
-        {
+        if (wrong < 100) {
             chart.addHorizontalRangeMarker(Math.max(wrong, 0), 100, Color.LIGHTCORAL);
         }
 
@@ -282,25 +256,19 @@ public class TestAndGraphResults
         String page = pageStart + img + pageEnd;
 
         FileWriter fout = null;
-        try
-        {
+        try {
             fout = new FileWriter(String.format("%s_k%02d_n%010d_t%08d_r%06d.html", acronym(estimator), k, CARDINALITY, NUM_TRIALS, NUM_RESULTS));
             fout.append(page);
             fout.close();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static String acronym(String s)
-    {
+    private static String acronym(String s) {
         StringBuilder sb = new StringBuilder(s.length());
-        for (char c : s.toCharArray())
-        {
-            if (Character.isUpperCase(c))
-            {
+        for (char c : s.toCharArray()) {
+            if (Character.isUpperCase(c)) {
                 sb.append(c);
             }
         }
@@ -309,16 +277,12 @@ public class TestAndGraphResults
     }
 
     @SuppressWarnings("unused")
-    private static String shortenNumericLabel(double d)
-    {
+    private static String shortenNumericLabel(double d) {
         String suffix = " ";
-        if (d >= 1000000)
-        {
+        if (d >= 1000000) {
             d /= 1000000;
             suffix = "M";
-        }
-        else if (d >= 1000)
-        {
+        } else if (d >= 1000) {
             d /= 1000;
             suffix = "K";
         }

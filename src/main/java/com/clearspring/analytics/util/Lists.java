@@ -25,6 +25,7 @@ import java.util.List;
  * a dependency.  It would be better to just depend on guava.
  */
 public class Lists {
+
     public static <T> List<T> newArrayList(Iterable<T> source) {
         List<T> r = new ArrayList<T>();
         for (T x : source) {

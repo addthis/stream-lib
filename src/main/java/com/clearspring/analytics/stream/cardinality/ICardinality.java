@@ -19,8 +19,8 @@ package com.clearspring.analytics.stream.cardinality;
 import java.io.IOException;
 
 
-public interface ICardinality
-{
+public interface ICardinality {
+
     /**
      * @param o stream element
      * @return false if the value returned by cardinality() is unaffected by the appearance of o in the stream.
@@ -62,7 +62,7 @@ public interface ICardinality
     /**
      * Merges estimators to produce a new estimator for the combined streams
      * of this estimator and those passed as arguments.
-     * 
+     * <p/>
      * Nor this estimator nor the one passed as parameters are modified.
      *
      * @param estimators Zero or more compatible estimators

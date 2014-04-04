@@ -36,11 +36,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
-public class TestHyperLogLogPlus
-{
+public class TestHyperLogLogPlus {
 
-    public static void main(final String[] args) throws Throwable
-    {
+    public static void main(final String[] args) throws Throwable {
         long startTime = System.currentTimeMillis();
 
         int numSets = 10;
@@ -48,17 +46,13 @@ public class TestHyperLogLogPlus
         int repeats = 5;
 
         HyperLogLogPlus[] counters = new HyperLogLogPlus[numSets];
-        for (int i = 0; i < numSets; i++)
-        {
+        for (int i = 0; i < numSets; i++) {
             counters[i] = new HyperLogLogPlus(15, 15);
         }
-        for (int i = 0; i < numSets; i++)
-        {
-            for (int j = 0; j < setSize; j++)
-            {
+        for (int i = 0; i < numSets; i++) {
+            for (int j = 0; j < setSize; j++) {
                 String val = UUID.randomUUID().toString();
-                for (int z = 0; z < repeats; z++)
-                {
+                for (int z = 0; z < repeats; z++) {
                     counters[i].offer(val);
                 }
             }
@@ -66,8 +60,7 @@ public class TestHyperLogLogPlus
 
         ICardinality merged = counters[0];
         long sum = merged.cardinality();
-        for (int i = 1; i < numSets; i++)
-        {
+        for (int i = 1; i < numSets; i++) {
             sum += counters[i].cardinality();
             merged = merged.merge(counters[i]);
         }
@@ -81,12 +74,10 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testComputeCount()
-    {
+    public void testComputeCount() {
         HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
         int count = 70000;
-        for (int i = 0; i < count; i++)
-        {
+        for (int i = 0; i < count; i++) {
             hyperLogLogPlus.offer("i" + i);
         }
         long estimate = hyperLogLogPlus.cardinality();
@@ -99,29 +90,27 @@ public class TestHyperLogLogPlus
         assertTrue(estimate <= expectedCardinality + (3 * se));
     }
 
-	@Test
-	public void testSmallCardinalityRepeatedInsert() {
-		HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
-		int count = 15000;
-		int maxAttempts = 200;
-		Random r = new Random();
-		for (int i = 0; i < count; i++)
-		{
-			int n = r.nextInt(maxAttempts) + 1;
-			for (int j = 0; j < n ; j++)
-			{
-				hyperLogLogPlus.offer("i" + i);
-			}
-		}
-		long estimate = hyperLogLogPlus.cardinality();
-		double se = count * (1.04 / Math.sqrt(Math.pow(2, 14)));
-		long expectedCardinality = count;
+    @Test
+    public void testSmallCardinalityRepeatedInsert() {
+        HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(14, 25);
+        int count = 15000;
+        int maxAttempts = 200;
+        Random r = new Random();
+        for (int i = 0; i < count; i++) {
+            int n = r.nextInt(maxAttempts) + 1;
+            for (int j = 0; j < n; j++) {
+                hyperLogLogPlus.offer("i" + i);
+            }
+        }
+        long estimate = hyperLogLogPlus.cardinality();
+        double se = count * (1.04 / Math.sqrt(Math.pow(2, 14)));
+        long expectedCardinality = count;
 
-		System.out.println("Expect estimate: " + estimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
+        System.out.println("Expect estimate: " + estimate + " is between " + (expectedCardinality - (3 * se)) + " and " + (expectedCardinality + (3 * se)));
 
-		assertTrue(estimate >= expectedCardinality - (3 * se));
-		assertTrue(estimate <= expectedCardinality + (3 * se));
-	}
+        assertTrue(estimate >= expectedCardinality - (3 * se));
+        assertTrue(estimate <= expectedCardinality + (3 * se));
+    }
 
 //    @Test
 //    public void testDelta()
@@ -139,11 +128,9 @@ public class TestHyperLogLogPlus
 //    }
 
     @Test
-    public void testSerialization_Normal() throws IOException
-    {
+    public void testSerialization_Normal() throws IOException {
         HyperLogLogPlus hll = new HyperLogLogPlus(5, 25);
-        for (int i = 0; i < 100000; i++)
-        {
+        for (int i = 0; i < 100000; i++) {
             hll.offer("" + i);
         }
         System.out.println(hll.cardinality());
@@ -152,8 +139,7 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testSerialization_Sparse() throws IOException
-    {
+    public void testSerialization_Sparse() throws IOException {
         HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
         hll.offer("a");
         hll.offer("b");
@@ -166,13 +152,11 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testHighCardinality()
-    {
+    public void testHighCardinality() {
         long start = System.currentTimeMillis();
         HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(18, 25);
         int size = 10000000;
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             hyperLogLogPlus.offer(TestICardinality.streamElement(i));
         }
         System.out.println("expected: " + size + ", estimate: " + hyperLogLogPlus.cardinality() + ", time: " + (System.currentTimeMillis() - start));
@@ -183,8 +167,7 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testSortEncodedSet()
-    {
+    public void testSortEncodedSet() {
         int[] testSet = new int[3];
         testSet[0] = 655403;
         testSet[1] = 655416;
@@ -198,17 +181,13 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testMergeSelf_forceNormal() throws CardinalityMergeException, IOException
-    {
-        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000, 1000000};
-        for (int cardinality : cardinalities)
-        {
-            for (int j = 4; j < 24; j++)
-            {
+    public void testMergeSelf_forceNormal() throws CardinalityMergeException, IOException {
+        final int[] cardinalities = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+        for (int cardinality : cardinalities) {
+            for (int j = 4; j < 24; j++) {
                 System.out.println("p=" + j);
                 HyperLogLogPlus hllPlus = new HyperLogLogPlus(j, 0);
-                for (int l = 0; l < cardinality; l++)
-                {
+                for (int l = 0; l < cardinality; l++) {
                     hllPlus.offer(Math.random());
                 }
                 System.out.println("hllcardinality=" + hllPlus.cardinality() + " cardinality=" + cardinality);
@@ -222,26 +201,20 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testMergeSelf() throws CardinalityMergeException, IOException
-    {
-        final int[] cardinalities = { 0, 1, 10, 100, 1000, 10000, 100000 };
-        final int[] ps = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
-        final int[] sps = { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 };
+    public void testMergeSelf() throws CardinalityMergeException, IOException {
+        final int[] cardinalities = {0, 1, 10, 100, 1000, 10000, 100000};
+        final int[] ps = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+        final int[] sps = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
 
-        for (int cardinality : cardinalities)
-        {
-            for (int j = 0; j < ps.length; j++)
-            {
-                for (int sp : sps)
-                {
-                    if (sp < ps[j])
-                    {
+        for (int cardinality : cardinalities) {
+            for (int j = 0; j < ps.length; j++) {
+                for (int sp : sps) {
+                    if (sp < ps[j]) {
                         continue;
                     }
                     System.out.println(ps[j] + "-" + sp + ": " + cardinality);
                     HyperLogLogPlus hllPlus = new HyperLogLogPlus(ps[j], sp);
-                    for (int l = 0; l < cardinality; l++)
-                    {
+                    for (int l = 0; l < cardinality; l++) {
                         hllPlus.offer(Math.random());
                     }
                     HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBytes());
@@ -255,37 +228,32 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testOne() throws IOException
-    {
-        HyperLogLogPlus one = new HyperLogLogPlus(8,25);
+    public void testOne() throws IOException {
+        HyperLogLogPlus one = new HyperLogLogPlus(8, 25);
         one.offer("a");
         assertEquals(1, one.cardinality());
     }
 
     @Test
-    public void testSparseSpace() throws IOException
-    {
+    public void testSparseSpace() throws IOException {
         HyperLogLogPlus hllp = new HyperLogLogPlus(14, 14);
-        for (int i = 0; i < 10000 ; i++) {
-            hllp.offer(i );
+        for (int i = 0; i < 10000; i++) {
+            hllp.offer(i);
         }
         System.out.println("Size: " + hllp.getBytes().length);
     }
 
     @Test
-    public void testMerge_Sparse() throws CardinalityMergeException
-    {
+    public void testMerge_Sparse() throws CardinalityMergeException {
         int numToMerge = 4;
         int bits = 18;
         int cardinality = 4000;
 
         HyperLogLogPlus[] hyperLogLogs = new HyperLogLogPlus[numToMerge];
         HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             hyperLogLogs[i] = new HyperLogLogPlus(bits, 25);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 hyperLogLogs[i].offer(val);
                 baseline.offer(val);
@@ -309,19 +277,16 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testMerge_Normal() throws CardinalityMergeException
-    {
+    public void testMerge_Normal() throws CardinalityMergeException {
         int numToMerge = 4;
         int bits = 18;
         int cardinality = 5000;
 
         HyperLogLogPlus[] hyperLogLogs = new HyperLogLogPlus[numToMerge];
         HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             hyperLogLogs[i] = new HyperLogLogPlus(bits, 25);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 hyperLogLogs[i].offer(val);
                 baseline.offer(val);
@@ -342,14 +307,12 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testLegacyCodec_normal() throws IOException
-    {
+    public void testLegacyCodec_normal() throws IOException {
         int bits = 18;
         int cardinality = 1000000;
 
         HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int j = 0; j < cardinality; j++)
-        {
+        for (int j = 0; j < cardinality; j++) {
             double val = Math.random();
             baseline.offer(val);
         }
@@ -361,8 +324,7 @@ public class TestHyperLogLogPlus
         dos.writeInt(25);
         dos.writeInt(0);
         dos.writeInt(baseline.getRegisterSet().size * 4);
-        for (int x : baseline.getRegisterSet().readOnlyBits())
-        {
+        for (int x : baseline.getRegisterSet().readOnlyBits()) {
             dos.writeInt(x);
         }
 
@@ -377,14 +339,12 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testLegacyCodec_sparse() throws IOException
-    {
+    public void testLegacyCodec_sparse() throws IOException {
         int bits = 18;
         int cardinality = 5000;
 
         HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int j = 0; j < cardinality; j++)
-        {
+        for (int j = 0; j < cardinality; j++) {
             double val = Math.random();
             baseline.offer(val);
         }
@@ -400,13 +360,11 @@ public class TestHyperLogLogPlus
         List<byte[]> sparseBytes = new ArrayList<byte[]>(sparseSet.length);
 
         int prevDelta = 0;
-        for (int k : sparseSet)
-        {
+        for (int k : sparseSet) {
             sparseBytes.add(Varint.writeUnsignedVarInt(k - prevDelta));
             prevDelta = k;
         }
-        for (byte[] bytes : sparseBytes)
-        {
+        for (byte[] bytes : sparseBytes) {
             dos.writeInt(bytes.length);
             dos.write(bytes);
         }
@@ -423,19 +381,16 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testMerge_ManySparse() throws CardinalityMergeException
-    {
+    public void testMerge_ManySparse() throws CardinalityMergeException {
         int numToMerge = 20;
         int bits = 18;
         int cardinality = 10000;
 
         HyperLogLogPlus[] hyperLogLogs = new HyperLogLogPlus[numToMerge];
         HyperLogLogPlus baseline = new HyperLogLogPlus(bits, 25);
-        for (int i = 0; i < numToMerge; i++)
-        {
+        for (int i = 0; i < numToMerge; i++) {
             hyperLogLogs[i] = new HyperLogLogPlus(bits, 25);
-            for (int j = 0; j < cardinality; j++)
-            {
+            for (int j = 0; j < cardinality; j++) {
                 double val = Math.random();
                 hyperLogLogs[i].offer(val);
                 baseline.offer(val);
@@ -455,25 +410,24 @@ public class TestHyperLogLogPlus
     }
 
     @Test
-    public void testMerge_SparseIntersection() throws CardinalityMergeException
-    {
+    public void testMerge_SparseIntersection() throws CardinalityMergeException {
         HyperLogLogPlus a = new HyperLogLogPlus(11, 16);
         HyperLogLogPlus b = new HyperLogLogPlus(11, 16);
 
         // Note that only one element, 41, is shared amongst the two sets,
         // and so the number of total unique elements is 14.
-        int[] aInput = { 12, 13, 22, 34, 38, 40, 41, 46, 49 };
-        int[] bInput = { 2, 6, 19, 29, 41, 48 };
+        int[] aInput = {12, 13, 22, 34, 38, 40, 41, 46, 49};
+        int[] bInput = {2, 6, 19, 29, 41, 48};
 
         Set<Integer> testSet = new HashSet<Integer>();
         for (Integer in : aInput) {
-          testSet.add(in);
-          a.offer(in);
+            testSet.add(in);
+            a.offer(in);
         }
 
         for (Integer in : bInput) {
-          testSet.add(in);
-          b.offer(in);
+            testSet.add(in);
+            b.offer(in);
         }
 
         assertEquals(14, testSet.size());

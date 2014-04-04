@@ -16,90 +16,79 @@
 
 package com.clearspring.analytics.stream;
 
-import cern.jet.random.Distributions;
-import cern.jet.random.engine.RandomEngine;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Test;
+
+import cern.jet.random.Distributions;
+import cern.jet.random.engine.RandomEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestConcurrentStreamSummary
-{
-	private static final int NUM_ITERATIONS = 100000;
+public class TestConcurrentStreamSummary {
 
-	@Test
-	public void testStreamSummary()
-	{
-		ConcurrentStreamSummary<String> vs = new ConcurrentStreamSummary<String>(3);
-		String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "A", "A"};
-		for (String i : stream)
-		{
-			vs.offer(i);
-			/*
+    private static final int NUM_ITERATIONS = 100000;
+
+    @Test
+    public void testStreamSummary() {
+        ConcurrentStreamSummary<String> vs = new ConcurrentStreamSummary<String>(3);
+        String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "A", "A"};
+        for (String i : stream) {
+            vs.offer(i);
+            /*
 		for(String s : vs.poll(3))
 		System.out.print(s+" ");
 			 */
-			System.out.println(vs);
-		}
-	}
+            System.out.println(vs);
+        }
+    }
 
-	@Test
-	public void testTopK()
-	{
-		ConcurrentStreamSummary<String> vs = new ConcurrentStreamSummary<String>(3);
-		String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-		for (String i : stream)
-		{
-			vs.offer(i);
-		}
-		List<ScoredItem<String>> topK = vs.peekWithScores(3);
-		for (ScoredItem<String> c : topK)
-		{
-			assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
-		}
-	}
+    @Test
+    public void testTopK() {
+        ConcurrentStreamSummary<String> vs = new ConcurrentStreamSummary<String>(3);
+        String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
+        for (String i : stream) {
+            vs.offer(i);
+        }
+        List<ScoredItem<String>> topK = vs.peekWithScores(3);
+        for (ScoredItem<String> c : topK) {
+            assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
+        }
+    }
 
-	@Test
-	public void testTopKWithIncrement()
-	{
-		ConcurrentStreamSummary<String> vs = new ConcurrentStreamSummary<String>(3);
-		String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
-		for (String i : stream)
-		{
-			vs.offer(i, 10);
-		}
-		List<ScoredItem<String>> topK = vs.peekWithScores(3);
-		for (ScoredItem<String> c : topK)
-		{
-			assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
-		}
-	}
+    @Test
+    public void testTopKWithIncrement() {
+        ConcurrentStreamSummary<String> vs = new ConcurrentStreamSummary<String>(3);
+        String[] stream = {"X", "X", "Y", "Z", "A", "B", "C", "X", "X", "A", "C", "A", "A"};
+        for (String i : stream) {
+            vs.offer(i, 10);
+        }
+        List<ScoredItem<String>> topK = vs.peekWithScores(3);
+        for (ScoredItem<String> c : topK) {
+            assertTrue(Arrays.asList("A", "C", "X").contains(c.getItem()));
+        }
+    }
 
-	@Test
-	public void testGeometricDistribution()
-	{
-		ConcurrentStreamSummary<Integer> vs = new ConcurrentStreamSummary<Integer>(10);
-		RandomEngine re = RandomEngine.makeDefault();
+    @Test
+    public void testGeometricDistribution() {
+        ConcurrentStreamSummary<Integer> vs = new ConcurrentStreamSummary<Integer>(10);
+        RandomEngine re = RandomEngine.makeDefault();
 
-		for (int i = 0; i < NUM_ITERATIONS; i++)
-		{
-			int z = Distributions.nextGeometric(0.25, re);
-			vs.offer(z);
-		}
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
+            int z = Distributions.nextGeometric(0.25, re);
+            vs.offer(z);
+        }
 
-		List<Integer> top = vs.peek(5);
-		System.out.println("Geometric:");
-		for (Integer e : top)
-		{
-			System.out.println(e);
-		}
+        List<Integer> top = vs.peek(5);
+        System.out.println("Geometric:");
+        for (Integer e : top) {
+            System.out.println(e);
+        }
 
-		int tippyTop = top.get(0);
-		assertEquals(0, tippyTop);
-		System.out.println(vs);
-	}
+        int tippyTop = top.get(0);
+        assertEquals(0, tippyTop);
+        System.out.println(vs);
+    }
 
 }

@@ -20,20 +20,23 @@ import java.util.ConcurrentModificationException;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-public class TestDoublyLinkedList
-{
+public class TestDoublyLinkedList {
+
     @Test
-    public void testDoublyLinkedList()
-    {
+    public void testDoublyLinkedList() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         assertIsEmpty(list);
     }
 
     @Test
-    public void testAdd()
-    {
+    public void testAdd() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         list.add(1);
         assertFalse(list.isEmpty());
@@ -51,8 +54,7 @@ public class TestDoublyLinkedList
     }
 
     @Test
-    public void testEnqueue()
-    {
+    public void testEnqueue() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         list.enqueue(1);
         assertFalse(list.isEmpty());
@@ -71,8 +73,7 @@ public class TestDoublyLinkedList
     }
 
     @Test
-    public void testAddNode()
-    {
+    public void testAddNode() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         list.add(new ListNode2<Integer>(1));
         assertFalse(list.isEmpty());
@@ -90,8 +91,7 @@ public class TestDoublyLinkedList
     }
 
     @Test
-    public void testAddAfter()
-    {
+    public void testAddAfter() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         list.add(1);
         ListNode2<Integer> node2 = list.add(2);
@@ -109,8 +109,7 @@ public class TestDoublyLinkedList
     }
 
     @Test
-    public void testRemove()
-    {
+    public void testRemove() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         ListNode2<Integer> node1 = list.add(1);
         list.remove(node1);
@@ -145,32 +144,27 @@ public class TestDoublyLinkedList
     }
 
     @Test(expected = ConcurrentModificationException.class)
-    public void testConcurrentModification()
-    {
+    public void testConcurrentModification() {
         DoublyLinkedList<Integer> list = new DoublyLinkedList<Integer>();
         list.add(1);
         list.add(2);
         list.add(3);
 
-        for (int i : list)
-        {
-            if (i == 2)
-            {
+        for (int i : list) {
+            if (i == 2) {
                 list.add(4);
             }
         }
     }
 
-    private <T> void assertIsEmpty(DoublyLinkedList<T> list)
-    {
+    private <T> void assertIsEmpty(DoublyLinkedList<T> list) {
         assertNull(list.tail());
         assertNull(list.head());
         assertNull(list.first());
         assertNull(list.last());
         assertTrue(list.isEmpty());
         assertEquals(0, list.size());
-        for (T i : list)
-        {
+        for (T i : list) {
             fail("What is this: " + i + " ?");
         }
     }

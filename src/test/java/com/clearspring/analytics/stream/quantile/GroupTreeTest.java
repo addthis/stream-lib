@@ -17,19 +17,25 @@
 
 package com.clearspring.analytics.stream.quantile;
 
-import com.google.common.collect.Lists;
-import org.apache.mahout.common.RandomUtils;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import com.google.common.collect.Lists;
+
+import org.apache.mahout.common.RandomUtils;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GroupTreeTest {
+
     @Test
     public void testSimpleAdds() {
         GroupTree x = new GroupTree();

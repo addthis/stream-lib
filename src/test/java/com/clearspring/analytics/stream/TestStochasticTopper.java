@@ -19,45 +19,40 @@
  */
 package com.clearspring.analytics.stream;
 
-import cern.jet.random.Distributions;
-import cern.jet.random.engine.RandomEngine;
-
 import java.util.List;
 import java.util.Random;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import cern.jet.random.Distributions;
+import cern.jet.random.engine.RandomEngine;
+import static org.junit.Assert.assertTrue;
 
 
-public class TestStochasticTopper
-{
+public class TestStochasticTopper {
+
     private static final int NUM_ITERATIONS = 100000;
     private static final int NUM_ELEMENTS = 10;
     private StochasticTopper<Integer> vs;
     private Random random;
 
     @Before
-    public void setUp()
-    {
+    public void setUp() {
         vs = new StochasticTopper<Integer>(200);
         random = new Random(340340990L);
     }
 
 
     @Test
-    public void testGaussianDistribution()
-    {
-        for (int i = 0; i < NUM_ITERATIONS; i++)
-        {
+    public void testGaussianDistribution() {
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
             vs.offer(new Integer((int) Math.round((random.nextGaussian() * NUM_ELEMENTS))));
         }
 
         List<Integer> top = vs.peek(5);
         System.out.println("Gaussian:");
-        for (Integer e : top)
-        {
+        for (Integer e : top) {
             System.out.println(e);
         }
 
@@ -66,20 +61,17 @@ public class TestStochasticTopper
     }
 
     @Test
-    public void testZipfianDistribution()
-    {
+    public void testZipfianDistribution() {
         RandomEngine re = RandomEngine.makeDefault();
 
-        for (int i = 0; i < NUM_ITERATIONS; i++)
-        {
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
             int z = Distributions.nextZipfInt(1.2D, re);
             vs.offer(z);
         }
 
         List<Integer> top = vs.peek(5);
         System.out.println("Zipfian:");
-        for (Integer e : top)
-        {
+        for (Integer e : top) {
             System.out.println(e);
         }
 
@@ -88,20 +80,17 @@ public class TestStochasticTopper
     }
 
     @Test
-    public void testGeometricDistribution()
-    {
+    public void testGeometricDistribution() {
         RandomEngine re = RandomEngine.makeDefault();
 
-        for (int i = 0; i < NUM_ITERATIONS; i++)
-        {
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
             int z = Distributions.nextGeometric(0.25, re);
             vs.offer(z);
         }
 
         List<Integer> top = vs.peek(5);
         System.out.println("Geometric:");
-        for (Integer e : top)
-        {
+        for (Integer e : top) {
             System.out.println(e);
         }
 
@@ -110,34 +99,28 @@ public class TestStochasticTopper
     }
 
     @Test
-    public void testRandomEngine()
-    {
+    public void testRandomEngine() {
         int[] maxcounts = new int[10];
         int[] counts = new int[20];
 
         RandomEngine re = RandomEngine.makeDefault();
 
-        for (int i = 0; i < NUM_ITERATIONS; i++)
-        {
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
 //            int z = Distributions.nextZipfInt(1.2D, re);
             int z = Distributions.nextGeometric(0.25, re);
-            if (z > Integer.MAX_VALUE - 9)
-            {
+            if (z > Integer.MAX_VALUE - 9) {
                 maxcounts[Integer.MAX_VALUE - z]++;
             }
-            if (z < 20)
-            {
+            if (z < 20) {
                 counts[z]++;
             }
         }
 
-        for (int i = 0; i < 20; i++)
-        {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + ": " + counts[i]);
         }
 
-        for (int i = 9; i >= 0; i--)
-        {
+        for (int i = 9; i >= 0; i--) {
             System.out.println((Integer.MAX_VALUE - i) + ": " + maxcounts[i]);
         }
 
