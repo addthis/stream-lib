@@ -20,6 +20,8 @@ import java.io.IOException;
 
 import java.util.Arrays;
 
+import com.clearspring.analytics.TestUtils;
+
 import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -48,7 +50,20 @@ public class TestHyperLogLog {
     }
 
     @Test
-    public void testSerialization() throws IOException {
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        HyperLogLog hll = new HyperLogLog(8);
+        hll.offer("a");
+        hll.offer("b");
+        hll.offer("c");
+        hll.offer("d");
+        hll.offer("e");
+
+        HyperLogLog hll2 = (HyperLogLog) TestUtils.deserialize(TestUtils.serialize(hll));
+        assertEquals(hll.cardinality(), hll2.cardinality());
+    }
+
+    @Test
+    public void testSerializationUsingBuilder() throws IOException {
         HyperLogLog hll = new HyperLogLog(8);
         hll.offer("a");
         hll.offer("b");
