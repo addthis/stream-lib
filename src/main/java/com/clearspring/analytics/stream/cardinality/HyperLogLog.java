@@ -235,7 +235,7 @@ public class HyperLogLog implements ICardinality, Serializable {
     }
 
     private Object writeReplace() {
-        return new SerializedHyperLogLog(this);
+        return new SerializationHolder(this);
     }
 
     /**
@@ -254,18 +254,18 @@ public class HyperLogLog implements ICardinality, Serializable {
      * to optimize that here (eg. by raising this from an inner class
      * and giving it an unhelpful name).
      */
-    private static class SerializedHyperLogLog implements Externalizable {
+    private static class SerializationHolder implements Externalizable {
 
         HyperLogLog hyperLogLogHolder;
 
-        public SerializedHyperLogLog(HyperLogLog hyperLogLogHolder) {
+        public SerializationHolder(HyperLogLog hyperLogLogHolder) {
             this.hyperLogLogHolder = hyperLogLogHolder;
         }
 
         /**
          * required for Externalizable
          */
-        public SerializedHyperLogLog() {
+        public SerializationHolder() {
 
         }
 
