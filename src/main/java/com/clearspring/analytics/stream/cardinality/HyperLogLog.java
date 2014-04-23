@@ -115,7 +115,8 @@ public class HyperLogLog implements ICardinality, Serializable {
      *
      * @param registerSet - the initial values for the register set
      */
-    protected HyperLogLog(int log2m, RegisterSet registerSet) {
+    @Deprecated
+    public HyperLogLog(int log2m, RegisterSet registerSet) {
         if (log2m < 0 || log2m > 30) {
             throw new IllegalArgumentException("log2m argument is "
                                                + log2m + " and is outside the range [0, 30]");
