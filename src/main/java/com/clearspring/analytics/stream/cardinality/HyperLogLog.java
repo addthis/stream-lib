@@ -16,7 +16,15 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 
 import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.Bits;
@@ -66,11 +74,11 @@ import com.clearspring.analytics.util.IBuilder;
  * implementation google provides.
  * </p>
  */
-public class HyperLogLog implements ICardinality, Externalizable {
+public class HyperLogLog implements ICardinality, Serializable {
 
-    private RegisterSet registerSet;
-    private int log2m;
-    private double alphaMM;
+    private final RegisterSet registerSet;
+    private final int log2m;
+    private final double alphaMM;
 
 
     /**
@@ -81,13 +89,6 @@ public class HyperLogLog implements ICardinality, Externalizable {
      */
     public HyperLogLog(double rsd) {
         this(log2m(rsd));
-    }
-
-    /**
-     * A no-arg constructor used for deserialization.
-     */
-    public HyperLogLog() {
-        super();
     }
 
     private static int log2m(double rsd) {
@@ -113,13 +114,9 @@ public class HyperLogLog implements ICardinality, Externalizable {
      * @param registerSet - the initial values for the register set
      */
     protected HyperLogLog(int log2m, RegisterSet registerSet) {
-        initialize(log2m, registerSet);
-    }
-
-    private void initialize(int log2m, RegisterSet registerSet) {
         if (log2m < 0 || log2m > 30) {
             throw new IllegalArgumentException("log2m argument is "
-                    + log2m + " and is outside the range [0, 30]");
+                                               + log2m + " and is outside the range [0, 30]");
         }
         this.registerSet = registerSet;
         this.log2m = log2m;
@@ -231,22 +228,48 @@ public class HyperLogLog implements ICardinality, Externalizable {
         return merged;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(log2m);
-        out.writeInt(registerSet.size * 4);
-        for (int x : registerSet.readOnlyBits()) {
-            out.writeInt(x);
-        }
+    private Object writeReplace() {
+        return new SerializedHyperLogLog(log2m, registerSet);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        log2m = in.readInt();
-        int size = in.readInt();
-        byte[] longArrayBytes = new byte[size];
-        in.readFully(longArrayBytes);
-        initialize(log2m, new RegisterSet(1 << log2m, Bits.getBits(longArrayBytes)));
+    private static class SerializedHyperLogLog implements Externalizable {
+
+        int log2m;
+        RegisterSet registerSet;
+
+        public SerializedHyperLogLog(int log2m, RegisterSet registerSet) {
+            this.log2m = log2m;
+            this.registerSet = registerSet;
+        }
+
+        /**
+         * required for Externalizable
+         */
+        public SerializedHyperLogLog() {
+
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(log2m);
+            out.writeInt(registerSet.size * 4);
+            for (int x : registerSet.readOnlyBits()) {
+                out.writeInt(x);
+            }
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            log2m = in.readInt();
+            int size = in.readInt();
+            byte[] longArrayBytes = new byte[size];
+            in.readFully(longArrayBytes);
+            registerSet = new RegisterSet(1 << log2m, Bits.getBits(longArrayBytes));
+        }
+
+        private Object readResolve() {
+            return new HyperLogLog(log2m, registerSet);
+        }
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable {
