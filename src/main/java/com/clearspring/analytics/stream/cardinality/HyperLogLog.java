@@ -18,7 +18,9 @@ package com.clearspring.analytics.stream.cardinality;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
@@ -181,15 +183,18 @@ public class HyperLogLog implements ICardinality, Serializable {
     @Override
     public byte[] getBytes() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-
-        dos.writeInt(log2m);
-        dos.writeInt(registerSet.size * 4);
-        for (int x : registerSet.readOnlyBits()) {
-            dos.writeInt(x);
-        }
+        DataOutput dos = new DataOutputStream(baos);
+        writeBytes(dos);
 
         return baos.toByteArray();
+    }
+
+    private void writeBytes(DataOutput serializedByteStream) throws IOException {
+        serializedByteStream.writeInt(log2m);
+        serializedByteStream.writeInt(registerSet.size * 4);
+        for (int x : registerSet.readOnlyBits()) {
+            serializedByteStream.writeInt(x);
+        }
     }
 
     /**
@@ -229,17 +234,15 @@ public class HyperLogLog implements ICardinality, Serializable {
     }
 
     private Object writeReplace() {
-        return new SerializedHyperLogLog(log2m, registerSet);
+        return new SerializedHyperLogLog(this);
     }
 
     private static class SerializedHyperLogLog implements Externalizable {
 
-        int log2m;
-        RegisterSet registerSet;
+        HyperLogLog hyperLogLogHolder;
 
-        public SerializedHyperLogLog(int log2m, RegisterSet registerSet) {
-            this.log2m = log2m;
-            this.registerSet = registerSet;
+        public SerializedHyperLogLog(HyperLogLog hyperLogLogHolder) {
+            this.hyperLogLogHolder = hyperLogLogHolder;
         }
 
         /**
@@ -251,24 +254,16 @@ public class HyperLogLog implements ICardinality, Serializable {
 
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(log2m);
-            out.writeInt(registerSet.size * 4);
-            for (int x : registerSet.readOnlyBits()) {
-                out.writeInt(x);
-            }
+            hyperLogLogHolder.writeBytes(out);
         }
 
         @Override
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            log2m = in.readInt();
-            int size = in.readInt();
-            byte[] longArrayBytes = new byte[size];
-            in.readFully(longArrayBytes);
-            registerSet = new RegisterSet(1 << log2m, Bits.getBits(longArrayBytes));
+            hyperLogLogHolder = Builder.build(in);
         }
 
         private Object readResolve() {
-            return new HyperLogLog(log2m, registerSet);
+            return hyperLogLogHolder;
         }
     }
 
@@ -294,12 +289,14 @@ public class HyperLogLog implements ICardinality, Serializable {
 
         public static HyperLogLog build(byte[] bytes) throws IOException {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            DataInputStream oi = new DataInputStream(bais);
-            int log2m = oi.readInt();
-            int size = oi.readInt();
-            byte[] longArrayBytes = new byte[size];
-            oi.readFully(longArrayBytes);
-            return new HyperLogLog(log2m, new RegisterSet(1 << log2m, Bits.getBits(longArrayBytes)));
+            return build(new DataInputStream(bais));
+        }
+
+        public static HyperLogLog build(DataInput serializedByteStream) throws IOException {
+            int log2m = serializedByteStream.readInt();
+            int byteArraySize = serializedByteStream.readInt();
+            return new HyperLogLog(log2m,
+                    new RegisterSet(1 << log2m, Bits.getBits(serializedByteStream, byteArraySize)));
         }
     }
 
