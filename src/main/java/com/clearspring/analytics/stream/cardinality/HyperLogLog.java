@@ -237,6 +237,22 @@ public class HyperLogLog implements ICardinality, Serializable {
         return new SerializedHyperLogLog(this);
     }
 
+    /**
+     * This class exists to support Externalizable semantics for
+     * HyperLogLog objects without having to expose a public
+     * constructor, public write/read methods, or pretend final
+     * fields aren't final.
+     *
+     * In short, Externalizable allows you to skip some of the more
+     * verbose meta-data default Serializable gets you, but still
+     * includes the class name. In that sense, there is some cost
+     * to this holder object because it has a longer class name. I
+     * imagine people who care about optimizing for that have their
+     * own work-around for long class names in general, or just use
+     * a custom serialization framework. Therefore we make no attempt
+     * to optimize that here (eg. by raising this from an inner class
+     * and giving it an unhelpful name).
+     */
     private static class SerializedHyperLogLog implements Externalizable {
 
         HyperLogLog hyperLogLogHolder;
