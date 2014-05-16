@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import com.clearspring.analytics.TestUtils;
 import com.clearspring.analytics.util.Varint;
 
 import org.junit.Test;
@@ -135,6 +137,17 @@ public class TestHyperLogLogPlus {
         }
         System.out.println(hll.cardinality());
         HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
+        assertEquals(hll.cardinality(), hll2.cardinality());
+    }
+
+    @Test
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        HyperLogLogPlus hll = new HyperLogLogPlus(5, 25);
+        for (int i = 0; i < 100000; i++) {
+            hll.offer("" + i);
+        }
+        System.out.println(hll.cardinality());
+        HyperLogLogPlus hll2 = (HyperLogLogPlus) TestUtils.deserialize(TestUtils.serialize(hll));
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 

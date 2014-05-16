@@ -18,9 +18,14 @@ package com.clearspring.analytics.stream.cardinality;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -54,7 +59,7 @@ import com.clearspring.analytics.util.Varint;
  * strategy and leverages data compression to compete with 'normal' for as long as possible
  * (sparse has the advantage on accuracy per unit of memory at low cardinality but quickly falls behind).
  */
-public class HyperLogLogPlus implements ICardinality {
+public class HyperLogLogPlus implements ICardinality, Serializable {
 
     private enum Format {
         SPARSE, NORMAL
@@ -707,6 +712,10 @@ public class HyperLogLogPlus implements ICardinality {
         return baos.toByteArray();
     }
 
+    private void writeBytes(DataOutput serializedByteStream) throws IOException {
+        serializedByteStream.write(getBytes());
+    }
+
     /**
      * Script-esque function that handles preparing to and executing merging the sparse set
      * and the temp list.
@@ -907,7 +916,20 @@ public class HyperLogLogPlus implements ICardinality {
             }
         }
 
-        private static HyperLogLogPlus legacyDecode(DataInputStream oi) throws IOException {
+        public static HyperLogLogPlus build(DataInput oi) throws IOException {
+            int version = oi.readInt();
+            // the new encoding scheme includes a version field
+            // that is always negative.  If the version field
+            // is not present then we'll use the legacy
+            // decoding method
+            if (version < 0) {
+                return decodeBytes(oi);
+            } else {
+                return legacyDecode(oi);
+            }
+        }
+
+        private static HyperLogLogPlus legacyDecode(DataInput oi) throws IOException {
             int p = oi.readInt();
             int sp = oi.readInt();
             int formatType = oi.readInt();
@@ -923,7 +945,7 @@ public class HyperLogLogPlus implements ICardinality {
                 List<byte[]> deltaByteSet = new ArrayList<byte[]>();
                 while ((l = oi.readInt()) > 0) {
                     byte[] longArrayBytes = new byte[l];
-                    oi.read(longArrayBytes, 0, l);
+                    oi.readFully(longArrayBytes, 0, l);
                     deltaByteSet.add(longArrayBytes);
                 }
                 HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, deltaByteSet);
@@ -932,7 +954,7 @@ public class HyperLogLogPlus implements ICardinality {
             }
         }
 
-        private static HyperLogLogPlus decodeBytes(DataInputStream oi) throws IOException {
+        private static HyperLogLogPlus decodeBytes(DataInput oi) throws IOException {
             int p = Varint.readUnsignedVarInt(oi);
             int sp = Varint.readUnsignedVarInt(oi);
             int formatType = Varint.readUnsignedVarInt(oi);
@@ -963,6 +985,56 @@ public class HyperLogLogPlus implements ICardinality {
 
         public HyperLogLogPlusMergeException(String message) {
             super(message);
+        }
+    }
+
+    private Object writeReplace() {
+        return new SerializationHolder(this);
+    }
+
+    /**
+     * This class exists to support Externalizable semantics for
+     * HyperLogLog objects without having to expose a public
+     * constructor, public write/read methods, or pretend final
+     * fields aren't final.
+     *
+     * In short, Externalizable allows you to skip some of the more
+     * verbose meta-data default Serializable gets you, but still
+     * includes the class name. In that sense, there is some cost
+     * to this holder object because it has a longer class name. I
+     * imagine people who care about optimizing for that have their
+     * own work-around for long class names in general, or just use
+     * a custom serialization framework. Therefore we make no attempt
+     * to optimize that here (eg. by raising this from an inner class
+     * and giving it an unhelpful name).
+     */
+    private static class SerializationHolder implements Externalizable {
+
+        HyperLogLogPlus hyperLogLogHolder;
+
+        public SerializationHolder(HyperLogLogPlus hyperLogLogHolder) {
+            this.hyperLogLogHolder = hyperLogLogHolder;
+        }
+
+        /**
+         * required for Externalizable
+         */
+        public SerializationHolder() {
+
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            hyperLogLogHolder.writeBytes(out);
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            hyperLogLogHolder = Builder.build(in);
+        }
+
+        private Object readResolve() {
+            return hyperLogLogHolder;
         }
     }
 
