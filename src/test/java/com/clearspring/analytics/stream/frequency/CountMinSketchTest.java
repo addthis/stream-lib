@@ -38,7 +38,7 @@ public class CountMinSketchTest {
         int numItems = 1000000;
         int[] xs = new int[numItems];
         int maxScale = 20;
-        for (int i = 0; i < xs.length; ++i) {
+        for (int i = 0; i < numItems; i++) {
             int scale = r.nextInt(maxScale);
             xs[i] = r.nextInt(1 << scale);
         }
@@ -60,12 +60,12 @@ public class CountMinSketchTest {
 
         int numErrors = 0;
         for (int i = 0; i < actualFreq.length; ++i) {
-            double ratio = 1.0 * (sketch.estimateCount(i) - actualFreq[i]) / xs.length;
-            if (ratio > 1.0001) {
+            double ratio = ((double) (sketch.estimateCount(i) - actualFreq[i])) / numItems;
+            if (ratio > epsOfTotalCount) {
                 numErrors++;
             }
         }
-        double pCorrect = 1 - 1.0 * numErrors / actualFreq.length;
+        double pCorrect = 1.0 - ((double) numErrors) / actualFreq.length;
         assertTrue("Confidence not reached: required " + confidence + ", reached " + pCorrect, pCorrect > confidence);
     }
 
@@ -74,9 +74,10 @@ public class CountMinSketchTest {
         int seed = 7364181;
         Random r = new Random(seed);
         int numItems = 1000000;
+        int absentItems = numItems * 10;
         String[] xs = new String[numItems];
         int maxScale = 20;
-        for (int i = 0; i < xs.length; ++i) {
+        for (int i = 0; i < numItems; i++) {
             int scale = r.nextInt(maxScale);
             xs[i] = RandomStringUtils.random(scale);
         }
@@ -102,15 +103,29 @@ public class CountMinSketchTest {
         sketch = CountMinSketch.deserialize(CountMinSketch.serialize(sketch));
 
         int numErrors = 0;
-        for (int i = 0; i < actualFreq.size(); ++i) {
-            Long value = actualFreq.get(i);
-            long lvalue = (value == null) ? 0 : value;
-            double ratio = 1.0 * (sketch.estimateCount(i) - lvalue) / xs.length;
-            if (ratio > 1.0001) {
+        for (Map.Entry<String,Long> entry : actualFreq.entrySet()) {
+            String key = entry.getKey();
+            long count = entry.getValue();
+            double ratio = ((double) (sketch.estimateCount(key) - count)) / numItems;
+            if (ratio > epsOfTotalCount) {
                 numErrors++;
             }
         }
-        double pCorrect = 1 - 1.0 * numErrors / actualFreq.size();
+        for (int i = 0; i < absentItems; i++) {
+            int scale = r.nextInt(maxScale);
+            String key = RandomStringUtils.random(scale);
+            Long value = actualFreq.get(key);
+            long count = (value == null) ? 0L : value;
+            double ratio = ((double) (sketch.estimateCount(key) - count)) / numItems;
+            if (ratio > epsOfTotalCount) {
+                numErrors++;
+            }
+        }
+
+        double pCorrect = 1.0 - ((double) numErrors) / (numItems + absentItems);
+        System.out.println(pCorrect);
+        assertTrue("Confidence not reached: required " + confidence + ", reached " + pCorrect, pCorrect > confidence);
+
         assertTrue("Confidence not reached: required " + confidence + ", reached " + pCorrect, pCorrect > confidence);
     }
 
