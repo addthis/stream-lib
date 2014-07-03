@@ -33,6 +33,16 @@ others.  Please read the [Sources](#Sources) and
              3                    2
 
 
+## Maven Artifact
+
+``` xml
+<dependency>
+  <groupId>com.clearspring.analytics</groupId>
+  <artifactId>stream</artifactId>
+  <version>2.7.0</version>
+</dependency>
+```
+
 ## Building
 
 Assuming you have [Apache Maven](http://maven.apache.org/) installed
