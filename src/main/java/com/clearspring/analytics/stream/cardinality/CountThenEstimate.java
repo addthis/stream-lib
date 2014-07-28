@@ -39,8 +39,6 @@ import com.clearspring.analytics.util.IBuilder;
  * Avoids allocating a large block of memory for cardinality estimation until
  * a specified "tipping point" cardinality is reached.
  * </p>
- * <p/>
- * Currently supports serialization with LinearCounting or AdaptiveCounting
  */
 public class CountThenEstimate implements ICardinality, Externalizable {
 
