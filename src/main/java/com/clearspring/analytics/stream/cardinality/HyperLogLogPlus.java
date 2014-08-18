@@ -61,13 +61,13 @@ import com.clearspring.analytics.util.Varint;
  */
 public class HyperLogLogPlus implements ICardinality, Serializable {
 
+    public static final int[] EMPTY_SPARSE = new int[0];
+
     private enum Format {
         SPARSE, NORMAL
     }
 
-    /**
-     * used to mark codec version for serialization
-     */
+    /** Used to mark codec version for serialization. */
     private static final int VERSION = 2;
 
     // threshold and bias data taken from google's bias correction data set:  https://docs.google.com/document/d/1gyjfMHy43U9OWBXxfaeG-3MjGzejW1dlpyMwEYAAWEI/view?fullscreen#
@@ -173,10 +173,10 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     /**
      * Basic constructor for creating a instance that supports sparse and normal
-     * representations. The values of <code>p</code> and
-     * <code>sp</code> define the precision of the Normal and Sparse set
-     * representations for the data structure.  <code>p</code> must be a value
-     * between 4 and <code>sp</code> and <code>sp</code> must be less than 32.
+     * representations. The values of {@code p} and
+     * {@code sp} define the precision of the Normal and Sparse set
+     * representations for the data structure.  {@code p} must be a value
+     * between 4 and {@code sp} and {@code sp} must be less than 32.
      *
      * @param p  - the precision value for the normal set
      * @param sp - the precision value for the sparse set
@@ -215,7 +215,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     private HyperLogLogPlus(int p, int sp, int[] sparseSet, RegisterSet registerSet) {
-        if (p < 4 || (p > sp && sp != 0)) {
+        if ((p < 4) || ((p > sp) && (sp != 0))) {
             throw new IllegalArgumentException("p must be between 4 and sp (inclusive)");
         }
         if (sp > 32) {
@@ -252,7 +252,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 //Ignore the first p bits (the idx), and then find the number of leading zeros
                 //Push a 1 to where the bit string would have ended if we didnt just push the idx out of the way
                 //A one is always added to runLength for estimation calculation purposes
-                final int runLength = Long.numberOfLeadingZeros((hashedLong << this.p) | (1 << (this.p - 1))) + 1;
+                final int runLength = Long.numberOfLeadingZeros((hashedLong << this.p) | (long) (1 << (this.p - 1))) + 1;
                 return registerSet.updateIfGreater((int) idx, runLength);
             case SPARSE:
                 //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
@@ -262,7 +262,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
-                if (sparseSet != null && sparseSet.length > sparseSetThreshold) {
+                if ((sparseSet != null) && (sparseSet.length > sparseSetThreshold)) {
                     mergeTempList();
                     convertToNormal();
                 } else if (tmpIndex > sortThreshold) {
@@ -278,12 +278,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Add data to estimator based on the mode it is in
-     *
-     * @param o stream element
-     * @return Will almost always return true for sparse mode because the additions are batched in
-     */
     @Override
     public boolean offer(Object o) {
         long x = MurmurHash.hash64(o);
@@ -297,7 +291,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * truncated to length p and the associated run length is placed into a register.
      * Collisions are resolved by merely taking the max.
      */
-
     private void convertToNormal() {
         mergeTempList();
         this.registerSet = new RegisterSet((int) Math.pow(2, p));
@@ -376,13 +369,13 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         }
         if (zeroTest == 0) {
             //See offer
-            final int runLength = Long.numberOfLeadingZeros((x << this.p) | (1 << (this.p - 1))) + 1;
+            final int runLength = Long.numberOfLeadingZeros((x << this.p) | (long) (1 << (this.p - 1))) + 1;
             //Invert run length by xoring it with a bunch of 1s
             int invrl = runLength ^ 63;
-            return (((idx
-                      << 6)       //push the idx left 6 times to make room to put in the run length
-                     | invrl)    //then merge in the run length
-                    << 1)       //move left again to make room for the flag bit
+            return (   (
+                            (idx << 6) //push the idx left 6 times to make room to put in the run length
+                            | invrl)   //then merge in the run length
+                       << 1)       //move left again to make room for the flag bit
                    | 1;        //merge in the flag bit (set to one because we needed the run length)
         } else {
             //Just push left once. A zero will appear by default and that's the flag we want.
@@ -411,26 +404,21 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             //Then push left some more cause bits in precision p don't count for run length
             //That is, push left p times.
             //Lastly we add one because we love adding one to run lengths. Its our JAM
-            return Integer.numberOfLeadingZeros(k << p + (31 - sp)) + 1;
+            return Integer.numberOfLeadingZeros(k << (p + (31 - sp))) + 1;
         }
     }
 
     /**
-     * returns the hash portion of the of the integer value
+     * Returns the hash portion of the of the integer value.
      *
      * @param k - the encoded integer to extract the hash from
      * @return the encoded hash value
      */
     private int getEncodedHash(int k) {
-        return (k << p + (31 - sp));
+        return k << (p + (31 - sp));
     }
 
-    /**
-     * Get the idx' from an encoding
-     *
-     * @param k encoded data
-     * @return idx'
-     */
+    /** Get the idx' from an encoding. */
     private static int getSparseIndex(int k) {
         if ((k & 1) == 1) {
             return k >>> 7;
@@ -440,15 +428,14 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     /**
-     * Gets the idx from an encoding (note this is idx and not idx prime)
+     * Returns the idx from an encoding (note this is idx and not idx prime).
      *
      * @param k encoded data
      * @param p 'normal' precision
-     * @return
      */
     private int getIndex(int k, int p) {
-        k = getSparseIndex(k);
-        return (k >>> (sp - p));
+        int sparseIndex = getSparseIndex(k);
+        return sparseIndex >>> (sp - p);
     }
 
     /**
@@ -456,8 +443,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * <p/>
      * Has two procedures based on current mode. 'Normal' mode works similar to HLL but has some
      * new bias corrections. 'Sparse' mode is linear counting.
-     *
-     * @return
      */
     @Override
     public long cardinality() {
@@ -486,14 +471,14 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                     H = estimatePrime;
                 }
                 // when p is large the threshold is just 5*m
-                if ((p <= 18 && H < thresholdData[p - 4]) || (p > 18 && estimate <= 5 * m)) {
+                if (((p <= 18) && (H < thresholdData[p - 4])) || ((p > 18) && (estimate <= (5 * m)))) {
                     return Math.round(H);
                 } else {
                     return Math.round(estimatePrime);
                 }
             case SPARSE:
                 mergeTempList();
-                return Math.round(HyperLogLog.linearCounting(sm, (sm - sparseSet.length)));
+                return Math.round(HyperLogLog.linearCounting(sm, sm - sparseSet.length));
         }
         return 0;
     }
@@ -516,7 +501,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         for (int nearestNeighbor : nearestNeighbors) {
             biasTotal += biasVector[nearestNeighbor];
         }
-        return biasTotal / (nearestNeighbors.length);
+        return biasTotal / nearestNeighbors.length;
     }
 
     private static int[] getNearestNeighbors(SortedMap<Double, Integer> distanceMap) {
@@ -564,10 +549,15 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         List<Integer> newSet = new ArrayList<Integer>();
         // iterate over each set and merge the result values
 
-        int setLength = (set == null ? 0 : set.length);
+        int setLength;
+        if (set == null) {
+            setLength = 0;
+        } else {
+            setLength = set.length;
+        }
         int seti = 0;
         int tmpi = 0;
-        while (seti < setLength || tmpi < tmp.length) {
+        while ((seti < setLength) || (tmpi < tmp.length)) {
             if (seti >= setLength) {
                 int tmpVal = tmp[tmpi];
                 newSet.add(tmpVal);
@@ -626,14 +616,11 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     /**
-     * Merge this HLL++ instance with another! The power of friends!
-     * <p/>
-     * This works very similarly to the merge with temp list function.
-     * <p/>
-     * However, in this case, both lists will need their own delta decoding and neither will
-     * have to worry about consuming duplicates.
+     * Merge this HLL++ instance with another! The power of friends! This works
+     * very similarly to the merge with temp list function. However, in this
+     * case, both lists will need their own delta decoding and neither will have
+     * to worry about consuming duplicates.
      *
-     * @param other
      * @return the new sparse set
      */
     private int[] mergeEstimators(HyperLogLogPlus other) {
@@ -648,7 +635,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
         int seti = 0;
         int tmpi = 0;
-        while (seti < set.length || tmpi < tmp.length) {
+        while ((seti < set.length) || (tmpi < tmp.length)) {
             if (seti >= set.length) {
                 newSet.add(tmp[tmpi++]);
             } else if (tmpi >= tmp.length) {
@@ -717,24 +704,20 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     /**
-     * Script-esque function that handles preparing to and executing merging the sparse set
-     * and the temp list.
-     * <p/>
-     * Set up the delta encoding, sort the temp list, merge the lists, blow up the temp list.
-     * <p/>
-     * Exposed for testing purposes
+     * Script-esque function that handles preparing to and executing merging the
+     * sparse set and the temp list. Set up the delta encoding, sort the temp
+     * list, merge the lists, blow up the temp list.
      */
-    protected void mergeTempList() {
+    void mergeTempList() {
         int[] retSet = sparseSet;
         if (tmpIndex > 0) {
             int[] sortedSet = sortEncodedSet(tmpSet, tmpIndex);
             retSet = merge(sparseSet, sortedSet);
             tmpIndex = 0;
         }
-        sparseSet = retSet == null ? new int[0] : retSet;
+        sparseSet = retSet == null ? EMPTY_SPARSE : retSet;
     }
 
-    // exposed for testing
     int[] sortEncodedSet(int[] encodedSet, int validIndex) {
         List<Integer> sortedList = new ArrayList<Integer>(validIndex);
         for (int i = 0; i < validIndex; i++) {
@@ -784,30 +767,30 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
         }
 
-        if (format == Format.NORMAL && other.format == Format.NORMAL) {
+        if ((format == Format.NORMAL) && (other.format == Format.NORMAL)) {
             registerSet.merge(other.registerSet);
             return;
         }
 
-        if (format == Format.SPARSE && other.format == Format.SPARSE) {
+        if ((format == Format.SPARSE) && (other.format == Format.SPARSE)) {
             sparseSet = mergeEstimators(other);
             // Convert to normal mode if needed. 
             // Since offer trigger the switch to the normal mode on only when 
             // the tmpSet is full and the threshold is reached, we follow the same 
             // behavior here to ease testing
-            if (sparseSet.length > sparseSetThreshold + sortThreshold) {
+            if (sparseSet.length > (sparseSetThreshold + sortThreshold)) {
                 convertToNormal();
             }
             return;
         }
 
-        if (format == Format.SPARSE && other.format == Format.NORMAL) {
+        if ((format == Format.SPARSE) && (other.format == Format.NORMAL)) {
             convertToNormal();
             registerSet.merge(other.registerSet);
             return;
         }
 
-        if (format == Format.NORMAL && other.format == Format.SPARSE) {
+        if ((format == Format.NORMAL) && (other.format == Format.SPARSE)) {
             // Iterating over other's sparse set and updating only required indexes
             // of this' register set is several orders of magnitude faster than copying 
             // and converting other to normal mode. This use case is quite common since
@@ -839,7 +822,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * @return a new estimator with their combined knowledge
      * @throws CardinalityMergeException
      */
-
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException {
         HyperLogLogPlus merged = new HyperLogLogPlus(p, sp);
@@ -860,20 +842,13 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         return merged;
     }
 
-    /**
-     * exposed for testing
-     */
-    protected RegisterSet getRegisterSet() {
+    RegisterSet getRegisterSet() {
         return registerSet;
     }
 
-    /**
-     * exposed for testing
-     */
-    protected int[] getSparseSet() {
+    int[] getSparseSet() {
         return sparseSet;
     }
-
 
     public static class Builder implements IBuilder<ICardinality>, Serializable {
 
@@ -937,7 +912,8 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 int size = oi.readInt();
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+                RegisterSet registerSetFromBytes = new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes));
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, registerSetFromBytes);
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             } else {
@@ -981,7 +957,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     @SuppressWarnings("serial")
-    protected static class HyperLogLogPlusMergeException extends CardinalityMergeException {
+    static class HyperLogLogPlusMergeException extends CardinalityMergeException {
 
         public HyperLogLogPlusMergeException(String message) {
             super(message);
@@ -1016,12 +992,8 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             this.hyperLogLogHolder = hyperLogLogHolder;
         }
 
-        /**
-         * required for Externalizable
-         */
-        public SerializationHolder() {
-
-        }
+        /** required for Externalizable */
+        public SerializationHolder() {}
 
         @Override
         public void writeExternal(ObjectOutput out) throws IOException {
@@ -1037,5 +1009,4 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             return hyperLogLogHolder;
         }
     }
-
 }
