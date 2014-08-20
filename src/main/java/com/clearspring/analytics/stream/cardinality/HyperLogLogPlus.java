@@ -755,7 +755,12 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 } else if (rightIndex < leftIndex) {
                     return 1;
                 }
-                return Integer.compare(left, right);
+                if (left < right) {
+                    return -1;
+                } else if (right < left) {
+                    return 1;
+                }
+                return 0;
             }
         });
         return toIntArray(sortedList);
