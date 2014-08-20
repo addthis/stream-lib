@@ -10,11 +10,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-
-import it.unimi.dsi.fastutil.Hash;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * Q-Digest datastructure.
@@ -70,13 +70,10 @@ public class QDigest implements IQuantileEstimator {
         }
     };
 
-    private static final int MAP_INITIAL_SIZE = Hash.DEFAULT_INITIAL_SIZE;
-    private static final float MAP_LOAD_FACTOR = Hash.VERY_FAST_LOAD_FACTOR;
-
     private long size;
     private long capacity = 1;
     private double compressionFactor;
-    private Long2LongOpenHashMap node2count = new Long2LongOpenHashMap(MAP_INITIAL_SIZE, MAP_LOAD_FACTOR);
+    private Map<Long, Long> node2count = new HashMap<Long, Long>();
 
     public QDigest(double compressionFactor) {
         this.compressionFactor = compressionFactor;
@@ -139,7 +136,7 @@ public class QDigest implements IQuantileEstimator {
         }
 
         long leaf = value2leaf(value);
-        node2count.addTo(leaf, 1);
+        node2count.put(leaf, 1L);
         size++;
         // Always compress at the inserted node, and recompress fully
         // if the tree becomes too large.
@@ -183,7 +180,7 @@ public class QDigest implements IQuantileEstimator {
     }
 
     private void rebuildToCapacity(long newCapacity) {
-        Long2LongOpenHashMap newNode2count = new Long2LongOpenHashMap(MAP_INITIAL_SIZE, MAP_LOAD_FACTOR);
+        Map<Long, Long> newNode2count = new HashMap<Long, Long>();
         // rebuild to newLogCapacity.
         // This means that our current tree becomes a leftmost subtree
         // of the new tree.
@@ -241,7 +238,7 @@ public class QDigest implements IQuantileEstimator {
                 break;
             }
 
-            node2count.addTo(parent(node), atNode + atSibling);
+            node2count.put(parent(node), atNode + atSibling);
             node2count.remove(node);
             if (atSibling > 0) {
                 node2count.remove(sibling(node));
@@ -257,10 +254,8 @@ public class QDigest implements IQuantileEstimator {
     private void compressDownward(long seedNode) {
         double threshold = Math.floor(size / compressionFactor);
         // P2 check same as above but shorter and slower (and invoked rarely)
-        LongArrayFIFOQueue q = new LongArrayFIFOQueue();
-        q.enqueue(seedNode);
-        while (!q.isEmpty()) {
-            long node = q.dequeueLong();
+        for (Queue<Long> q = new LinkedList<Long>(Arrays.asList(seedNode)); !q.isEmpty(); ) {
+            long node = q.poll();
             long atNode = get(node);
             long atSibling = get(sibling(node));
             if (atNode == 0 && atSibling == 0) {
@@ -270,13 +265,13 @@ public class QDigest implements IQuantileEstimator {
             if (atParent + atNode + atSibling > threshold) {
                 continue;
             }
-            node2count.addTo(parent(node), atNode + atSibling);
+            node2count.put(parent(node), atNode + atSibling);
             node2count.remove(node);
             node2count.remove(sibling(node));
             // Now P2 could have vanished at the node's and sibling's subtrees since they decreased.
             if (!isLeaf(node)) {
-                q.enqueue(leftChild(node));
-                q.enqueue(leftChild(sibling(node)));
+                q.offer(leftChild(node));
+                q.offer(leftChild(sibling(node)));
             }
         }
     }
