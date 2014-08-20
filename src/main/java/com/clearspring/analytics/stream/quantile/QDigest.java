@@ -136,7 +136,7 @@ public class QDigest implements IQuantileEstimator {
         }
 
         long leaf = value2leaf(value);
-        node2count.put(leaf, 1L);
+        node2count.put(leaf, get(leaf) + 1);
         size++;
         // Always compress at the inserted node, and recompress fully
         // if the tree becomes too large.
@@ -238,7 +238,7 @@ public class QDigest implements IQuantileEstimator {
                 break;
             }
 
-            node2count.put(parent(node), atNode + atSibling);
+            node2count.put(parent(node), atParent + atNode + atSibling);
             node2count.remove(node);
             if (atSibling > 0) {
                 node2count.remove(sibling(node));
@@ -265,7 +265,7 @@ public class QDigest implements IQuantileEstimator {
             if (atParent + atNode + atSibling > threshold) {
                 continue;
             }
-            node2count.put(parent(node), atNode + atSibling);
+            node2count.put(parent(node), atParent + atNode + atSibling);
             node2count.remove(node);
             node2count.remove(sibling(node));
             // Now P2 could have vanished at the node's and sibling's subtrees since they decreased.
@@ -277,7 +277,8 @@ public class QDigest implements IQuantileEstimator {
     }
 
     private long get(long node) {
-        return node2count.get(node);
+        Long res = node2count.get(node);
+        return (res == null) ? 0 : res;
     }
 
     @Override
