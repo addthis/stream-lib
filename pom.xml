@@ -21,18 +21,38 @@
     </license>
   </licenses>
 
-  <dependencies>
-    <dependency>
-      <groupId>it.unimi.dsi</groupId>
-      <artifactId>fastutil</artifactId>
-      <version>6.5.7</version>
-    </dependency>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.7</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
+  <dependencies>
     <!-- Test -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>16.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -51,12 +71,6 @@
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>1.4</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>16.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
