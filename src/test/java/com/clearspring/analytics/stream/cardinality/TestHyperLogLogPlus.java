@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,13 +31,53 @@ import java.util.UUID;
 import com.clearspring.analytics.TestUtils;
 import com.clearspring.analytics.util.Varint;
 
-import org.junit.Test;
+import org.apache.commons.lang3.RandomStringUtils;
 
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 
 public class TestHyperLogLogPlus {
+    private static final Logger log = LoggerFactory.getLogger(TestHyperLogLogPlus.class);
+
+    @Test
+    public void consistentBytes() throws Throwable {
+        int[] NUM_STRINGS = {30, 50, 100, 200, 300, 500, 1000, 10000, 100000};
+        for (int n : NUM_STRINGS) {
+
+            String[] strings = new String[n];
+
+            for (int i = 0; i < n; i++) {
+                strings[i] = RandomStringUtils.randomAlphabetic(20);
+            }
+
+            HyperLogLogPlus hllpp1 = new HyperLogLogPlus(5, 5);
+            HyperLogLogPlus hllpp2 = new HyperLogLogPlus(5, 5);
+            for (int i = 0; i < n; i++) {
+                hllpp1.offer(strings[i]);
+                hllpp2.offer(strings[n - 1 - i]);
+            }
+            log.debug("n={} format1={} format2={}", n, hllpp1.format, hllpp2.format);
+            try {
+                if (hllpp1.format == hllpp2.format) {
+                    assertEquals(hllpp1, hllpp2);
+                    assertEquals(hllpp1.hashCode(), hllpp2.hashCode());
+                    assertArrayEquals(hllpp1.getBytes(), hllpp2.getBytes());
+                } else {
+                    assertNotEquals(hllpp1, hllpp2);
+                }
+            } catch (Throwable any) {
+                log.error("n={} format1={} format2={}", n, hllpp1.format, hllpp2.format, any);
+                throw any;
+            }
+        }
+    }
 
     public static void main(final String[] args) throws Throwable {
         long startTime = System.currentTimeMillis();
