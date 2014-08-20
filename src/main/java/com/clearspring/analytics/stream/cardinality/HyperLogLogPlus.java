@@ -29,6 +29,7 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -241,6 +242,32 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         }
 
         this.alphaMM = HyperLogLog.getAlphaMM(p, m);
+    }
+
+    @Override public boolean equals(Object obj) {
+        if (!(obj instanceof HyperLogLogPlus)) {
+            return false;
+        }
+        HyperLogLogPlus other = (HyperLogLogPlus) obj;
+        if (other.format != format) {
+            return false;
+        }
+        if (format == Format.NORMAL) {
+            return Arrays.equals(registerSet.readOnlyBits(), other.registerSet.readOnlyBits());
+        } else {
+            mergeTempList();
+            other.mergeTempList();
+            return Arrays.equals(sparseSet, sparseSet);
+        }
+    }
+
+    @Override public int hashCode() {
+        if (format == Format.NORMAL) {
+            return Arrays.hashCode(registerSet.readOnlyBits());
+        } else {
+            mergeTempList();
+            return Arrays.hashCode(sparseSet);
+        }
     }
 
     @Override

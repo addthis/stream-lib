@@ -33,12 +33,13 @@ import com.clearspring.analytics.util.Varint;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 
@@ -46,7 +47,7 @@ public class TestHyperLogLogPlus {
     private static final Logger log = LoggerFactory.getLogger(TestHyperLogLogPlus.class);
 
     @Test
-    public void consistentGetBytes() throws Exception {
+    public void consistentBytes() throws Throwable {
         int[] NUM_STRINGS = {30, 50, 100, 200, 300, 500, 1000, 10000, 100000};
         for (int n : NUM_STRINGS) {
 
@@ -63,7 +64,18 @@ public class TestHyperLogLogPlus {
                 hllpp2.offer(strings[n - 1 - i]);
             }
             log.debug("n={} format1={} format2={}", n, hllpp1.format, hllpp2.format);
-            Assert.assertArrayEquals(hllpp1.getBytes(), hllpp2.getBytes());
+            try {
+                if (hllpp1.format == hllpp2.format) {
+                    assertEquals(hllpp1, hllpp2);
+                    assertEquals(hllpp1.hashCode(), hllpp2.hashCode());
+                    assertArrayEquals(hllpp1.getBytes(), hllpp2.getBytes());
+                } else {
+                    assertNotEquals(hllpp1, hllpp2);
+                }
+            } catch (Throwable any) {
+                log.error("n={} format1={} format2={}", n, hllpp1.format, hllpp2.format, any);
+                throw any;
+            }
         }
     }
 
