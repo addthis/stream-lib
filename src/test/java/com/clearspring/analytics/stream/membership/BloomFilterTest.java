@@ -42,11 +42,13 @@ import static org.junit.Assert.assertTrue;
 public class BloomFilterTest {
 
     public BloomFilter bf;
+    public BloomFilter bf2;
     public BloomCalculations.BloomSpecification spec = BloomCalculations.computeBucketsAndK(0.0001);
     static final int ELEMENTS = 10000;
 
     public BloomFilterTest() {
         bf = new BloomFilter(ELEMENTS, spec.bucketsPerElement);
+        bf2 = new BloomFilter(ELEMENTS, spec.bucketsPerElement);
         assertNotNull(bf);
     }
 
@@ -60,6 +62,26 @@ public class BloomFilterTest {
         bf.add("a");
         assertTrue(bf.isPresent("a"));
         assertFalse(bf.isPresent("b"));
+    }
+
+    @Test
+    public void testMerge() throws MembershipMergeException {
+        bf.add("a");
+	bf2.add("c");
+	BloomFilter[] bfs = new BloomFilter[1];
+	bfs[0] = bf;
+	BloomFilter mergeBf = (BloomFilter) bf2.merge(bf);
+        assertTrue(mergeBf.isPresent("a"));
+        assertFalse(mergeBf.isPresent("b"));
+        assertTrue(mergeBf.isPresent("c"));
+    }
+
+    @Test(expected=MembershipMergeException.class)
+    public void testMergeException() throws MembershipMergeException {
+	BloomFilter bf3 = new BloomFilter(ELEMENTS*10, 1);
+	BloomFilter[] bfs = new BloomFilter[1];
+	bfs[0] = bf;
+	BloomFilter mergeBf = (BloomFilter) bf3.merge(bf);
     }
 
     @Test
