@@ -97,6 +97,13 @@ public class HyperLogLog implements ICardinality, Serializable {
         return (int) (Math.log((1.106 / rsd) * (1.106 / rsd)) / Math.log(2));
     }
 
+    private static void validateLog2m(int log2m) {
+        if (log2m < 0 || log2m > 30) {
+            throw new IllegalArgumentException("log2m argument is "
+                                               + log2m + " and is outside the range [0, 30]");
+        }
+    }
+
     /**
      * Create a new HyperLogLog instance.  The log2m parameter defines the accuracy of
      * the counter.  The larger the log2m the better the accuracy.
@@ -117,10 +124,7 @@ public class HyperLogLog implements ICardinality, Serializable {
      */
     @Deprecated
     public HyperLogLog(int log2m, RegisterSet registerSet) {
-        if (log2m < 0 || log2m > 30) {
-            throw new IllegalArgumentException("log2m argument is "
-                                               + log2m + " and is outside the range [0, 30]");
-        }
+        validateLog2m(log2m);
         this.registerSet = registerSet;
         this.log2m = log2m;
         int m = 1 << this.log2m;
@@ -286,22 +290,43 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     public static class Builder implements IBuilder<ICardinality>, Serializable {
 
-        private double rsd;
+        private final int log2m;
 
+        /**
+         * Uses the given RSD percentage to determine how many bytes the constructed HyperLogLog will use.
+         *
+         * @deprecated Use {@link #withRsd(double)} instead. This builder's constructors did not match the (already
+         * themselves ambiguous) constructors of the HyperLogLog class, but there is no way to make them match without
+         * risking behavior changes downstream.
+         */
+        @Deprecated
         public Builder(double rsd) {
-            this.rsd = rsd;
+            this(log2m(rsd));
+        }
+
+        /** This constructor is private to prevent behavior change for ambiguous usages. (Legacy support). */
+        private Builder(int log2m) {
+            validateLog2m(log2m);
+            this.log2m = log2m;
         }
 
         @Override
         public HyperLogLog build() {
-            return new HyperLogLog(rsd);
+            return new HyperLogLog(log2m);
         }
 
         @Override
         public int sizeof() {
-            int log2m = log2m(rsd);
             int k = 1 << log2m;
             return RegisterSet.getBits(k) * 4;
+        }
+
+        public static Builder withLog2m(int log2m) {
+            return new Builder(log2m);
+        }
+
+        public static Builder withRsd(double rsd) {
+            return new Builder(rsd);
         }
 
         public static HyperLogLog build(byte[] bytes) throws IOException {
