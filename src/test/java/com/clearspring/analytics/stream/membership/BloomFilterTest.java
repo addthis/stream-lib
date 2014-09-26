@@ -65,7 +65,7 @@ public class BloomFilterTest {
     }
 
     @Test
-    public void testMerge() throws IllegalArgumentException {
+    public void testMerge() {
         bf.add("a");
         bf2.add("c");
         BloomFilter[] bfs = new BloomFilter[1];
@@ -77,7 +77,7 @@ public class BloomFilterTest {
     }
 
     @Test(expected=IllegalArgumentException.class)
-    public void testMergeException() throws IllegalArgumentException {
+    public void testMergeException() {
         BloomFilter bf3 = new BloomFilter(ELEMENTS*10, 1);
         BloomFilter[] bfs = new BloomFilter[1];
         bfs[0] = bf;

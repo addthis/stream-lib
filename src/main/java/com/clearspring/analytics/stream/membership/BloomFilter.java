@@ -118,7 +118,7 @@ public class BloomFilter extends Filter {
         return n;
     }
 
-    public void addAll(BloomFilter other) throws IllegalArgumentException {
+    public void addAll(BloomFilter other) {
         if (this.getHashCount() != other.getHashCount()) {
             throw new IllegalArgumentException("Cannot merge filters of different sizes");
         }
@@ -126,7 +126,7 @@ public class BloomFilter extends Filter {
         this.filter().or(other.filter());
     }
 
-    public Filter merge(Filter... filters) throws IllegalArgumentException {
+    public Filter merge(Filter... filters) {
         BloomFilter merged = new BloomFilter(this.getHashCount(), (BitSet) this.filter().clone());
 
         if (filters == null) {
