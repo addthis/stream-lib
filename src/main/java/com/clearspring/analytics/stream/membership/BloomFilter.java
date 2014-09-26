@@ -118,15 +118,15 @@ public class BloomFilter extends Filter {
         return n;
     }
 
-    public void addAll(BloomFilter other) throws MembershipMergeException {
+    public void addAll(BloomFilter other) throws IllegalArgumentException {
         if (this.getHashCount() != other.getHashCount()) {
-            throw new BloomFilterMergeException("Cannot merge filters of different sizes");
+            throw new IllegalArgumentException("Cannot merge filters of different sizes");
         }
 
         this.filter().or(other.filter());
     }
 
-    public Filter merge(Filter... filters) throws MembershipMergeException {
+    public Filter merge(Filter... filters) throws IllegalArgumentException {
         BloomFilter merged = new BloomFilter(this.getHashCount(), (BitSet) this.filter().clone());
 
         if (filters == null) {
@@ -135,22 +135,13 @@ public class BloomFilter extends Filter {
 
         for (Filter filter : filters) {
             if (!(filter instanceof BloomFilter)) {
-                throw new BloomFilterMergeException("Cannot merge filters of different class");
+                throw new IllegalArgumentException("Cannot merge filters of different class");
             }
             BloomFilter bf = (BloomFilter) filter;
             merged.addAll(bf);
         }
 
         return merged;
-    }
-
-
-    @SuppressWarnings("serial")
-    protected static class BloomFilterMergeException extends MembershipMergeException {
-
-        public BloomFilterMergeException(String message) {
-            super(message);
-        }
     }
 
     /**
