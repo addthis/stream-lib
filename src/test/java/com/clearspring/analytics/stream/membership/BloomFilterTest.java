@@ -67,10 +67,10 @@ public class BloomFilterTest {
     @Test
     public void testMerge() throws MembershipMergeException {
         bf.add("a");
-	bf2.add("c");
-	BloomFilter[] bfs = new BloomFilter[1];
-	bfs[0] = bf;
-	BloomFilter mergeBf = (BloomFilter) bf2.merge(bf);
+        bf2.add("c");
+        BloomFilter[] bfs = new BloomFilter[1];
+        bfs[0] = bf;
+        BloomFilter mergeBf = (BloomFilter) bf2.merge(bf);
         assertTrue(mergeBf.isPresent("a"));
         assertFalse(mergeBf.isPresent("b"));
         assertTrue(mergeBf.isPresent("c"));
@@ -78,10 +78,10 @@ public class BloomFilterTest {
 
     @Test(expected=MembershipMergeException.class)
     public void testMergeException() throws MembershipMergeException {
-	BloomFilter bf3 = new BloomFilter(ELEMENTS*10, 1);
-	BloomFilter[] bfs = new BloomFilter[1];
-	bfs[0] = bf;
-	BloomFilter mergeBf = (BloomFilter) bf3.merge(bf);
+        BloomFilter bf3 = new BloomFilter(ELEMENTS*10, 1);
+        BloomFilter[] bfs = new BloomFilter[1];
+        bfs[0] = bf;
+        BloomFilter mergeBf = (BloomFilter) bf3.merge(bf);
     }
 
     @Test
