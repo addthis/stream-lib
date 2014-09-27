@@ -118,6 +118,32 @@ public class BloomFilter extends Filter {
         return n;
     }
 
+    public void addAll(BloomFilter other) {
+        if (this.getHashCount() != other.getHashCount()) {
+            throw new IllegalArgumentException("Cannot merge filters of different sizes");
+        }
+
+        this.filter().or(other.filter());
+    }
+
+    public Filter merge(Filter... filters) {
+        BloomFilter merged = new BloomFilter(this.getHashCount(), (BitSet) this.filter().clone());
+
+        if (filters == null) {
+            return merged;
+        }
+
+        for (Filter filter : filters) {
+            if (!(filter instanceof BloomFilter)) {
+                throw new IllegalArgumentException("Cannot merge filters of different class");
+            }
+            BloomFilter bf = (BloomFilter) filter;
+            merged.addAll(bf);
+        }
+
+        return merged;
+    }
+
     /**
      * @return a BloomFilter that always returns a positive match, for testing
      */
