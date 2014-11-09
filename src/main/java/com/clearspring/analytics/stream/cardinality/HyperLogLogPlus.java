@@ -257,7 +257,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         } else {
             mergeTempList();
             other.mergeTempList();
-            return Arrays.equals(sparseSet, sparseSet);
+            return Arrays.equals(sparseSet, other.sparseSet);
         }
     }
 

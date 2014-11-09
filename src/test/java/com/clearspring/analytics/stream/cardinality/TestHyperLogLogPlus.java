@@ -47,6 +47,24 @@ public class TestHyperLogLogPlus {
     private static final Logger log = LoggerFactory.getLogger(TestHyperLogLogPlus.class);
 
     @Test
+    public void testEquals() {
+        HyperLogLogPlus hll1 = new HyperLogLogPlus(5, 25);
+        HyperLogLogPlus hll2 = new HyperLogLogPlus(5, 25);
+        hll1.offer("A");
+        hll2.offer("A");
+        assertEquals(hll1, hll2);
+        hll2.offer("B");
+        hll2.offer("C");
+        hll2.offer("D");
+        assertNotEquals(hll1, hll2);
+        HyperLogLogPlus hll3 = new HyperLogLogPlus(5, 25);
+        for (int i = 0; i < 50000; i++) {
+            hll3.offer("" + i);
+        }
+        assertNotEquals(hll1, hll3);
+    }
+    
+    @Test
     public void consistentBytes() throws Throwable {
         int[] NUM_STRINGS = {30, 50, 100, 200, 300, 500, 1000, 10000, 100000};
         for (int n : NUM_STRINGS) {
