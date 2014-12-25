@@ -866,6 +866,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable {
+        private static final long serialVersionUID = -14775219914128662L;
 
         private final int p;
         private final int sp;

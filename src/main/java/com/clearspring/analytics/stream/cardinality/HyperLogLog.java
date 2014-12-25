@@ -25,6 +25,7 @@ import java.io.DataOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 
@@ -95,6 +96,10 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     private static int log2m(double rsd) {
         return (int) (Math.log((1.106 / rsd) * (1.106 / rsd)) / Math.log(2));
+    }
+
+    private static double rsd(int log2m) {
+        return 1.106 / Math.sqrt(Math.exp(log2m * Math.log(2)));
     }
 
     private static void validateLog2m(int log2m) {
@@ -289,8 +294,10 @@ public class HyperLogLog implements ICardinality, Serializable {
     }
 
     public static class Builder implements IBuilder<ICardinality>, Serializable {
+        private static final long serialVersionUID = -2567898469253021883L;
 
-        private final int log2m;
+        private final double rsd;
+        private transient int log2m;
 
         /**
          * Uses the given RSD percentage to determine how many bytes the constructed HyperLogLog will use.
@@ -301,13 +308,21 @@ public class HyperLogLog implements ICardinality, Serializable {
          */
         @Deprecated
         public Builder(double rsd) {
-            this(log2m(rsd));
+            this.log2m = log2m(rsd);
+            validateLog2m(log2m);
+            this.rsd = rsd;
         }
 
         /** This constructor is private to prevent behavior change for ambiguous usages. (Legacy support). */
         private Builder(int log2m) {
-            validateLog2m(log2m);
             this.log2m = log2m;
+            validateLog2m(log2m);
+            this.rsd = rsd(log2m);
+        }
+
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            in.defaultReadObject();
+            this.log2m = log2m(rsd);
         }
 
         @Override
