@@ -64,7 +64,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     public static final int[] EMPTY_SPARSE = new int[0];
 
-    private static final int INITIAL_TEMP_SET_CAPACITY = 64;
+    private static final int INITIAL_TEMP_SET_CAPACITY = 4;
 
     /**
      * Ratio of the sparse set size to the temp set size.
