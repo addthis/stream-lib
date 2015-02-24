@@ -233,7 +233,11 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 format = Format.SPARSE;
                 this.sp = sp;
                 sm = (int) Math.pow(2, sp);
-                this.sparseSet = sparseSet;
+                if (sparseSet == null) {
+                    this.sparseSet = EMPTY_SPARSE;
+                } else {
+                    this.sparseSet = sparseSet;
+                }
                 sparseSetThreshold = (int) (m * 0.75);
                 sortThreshold = sparseSetThreshold / 4;
             } else {
@@ -249,23 +253,29 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             return false;
         }
         HyperLogLogPlus other = (HyperLogLogPlus) obj;
+        if (format == Format.SPARSE) {
+            mergeTempList();
+        }
+        if (other.format == Format.SPARSE) {
+            other.mergeTempList();
+        }
         if (other.format != format) {
             return false;
         }
         if (format == Format.NORMAL) {
             return Arrays.equals(registerSet.readOnlyBits(), other.registerSet.readOnlyBits());
         } else {
-            mergeTempList();
-            other.mergeTempList();
             return Arrays.equals(sparseSet, other.sparseSet);
         }
     }
 
     @Override public int hashCode() {
+        if (format == Format.SPARSE) {
+            mergeTempList();
+        }
         if (format == Format.NORMAL) {
             return Arrays.hashCode(registerSet.readOnlyBits());
         } else {
-            mergeTempList();
             return Arrays.hashCode(sparseSet);
         }
     }
@@ -289,10 +299,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
-                if ((sparseSet != null) && (sparseSet.length > sparseSetThreshold)) {
-                    mergeTempList();
-                    convertToNormal();
-                } else if (tmpIndex > sortThreshold) {
+                if (tmpIndex > sortThreshold) {
                     mergeTempList();
                 }
                 return true;
@@ -319,7 +326,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * Collisions are resolved by merely taking the max.
      */
     private void convertToNormal() {
-        mergeTempList();
         this.registerSet = new RegisterSet((int) Math.pow(2, p));
         for (int k : sparseSet) {
             int idx = getIndex(k, p);
@@ -463,6 +469,9 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      */
     @Override
     public long cardinality() {
+        if (format == Format.SPARSE) {
+            mergeTempList();
+        }
         switch (format) {
             case NORMAL:
                 double registerSum = 0;
@@ -494,7 +503,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                     return Math.round(estimatePrime);
                 }
             case SPARSE:
-                mergeTempList();
                 return Math.round(HyperLogLog.linearCounting(sm, sm - sparseSet.length));
         }
         return 0;
@@ -641,9 +649,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * @return the new sparse set
      */
     private int[] mergeEstimators(HyperLogLogPlus other) {
-        other.mergeTempList();
         int[] tmp = other.getSparseSet();
-        mergeTempList();
         int[] set = sparseSet;
 
         List<Integer> newSet = new ArrayList<Integer>();
@@ -693,6 +699,9 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         dos.writeInt(-VERSION);
         Varint.writeUnsignedVarInt(p, dos);
         Varint.writeUnsignedVarInt(sp, dos);
+        if (format == Format.SPARSE) {
+            mergeTempList();
+        }
         switch (format) {
             case NORMAL:
                 Varint.writeUnsignedVarInt(0, dos);
@@ -703,7 +712,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 break;
             case SPARSE:
                 Varint.writeUnsignedVarInt(1, dos);
-                mergeTempList();
                 Varint.writeUnsignedVarInt(sparseSet.length, dos);
                 int prevMergedDelta = 0;
                 for (int k : sparseSet) {
@@ -726,13 +734,14 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * list, merge the lists, blow up the temp list.
      */
     void mergeTempList() {
-        int[] retSet = sparseSet;
         if (tmpIndex > 0) {
             int[] sortedSet = sortEncodedSet(tmpSet, tmpIndex);
-            retSet = merge(sparseSet, sortedSet);
+            sparseSet = merge(sparseSet, sortedSet);
             tmpIndex = 0;
+            if (sparseSet.length > sparseSetThreshold) {
+                convertToNormal();
+            }
         }
-        sparseSet = retSet == null ? EMPTY_SPARSE : retSet;
     }
 
     int[] sortEncodedSet(int[] encodedSet, int validIndex) {
@@ -781,6 +790,12 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         if (other.sizeof() != sizeof()) {
             throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
         }
+        if (format == Format.SPARSE) {
+            mergeTempList();
+        }
+        if (other.format == Format.SPARSE) {
+            other.mergeTempList();
+        }
 
         if ((format == Format.NORMAL) && (other.format == Format.NORMAL)) {
             registerSet.merge(other.registerSet);
@@ -789,11 +804,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
         if ((format == Format.SPARSE) && (other.format == Format.SPARSE)) {
             sparseSet = mergeEstimators(other);
-            // Convert to normal mode if needed. 
-            // Since offer trigger the switch to the normal mode on only when 
-            // the tmpSet is full and the threshold is reached, we follow the same 
-            // behavior here to ease testing
-            if (sparseSet.length > (sparseSetThreshold + sortThreshold)) {
+            if (sparseSet.length > sparseSetThreshold) {
                 convertToNormal();
             }
             return;
@@ -810,7 +821,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             // of this' register set is several orders of magnitude faster than copying 
             // and converting other to normal mode. This use case is quite common since
             // we tend to aggregate small sets to large sets.
-            other.mergeTempList();
             for (int i = 0; i < other.sparseSet.length; i++) {
                 int k = other.sparseSet[i];
                 int idx = other.getIndex(k, p);
