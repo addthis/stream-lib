@@ -171,21 +171,6 @@ public class TestHyperLogLogPlus {
         assertTrue(estimate <= expectedCardinality + (3 * se));
     }
 
-//    @Test
-//    public void testDelta()
-//    {
-//        HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
-//        ArrayList<byte[]> l = new ArrayList<byte[]>();
-//        for (int i = 0; i < 1000000; i++)
-//        {
-//            hll.deltaAdd(l,i);
-//            int out = hll.deltaRead(l,i);
-//            assert i == out;
-//            int out2 = hll.deltaRead(l,i);
-//            assert i == out2;
-//        }
-//    }
-
     @Test
     public void testSerialization_Normal() throws IOException {
         HyperLogLogPlus hll = new HyperLogLogPlus(5, 25);
