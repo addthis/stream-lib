@@ -267,12 +267,12 @@ public class TestHyperLogLogPlus {
                     if (sp < ps[j]) {
                         continue;
                     }
-                    System.out.println(ps[j] + "-" + sp + ": " + cardinality);
                     HyperLogLogPlus hllPlus = new HyperLogLogPlus(ps[j], sp);
                     for (int l = 0; l < cardinality; l++) {
                         hllPlus.offer(Math.random());
                     }
                     HyperLogLogPlus deserialized = HyperLogLogPlus.Builder.build(hllPlus.getBytes());
+                    System.out.println(ps[j] + "-" + sp + ": " + cardinality + " -> " + hllPlus.cardinality());
                     assertEquals(hllPlus.cardinality(), deserialized.cardinality());
                     ICardinality merged = hllPlus.merge(deserialized);
                     assertEquals(hllPlus.cardinality(), merged.cardinality());
