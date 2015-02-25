@@ -304,7 +304,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
                 if (tmpIndex >= tmpSet.length) {
-                    mergeTempList(true);
+                    mergeTempList();
                 }
                 return true;
         }
@@ -742,21 +742,17 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * is determined by {@link #SPARSE_SET_TEMP_SET_RATIO}. The temp set will not
      * grow unless it is currently smaller by 1/2 of the target size.
      */
-    void mergeTempList(boolean resizeTmpSet) {
+    void mergeTempList() {
         if (tmpIndex > 0) {
             int[] sortedSet = sortEncodedSet(tmpSet, tmpIndex);
             sparseSet = merge(sparseSet, sortedSet);
             tmpIndex = 0;
             if (sparseSet.length > sparseSetThreshold) {
                 convertToNormal();
-            } else if (resizeTmpSet && (tmpSet.length * 2) < (sparseSet.length / SPARSE_SET_TEMP_SET_RATIO)) {
+            } else if ((tmpSet.length * 2) < (sparseSet.length / SPARSE_SET_TEMP_SET_RATIO)) {
                 tmpSet = new int[sparseSet.length / SPARSE_SET_TEMP_SET_RATIO];
             }
         }
-    }
-
-    void mergeTempList() {
-        mergeTempList(false);
     }
 
     int[] sortEncodedSet(int[] encodedSet, int validIndex) {
