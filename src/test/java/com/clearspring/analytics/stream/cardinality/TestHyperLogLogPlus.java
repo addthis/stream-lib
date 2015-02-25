@@ -81,6 +81,10 @@ public class TestHyperLogLogPlus {
                 hllpp1.offer(strings[i]);
                 hllpp2.offer(strings[n - 1 - i]);
             }
+            // calling these here ensures their internal state (format type) is stable for the rest of these checks.
+            // (end users have no need for this because they cannot access the format directly anyway)
+            hllpp1.mergeTempList();
+            hllpp2.mergeTempList();
             log.debug("n={} format1={} format2={}", n, hllpp1.format, hllpp2.format);
             try {
                 if (hllpp1.format == hllpp2.format) {
