@@ -64,6 +64,13 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     public static final int[] EMPTY_SPARSE = new int[0];
 
+    private static final int INITIAL_TEMP_SET_CAPACITY = 4;
+
+    /**
+     * Ratio of the sparse set size to the temp set size.
+     */
+    private static final int SPARSE_SET_TEMP_SET_RATIO = 4;
+
     enum Format {
         SPARSE, NORMAL
     }
@@ -153,8 +160,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     //How big the sparse set is allowed to get before we convert to 'normal'
     private int sparseSetThreshold;
-    //How big the temp list is allowed to get before we batch merge it into the sparse set
-    private int sortThreshold;
 
     private int[] tmpSet;
     private int tmpIndex = 0;
@@ -239,7 +244,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                     this.sparseSet = sparseSet;
                 }
                 sparseSetThreshold = (int) (m * 0.75);
-                sortThreshold = sparseSetThreshold / 4;
             } else {
                 this.registerSet = new RegisterSet((int) Math.pow(2, p));
             }
@@ -295,11 +299,11 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 //Call the sparse encoding scheme which attempts to stuff as much helpful data into 32 bits as possible
                 int k = encodeHash(hashedLong, p, sp);
                 if (tmpSet == null) {
-                    tmpSet = new int[sortThreshold + 1];
+                    tmpSet = new int[INITIAL_TEMP_SET_CAPACITY];
                 }
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
-                if (tmpIndex > sortThreshold) {
+                if (tmpIndex >= tmpSet.length) {
                     mergeTempList();
                 }
                 return true;
@@ -732,6 +736,11 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * Script-esque function that handles preparing to and executing merging the
      * sparse set and the temp list. Set up the delta encoding, sort the temp
      * list, merge the lists, blow up the temp list.
+     *
+     * The temp set grows in size at a rate proportional to the current
+     * size of the sparse set. The size ratio of the temp set to the sparse set
+     * is determined by {@link #SPARSE_SET_TEMP_SET_RATIO}. The temp set will not
+     * grow unless it is currently smaller by 1/2 of the target size.
      */
     void mergeTempList() {
         if (tmpIndex > 0) {
@@ -740,6 +749,8 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             tmpIndex = 0;
             if (sparseSet.length > sparseSetThreshold) {
                 convertToNormal();
+            } else if ((tmpSet.length * 2) < (sparseSet.length / SPARSE_SET_TEMP_SET_RATIO)) {
+                tmpSet = new int[sparseSet.length / SPARSE_SET_TEMP_SET_RATIO];
             }
         }
     }

@@ -81,6 +81,10 @@ public class TestHyperLogLogPlus {
                 hllpp1.offer(strings[i]);
                 hllpp2.offer(strings[n - 1 - i]);
             }
+            // calling these here ensures their internal state (format type) is stable for the rest of these checks.
+            // (end users have no need for this because they cannot access the format directly anyway)
+            hllpp1.mergeTempList();
+            hllpp2.mergeTempList();
             log.debug("n={} format1={} format2={}", n, hllpp1.format, hllpp2.format);
             try {
                 if (hllpp1.format == hllpp2.format) {
@@ -170,21 +174,6 @@ public class TestHyperLogLogPlus {
         assertTrue(estimate >= expectedCardinality - (3 * se));
         assertTrue(estimate <= expectedCardinality + (3 * se));
     }
-
-//    @Test
-//    public void testDelta()
-//    {
-//        HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
-//        ArrayList<byte[]> l = new ArrayList<byte[]>();
-//        for (int i = 0; i < 1000000; i++)
-//        {
-//            hll.deltaAdd(l,i);
-//            int out = hll.deltaRead(l,i);
-//            assert i == out;
-//            int out2 = hll.deltaRead(l,i);
-//            assert i == out2;
-//        }
-//    }
 
     @Test
     public void testSerialization_Normal() throws IOException {
