@@ -7,8 +7,8 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.clearspring.analytics</groupId>
-  <artifactId>stream</artifactId>
+  <groupId>com.addthis</groupId>
+  <artifactId>stream-lib</artifactId>
   <packaging>jar</packaging>
   <version>2.9.0-SNAPSHOT</version>
   <name>stream-lib</name>
