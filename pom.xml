@@ -10,7 +10,7 @@
   <groupId>com.addthis</groupId>
   <artifactId>stream-lib</artifactId>
   <packaging>jar</packaging>
-  <version>2.9.0-SNAPSHOT</version>
+  <version>3.0.0</version>
   <name>stream-lib</name>
   <description>A library for summarizing data in streams for which it is infeasible to store all events</description>
   <url>https://github.com/addthis/stream-lib</url>
@@ -97,6 +97,6 @@
     <connection>scm:git:git@github.com:addthis/stream-lib.git</connection>
     <developerConnection>scm:git:git@github.com:addthis/stream-lib.git</developerConnection>
     <url>https://github.com/addthis/stream-lib</url>
-    <tag>HEAD</tag>
+    <tag>v3.0.0</tag>
   </scm>
 </project>
