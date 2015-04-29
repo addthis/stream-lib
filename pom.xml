@@ -82,15 +82,6 @@
     </dependencies>
   </dependencyManagement>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.rat</groupId>
-        <artifactId>apache-rat-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <developers>
     <developer>
       <name>Matt Abrams</name>
