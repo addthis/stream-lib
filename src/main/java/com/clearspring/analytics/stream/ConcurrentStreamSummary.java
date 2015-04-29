@@ -39,16 +39,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ConcurrentStreamSummary<T> implements ITopK<T> {
 
     private final int capacity;
-    private final ConcurrentHashMap<T, ScoredItem> itemMap;
-    private final AtomicReference<ScoredItem> minVal;
+    private final ConcurrentHashMap<T, ScoredItem<T>> itemMap;
+    private final AtomicReference<ScoredItem<T>> minVal;
     private final AtomicLong size;
     private final AtomicBoolean reachCapacity;
 
     public ConcurrentStreamSummary(final int capacity) {
         this.capacity = capacity;
-        this.minVal = new AtomicReference<ScoredItem>();
+        this.minVal = new AtomicReference<ScoredItem<T>>();
         this.size = new AtomicLong(0);
-        this.itemMap = new ConcurrentHashMap<T, ScoredItem>(capacity);
+        this.itemMap = new ConcurrentHashMap<T, ScoredItem<T>>(capacity);
         this.reachCapacity = new AtomicBoolean(false);
     }
 
@@ -60,14 +60,14 @@ public class ConcurrentStreamSummary<T> implements ITopK<T> {
     @Override
     public boolean offer(final T element, final int incrementCount) {
         long val = incrementCount;
-        ScoredItem value = new ScoredItem(element, incrementCount);
-        ScoredItem oldVal = itemMap.putIfAbsent(element, value);
+        ScoredItem<T> value = new ScoredItem<T>(element, incrementCount);
+        ScoredItem<T> oldVal = itemMap.putIfAbsent(element, value);
         if (oldVal != null) {
             val = oldVal.addAndGetCount(incrementCount);
         } else if (reachCapacity.get() || size.incrementAndGet() > capacity) {
             reachCapacity.set(true);
 
-            ScoredItem oldMinVal = minVal.getAndSet(value);
+            ScoredItem<T> oldMinVal = minVal.getAndSet(value);
             itemMap.remove(oldMinVal.getItem());
 
             while (oldMinVal.isNewItem()) {
@@ -85,7 +85,7 @@ public class ConcurrentStreamSummary<T> implements ITopK<T> {
         return val != incrementCount;
     }
 
-    private ScoredItem getMinValue() {
+    private ScoredItem<T> getMinValue() {
         ScoredItem<T> minVal = null;
         for (ScoredItem<T> entry : itemMap.values()) {
             if (minVal == null || (!entry.isNewItem() && entry.getCount() < minVal.getCount())) {
@@ -119,9 +119,9 @@ public class ConcurrentStreamSummary<T> implements ITopK<T> {
 
     public List<ScoredItem<T>> peekWithScores(final int k) {
         List<ScoredItem<T>> values = new ArrayList<ScoredItem<T>>();
-        for (Map.Entry<T, ScoredItem> entry : itemMap.entrySet()) {
-            ScoredItem value = entry.getValue();
-            values.add(new ScoredItem(value.getItem(), value.getCount(), value.getError()));
+        for (Map.Entry<T, ScoredItem<T>> entry : itemMap.entrySet()) {
+            ScoredItem<T> value = entry.getValue();
+            values.add(new ScoredItem<T>(value.getItem(), value.getCount(), value.getError()));
         }
         Collections.sort(values);
         values = values.size() > k ? values.subList(0, k) : values;

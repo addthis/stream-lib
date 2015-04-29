@@ -18,7 +18,7 @@ package com.clearspring.analytics.hash;
 
 import org.junit.Test;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author epollan
@@ -31,12 +31,12 @@ public class TestMurmurHash {
         byte[] inputBytes = input.getBytes();
 
         int hashOfString = MurmurHash.hash(input);
-        Assert.assertEquals("MurmurHash.hash(byte[]) did not match MurmurHash.hash(String)",
-                hashOfString, MurmurHash.hash(inputBytes));
+        assertEquals("MurmurHash.hash(byte[]) did not match MurmurHash.hash(String)",
+                     hashOfString, MurmurHash.hash(inputBytes));
 
         Object bytesAsObject = inputBytes;
-        Assert.assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
-                hashOfString, MurmurHash.hash(bytesAsObject));
+        assertEquals("MurmurHash.hash(Object) given a byte[] did not match MurmurHash.hash(String)",
+                     hashOfString, MurmurHash.hash(bytesAsObject));
     }
 
     @Test
@@ -45,11 +45,11 @@ public class TestMurmurHash {
         byte[] inputBytes = input.getBytes();
 
         long hashOfString = MurmurHash.hash64(input);
-        Assert.assertEquals("MurmurHash.hash64(byte[]) did not match MurmurHash.hash64(String)",
-                hashOfString, MurmurHash.hash64(inputBytes));
+        assertEquals("MurmurHash.hash64(byte[]) did not match MurmurHash.hash64(String)",
+                     hashOfString, MurmurHash.hash64(inputBytes));
 
         Object bytesAsObject = inputBytes;
-        Assert.assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
-                hashOfString, MurmurHash.hash64(bytesAsObject));
+        assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
+                     hashOfString, MurmurHash.hash64(bytesAsObject));
     }
 }
