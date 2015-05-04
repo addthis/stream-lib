@@ -7,10 +7,10 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.addthis</groupId>
-  <artifactId>stream-lib</artifactId>
+  <groupId>com.clearspring.analytics</groupId>
+  <artifactId>stream</artifactId>
   <packaging>jar</packaging>
-  <version>3.0.1-SNAPSHOT</version>
+  <version>2.9.0-SNAPSHOT</version>
   <name>stream-lib</name>
   <description>A library for summarizing data in streams for which it is infeasible to store all events</description>
   <url>https://github.com/addthis/stream-lib</url>
@@ -20,6 +20,10 @@
       <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
     </license>
   </licenses>
+
+ <properties>
+    <project.build.targetJdk>1.6</project.build.targetJdk>
+  </properties>
 
   <dependencies>
     <dependency>
