@@ -316,8 +316,9 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                     mergeTempList();
                 }
                 return true;
+            default:
+                throw new IllegalStateException("Unrecognized format " + format);
         }
-        return false;
     }
 
     @Override
