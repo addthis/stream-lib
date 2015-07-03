@@ -119,6 +119,12 @@ public class LogLog implements ICardinality {
     }
 
     @Override
+    public void offerHashedSilent(long hashedLong) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public boolean offerHashed(int hashedInt) {
         boolean modified = false;
         int j = hashedInt >>> (Integer.SIZE - k);
@@ -128,14 +134,24 @@ public class LogLog implements ICardinality {
             M[j] = r;
             modified = true;
         }
-
         return modified;
+    }
+
+    @Override
+    public void offerHashedSilent(int hashedInt) {
+        offerHashed(hashedInt);
     }
 
     @Override
     public boolean offer(Object o) {
         int x = MurmurHash.hash(o);
         return offerHashed(x);
+    }
+
+    @Override
+    public void offerSilent(Object o) {
+        int x = MurmurHash.hash(o);
+        offerHashedSilent(x);
     }
 
     /**

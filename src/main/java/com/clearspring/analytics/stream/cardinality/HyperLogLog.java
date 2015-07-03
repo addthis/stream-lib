@@ -147,6 +147,11 @@ public class HyperLogLog implements ICardinality, Serializable {
     }
 
     @Override
+    public void offerHashedSilent(long hashedValue) {
+        offerHashed(hashedValue);
+    }
+
+    @Override
     public boolean offerHashed(int hashedValue) {
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
@@ -156,11 +161,20 @@ public class HyperLogLog implements ICardinality, Serializable {
     }
 
     @Override
+    public void offerHashedSilent(int hashedValue) {
+        offerHashed(hashedValue);
+    }
+
+    @Override
     public boolean offer(Object o) {
         final int x = MurmurHash.hash(o);
         return offerHashed(x);
     }
 
+    @Override
+    public void offerSilent(Object o) {
+        offer(o);
+    }
 
     @Override
     public long cardinality() {

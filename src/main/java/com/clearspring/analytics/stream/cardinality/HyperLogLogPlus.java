@@ -286,6 +286,15 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     @Override
     public boolean offerHashed(long hashedLong) {
+        return doOfferHashed(hashedLong, false);
+    }
+
+    @Override
+    public void offerHashedSilent(long hashedLong) {
+        doOfferHashed(hashedLong, true);
+    }
+
+    public boolean doOfferHashed(long hashedLong, boolean silent) {
         switch (format) {
             case NORMAL:
                 // find first p bits of x
@@ -317,9 +326,21 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     @Override
+    public void offerHashedSilent(int hashedInt) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public boolean offer(Object o) {
         long x = MurmurHash.hash64(o);
         return offerHashed(x);
+    }
+
+    @Override
+    public void offerSilent(Object o) {
+        long x = MurmurHash.hash64(o);
+        offerHashedSilent(x);
     }
 
     /**

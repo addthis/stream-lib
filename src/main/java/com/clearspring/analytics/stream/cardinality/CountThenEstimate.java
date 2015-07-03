@@ -127,6 +127,16 @@ public class CountThenEstimate implements ICardinality, Externalizable {
     }
 
     @Override
+    public void offerHashedSilent(long hashedLong) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void offerHashedSilent(int hashedInt) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean offer(Object o) {
         boolean modified = false;
 
@@ -142,6 +152,19 @@ public class CountThenEstimate implements ICardinality, Externalizable {
         }
 
         return modified;
+    }
+
+    @Override
+    public void offerSilent(Object o) {
+        if (tipped) {
+            estimator.offerSilent(o);
+        } else {
+            if (counter.add(o)) {
+                if (counter.size() > tippingPoint) {
+                    tip();
+                }
+            }
+        }
     }
 
     @Override

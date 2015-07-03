@@ -22,10 +22,19 @@ import java.io.IOException;
 public interface ICardinality {
 
     /**
+     * Offer the value
+     *
      * @param o stream element
      * @return false if the value returned by cardinality() is unaffected by the appearance of o in the stream.
      */
     boolean offer(Object o);
+
+    /**
+     * Offer the value and do not return update status.
+     *
+     * @param o stream element
+     */
+    void offerSilent(Object o);
 
     /**
      * Offer the value as a hashed long value
@@ -36,12 +45,26 @@ public interface ICardinality {
     boolean offerHashed(long hashedLong);
 
     /**
-     * Offer the value as a hashed long value
+     * Offer the value as a hashed long value and do not return update status.
+     *
+     * @param hashedLong - the hash of the item to offer to the estimator
+     */
+    void offerHashedSilent(long hashedLong);
+
+    /**
+     * Offer the value as a hashed int value
      *
      * @param hashedInt - the hash of the item to offer to the estimator
      * @return false if the value returned by cardinality() is unaffected by the appearance of hashedInt in the stream
      */
     boolean offerHashed(int hashedInt);
+
+    /**
+     * Offer the value as a hashed int value and do not return update status
+     *
+     * @param hashedInt - the hash of the item to offer to the estimator
+     */
+    void offerHashedSilent(int hashedInt);
 
     /**
      * @return the number of unique elements in the stream or an estimate thereof

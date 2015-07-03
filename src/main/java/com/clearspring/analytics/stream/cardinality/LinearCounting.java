@@ -87,9 +87,18 @@ public class LinearCounting implements ICardinality {
     }
 
     @Override
+    public void offerHashedSilent(long hashedLong) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void offerHashedSilent(int hashedInt) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean offer(Object o) {
         boolean modified = false;
-
         long hash = (long) MurmurHash.hash(o);
         int bit = (int) ((hash & 0xFFFFFFFFL) % (long) length);
         int i = bit / 8;
@@ -100,8 +109,12 @@ public class LinearCounting implements ICardinality {
             count--;
             modified = true;
         }
-
         return modified;
+    }
+
+    @Override
+    public void offerSilent(Object o) {
+        offer(o);
     }
 
     @Override
