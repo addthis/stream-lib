@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -62,6 +63,13 @@ public class TestHyperLogLogPlus {
             hll3.offer("" + i);
         }
         assertNotEquals(hll1, hll3);
+    }
+
+    @Test
+    public void testOffer() {
+        HyperLogLogPlus hll = new HyperLogLogPlus(5, 25);
+        assertTrue(hll.offer("ABC"));
+        assertFalse(hll.offer("ABC")); // boom!
     }
     
     @Test
@@ -205,9 +213,12 @@ public class TestHyperLogLogPlus {
         hll.offer("c");
         hll.offer("d");
         hll.offer("e");
+        assertTrue(hll.offer("ABC"));
+        assertFalse(hll.offer("ABC")); // boom!
 
         HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
         assertEquals(hll.cardinality(), hll2.cardinality());
+        assertFalse(hll2.offer("ABC")); // boom!
     }
 
     @Test

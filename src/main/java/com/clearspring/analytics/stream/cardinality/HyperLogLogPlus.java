@@ -32,14 +32,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import com.clearspring.analytics.hash.MurmurHash;
 import com.clearspring.analytics.util.Bits;
 import com.clearspring.analytics.util.IBuilder;
 import com.clearspring.analytics.util.Varint;
+import com.sun.tools.javac.util.ArrayUtils;
 
 
 /**
@@ -164,6 +170,8 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     private int[] tmpSet;
     private int tmpIndex = 0;
     private int[] sparseSet;
+    private Set<Integer> transientSparseSet;
+    private int sparseSetSize;
 
     /**
      * This constructor disables the sparse set.  If the counter is likely to exceed
@@ -242,6 +250,9 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                     this.sparseSet = EMPTY_SPARSE;
                 } else {
                     this.sparseSet = sparseSet;
+                    Supplier<Set<Integer>> supplier = HashSet::new;
+                    transientSparseSet = new HashSet<>(Arrays.stream(sparseSet).boxed().collect(Collectors.toCollection(supplier)));
+                    sparseSetSize = transientSparseSet.size();
                 }
                 sparseSetThreshold = (int) (m * 0.75);
             } else {
@@ -303,10 +314,17 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 //Put the encoded data into the temp set
                 tmpSet[tmpIndex++] = k;
+                if (transientSparseSet == null) {
+                    transientSparseSet = new HashSet<Integer>();
+                }
+                transientSparseSet.add(k);
+                int oldSize = sparseSetSize;
+                sparseSetSize = transientSparseSet.size();
+                boolean modified = sparseSetSize > oldSize;
                 if (tmpIndex >= tmpSet.length) {
                     mergeTempList();
                 }
-                return true;
+                return modified;
         }
         return false;
     }
