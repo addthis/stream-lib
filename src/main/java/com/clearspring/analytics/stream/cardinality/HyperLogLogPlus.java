@@ -164,6 +164,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     private int[] tmpSet;
     private int tmpIndex = 0;
     private int[] sparseSet;
+    private Long cardinality;
 
     /**
      * This constructor disables the sparse set.  If the counter is likely to exceed
@@ -286,6 +287,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     @Override
     public boolean offerHashed(long hashedLong) {
+        cardinality = null;
         switch (format) {
             case NORMAL:
                 // find first p bits of x
@@ -473,6 +475,9 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      */
     @Override
     public long cardinality() {
+        if (cardinality != null) {
+            return cardinality;
+        }
         if (format == Format.SPARSE) {
             mergeTempList();
         }
@@ -502,14 +507,18 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 // when p is large the threshold is just 5*m
                 if (((p <= 18) && (H < thresholdData[p - 4])) || ((p > 18) && (estimate <= (5 * m)))) {
-                    return Math.round(H);
+                    cardinality = Math.round(H);
                 } else {
-                    return Math.round(estimatePrime);
+                    cardinality = Math.round(estimatePrime);
                 }
+                break;
             case SPARSE:
-                return Math.round(HyperLogLog.linearCounting(sm, sm - sparseSet.length));
+                cardinality = Math.round(HyperLogLog.linearCounting(sm, sm - sparseSet.length));
+                break;
+            default:
+                throw new IllegalStateException("Unrecognized format " + format);
         }
-        return 0;
+        return cardinality;
     }
 
     private static double getEstimateBias(double estimate, int p) {
@@ -798,6 +807,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * @throws CardinalityMergeException if other is not compatible
      */
     public void addAll(HyperLogLogPlus other) throws HyperLogLogPlusMergeException {
+        cardinality = null;
         if (other.sizeof() != sizeof()) {
             throw new HyperLogLogPlusMergeException("Cannot merge estimators of different sizes");
         }

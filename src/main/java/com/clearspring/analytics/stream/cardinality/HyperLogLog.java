@@ -82,7 +82,7 @@ public class HyperLogLog implements ICardinality, Serializable {
     private final RegisterSet registerSet;
     private final int log2m;
     private final double alphaMM;
-
+    private Long cardinality;
 
     /**
      * Create a new HyperLogLog instance using the specified standard deviation.
@@ -139,6 +139,7 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     @Override
     public boolean offerHashed(long hashedValue) {
+        cardinality = null;
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
         final int j = (int) (hashedValue >>> (Long.SIZE - log2m));
@@ -148,6 +149,7 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     @Override
     public boolean offerHashed(int hashedValue) {
+        cardinality = null;
         // j becomes the binary address determined by the first b log2m of x
         // j will be between 0 and 2^log2m
         final int j = hashedValue >>> (Integer.SIZE - log2m);
@@ -164,6 +166,9 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     @Override
     public long cardinality() {
+        if (cardinality != null) {
+            return cardinality;
+        }
         double registerSum = 0;
         int count = registerSet.count;
         double zeros = 0.0;
@@ -179,10 +184,11 @@ public class HyperLogLog implements ICardinality, Serializable {
 
         if (estimate <= (5.0 / 2.0) * count) {
             // Small Range Estimate
-            return Math.round(linearCounting(count, zeros));
+            cardinality = Math.round(linearCounting(count, zeros));
         } else {
-            return Math.round(estimate);
+            cardinality = Math.round(estimate);
         }
+        return cardinality;
     }
 
     @Override
@@ -216,6 +222,7 @@ public class HyperLogLog implements ICardinality, Serializable {
      * @throws CardinalityMergeException if other is not compatible
      */
     public void addAll(HyperLogLog other) throws CardinalityMergeException {
+        cardinality = null;
         if (this.sizeof() != other.sizeof()) {
             throw new HyperLogLogMergeException("Cannot merge estimators of different sizes");
         }
