@@ -47,7 +47,6 @@ public class TestHyperLogLog {
         hyperLogLog.offer(19);
         hyperLogLog.offer(19);
         assertEquals(8, hyperLogLog.cardinality());
-        assertEquals(8, hyperLogLog.cardinality());
     }
 
     @Test
@@ -60,7 +59,6 @@ public class TestHyperLogLog {
         hll.offer("e");
 
         HyperLogLog hll2 = (HyperLogLog) TestUtils.deserialize(TestUtils.serialize(hll));
-        assertEquals(hll.cardinality(), hll.cardinality());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
@@ -102,7 +100,6 @@ public class TestHyperLogLog {
         }
         System.out.println("time: " + (System.currentTimeMillis() - start));
         long estimate = hyperLogLog.cardinality();
-        assertEquals(estimate, hyperLogLog.cardinality());
         double err = Math.abs(estimate - size) / (double) size;
         System.out.println(err);
         assertTrue(err < .1);

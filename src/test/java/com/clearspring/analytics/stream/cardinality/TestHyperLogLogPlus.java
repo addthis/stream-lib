@@ -166,7 +166,6 @@ public class TestHyperLogLogPlus {
             }
         }
         long estimate = hyperLogLogPlus.cardinality();
-        assertEquals(estimate, hyperLogLogPlus.cardinality());
         double se = count * (1.04 / Math.sqrt(Math.pow(2, 14)));
         long expectedCardinality = count;
 
@@ -184,7 +183,6 @@ public class TestHyperLogLogPlus {
         }
         System.out.println(hll.cardinality());
         HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
-        assertEquals(hll.cardinality(), hll.cardinality());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
@@ -196,7 +194,6 @@ public class TestHyperLogLogPlus {
         }
         System.out.println(hll.cardinality());
         HyperLogLogPlus hll2 = (HyperLogLogPlus) TestUtils.deserialize(TestUtils.serialize(hll));
-        assertEquals(hll.cardinality(), hll.cardinality());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
@@ -210,7 +207,6 @@ public class TestHyperLogLogPlus {
         hll.offer("e");
 
         HyperLogLogPlus hll2 = HyperLogLogPlus.Builder.build(hll.getBytes());
-        assertEquals(hll.cardinality(), hll.cardinality());
         assertEquals(hll.cardinality(), hll2.cardinality());
     }
 
@@ -227,7 +223,6 @@ public class TestHyperLogLogPlus {
         double err = Math.abs(estimate - size) / (double) size;
         System.out.println("Percentage error  " + err);
         assertTrue(err < .1);
-        assertEquals(hyperLogLogPlus.cardinality(), hyperLogLogPlus.cardinality());
     }
 
     @Test
@@ -260,7 +255,6 @@ public class TestHyperLogLogPlus {
                 ICardinality merged = hllPlus.merge(deserialized);
                 System.out.println(merged.cardinality() + " : " + hllPlus.cardinality());
                 assertEquals(hllPlus.cardinality(), merged.cardinality());
-                assertEquals(hllPlus.cardinality(), hllPlus.cardinality());
             }
         }
     }
@@ -286,7 +280,6 @@ public class TestHyperLogLogPlus {
                     assertEquals(hllPlus.cardinality(), deserialized.cardinality());
                     ICardinality merged = hllPlus.merge(deserialized);
                     assertEquals(hllPlus.cardinality(), merged.cardinality());
-                    assertEquals(hllPlus.cardinality(), hllPlus.cardinality());
                 }
             }
         }
@@ -297,7 +290,6 @@ public class TestHyperLogLogPlus {
     public void testOne() throws IOException {
         HyperLogLogPlus one = new HyperLogLogPlus(8, 25);
         one.offer("a");
-        assertEquals(1, one.cardinality());
         assertEquals(1, one.cardinality());
     }
 
@@ -400,7 +392,6 @@ public class TestHyperLogLogPlus {
         // decode legacy
         HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
         assertEquals(baseline.cardinality(), decoded.cardinality());
-        assertEquals(baseline.cardinality(), baseline.cardinality());
         byte[] newBytes = baseline.getBytes();
         assertTrue(newBytes.length < legacyBytes.length);
 
@@ -443,7 +434,6 @@ public class TestHyperLogLogPlus {
         //  decode legacy
         HyperLogLogPlus decoded = HyperLogLogPlus.Builder.build(legacyBytes);
         assertEquals(baseline.cardinality(), decoded.cardinality());
-        assertEquals(baseline.cardinality(), baseline.cardinality());
         byte[] newBytes = baseline.getBytes();
         assertTrue(newBytes.length < legacyBytes.length);
 
@@ -501,12 +491,9 @@ public class TestHyperLogLogPlus {
 
         assertEquals(14, testSet.size());
         assertEquals(9, a.cardinality());
-        assertEquals(9, a.cardinality());
-        assertEquals(6, b.cardinality());
         assertEquals(6, b.cardinality());
 
         a.addAll(b);
-        assertEquals(14, a.cardinality());
         assertEquals(14, a.cardinality());
     }
 }
