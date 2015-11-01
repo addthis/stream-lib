@@ -755,35 +755,37 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         }
     }
 
+    private static int transformToSortRepresentation(int x) {
+        if ((x & 1) == 0) {
+            return (x << 6) ^ 0x7F;
+        }
+        else {
+            return x ^ 1;
+        }
+    }
+
+    private static int transformFromSortRepresentation(int x) {
+        if ((x & 1) == 1) {
+            return (x >>> 6) ^ 1;
+        }
+        else {
+            return x ^ 1;
+        }
+    }
+
     int[] sortEncodedSet(int[] encodedSet, int validIndex) {
-        List<Integer> sortedList = new ArrayList<Integer>(validIndex);
-        for (int i = 0; i < validIndex; i++) {
-            int k = encodedSet[i];
-            sortedList.add(k);
+        int[] result = new int[validIndex];
+        for (int i = 0; i < validIndex; ++i) {
+            result[i] = transformToSortRepresentation(encodedSet[i]);
         }
 
-        Collections.sort(sortedList, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer left, Integer right) {
-                if (left.equals(right)) {
-                    return 0;
-                }
-                int leftIndex = getSparseIndex(left);
-                int rightIndex = getSparseIndex(right);
-                if (leftIndex < rightIndex) {
-                    return -1;
-                } else if (rightIndex < leftIndex) {
-                    return 1;
-                }
-                if (left < right) {
-                    return -1;
-                } else if (right < left) {
-                    return 1;
-                }
-                return 0;
-            }
-        });
-        return toIntArray(sortedList);
+        Arrays.sort(result);
+
+        for (int i = 0; i < validIndex; ++i) {
+            result[i] = transformFromSortRepresentation(result[i]);
+        }
+
+        return result;
     }
 
     /**
