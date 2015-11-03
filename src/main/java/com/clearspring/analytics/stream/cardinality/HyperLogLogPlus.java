@@ -575,7 +575,6 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * @return the new sparse set
      */
     private static int[] merge(int[] set, int[] tmp) {
-        List<Integer> newSet = new ArrayList<Integer>();
         // iterate over each set and merge the result values
 
         int setLength;
@@ -584,36 +583,38 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         } else {
             setLength = set.length;
         }
+        int[] newSet = new int[setLength + tmp.length];
+        int newSetCounter = 0;
         int seti = 0;
         int tmpi = 0;
         while ((seti < setLength) || (tmpi < tmp.length)) {
             if (seti >= setLength) {
                 int tmpVal = tmp[tmpi];
-                newSet.add(tmpVal);
+                newSet[newSetCounter++] = tmpVal;
                 tmpi++;
                 tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
             } else if (tmpi >= tmp.length) {
-                newSet.add(set[seti++]);
+                newSet[newSetCounter++] = set[seti++];
             } else {
                 int setVal = set[seti];
                 int tmpVal = tmp[tmpi];
 
                 if (getSparseIndex(setVal) == getSparseIndex(tmpVal)) {
-                    newSet.add(Math.min(setVal, tmpVal));
+                    newSet[newSetCounter++] = Math.min(setVal, tmpVal);
                     tmpi++;
                     tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
                     seti++;
                 } else if (getSparseIndex(setVal) < getSparseIndex(tmpVal)) {
-                    newSet.add(setVal);
+                    newSet[newSetCounter++] = setVal;
                     seti++;
                 } else {
-                    newSet.add(tmpVal);
+                    newSet[newSetCounter++] = tmpVal;
                     tmpi++;
                     tmpi = consumeDuplicates(tmp, getSparseIndex(tmpVal), tmpi);
                 }
             }
         }
-        return toIntArray(newSet);
+        return (newSetCounter < newSet.length)?Arrays.copyOf(newSet, newSetCounter):newSet;
     }
 
     private static int[] toIntArray(List<Integer> list) {
@@ -656,7 +657,8 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         int[] tmp = other.getSparseSet();
         int[] set = sparseSet;
 
-        List<Integer> newSet = new ArrayList<Integer>();
+        int[] newSet = new int[set.length + tmp.length];
+        int newSetCounter = 0;
 
         // iterate over each set and merge the result values
 
@@ -664,27 +666,27 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         int tmpi = 0;
         while ((seti < set.length) || (tmpi < tmp.length)) {
             if (seti >= set.length) {
-                newSet.add(tmp[tmpi++]);
+                newSet[newSetCounter++] = tmp[tmpi++];
             } else if (tmpi >= tmp.length) {
-                newSet.add(set[seti++]);
+                newSet[newSetCounter++] = set[seti++];
             } else {
                 int setVal = set[seti];
                 int tmpVal = tmp[tmpi];
 
                 if (getSparseIndex(setVal) == getSparseIndex(tmpVal)) {
-                    newSet.add(Math.min(setVal, tmpVal));
+                    newSet[newSetCounter++] = Math.min(setVal, tmpVal);
                     tmpi++;
                     seti++;
                 } else if (getSparseIndex(setVal) < getSparseIndex(tmpVal)) {
-                    newSet.add(setVal);
+                    newSet[newSetCounter++] = setVal;
                     seti++;
                 } else {
-                    newSet.add(tmpVal);
+                    newSet[newSetCounter++] = tmpVal;
                     tmpi++;
                 }
             }
         }
-        return toIntArray(newSet);
+        return (newSetCounter < newSet.length)?Arrays.copyOf(newSet, newSetCounter):newSet;
     }
 
     @Override
