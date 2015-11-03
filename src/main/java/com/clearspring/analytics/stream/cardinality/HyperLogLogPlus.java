@@ -229,7 +229,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         }
 
         this.p = p;
-        m = (int) Math.pow(2, p);
+        m = 1 << p;
         format = Format.NORMAL;
         this.registerSet = registerSet;
         if (registerSet == null) {
@@ -237,7 +237,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             {
                 format = Format.SPARSE;
                 this.sp = sp;
-                sm = (int) Math.pow(2, sp);
+                sm = 1 << sp;
                 if (sparseSet == null) {
                     this.sparseSet = EMPTY_SPARSE;
                 } else {
@@ -245,7 +245,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 sparseSetThreshold = (int) (m * 0.75);
             } else {
-                this.registerSet = new RegisterSet((int) Math.pow(2, p));
+                this.registerSet = new RegisterSet(1 << p);
             }
         }
 
@@ -330,7 +330,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
      * Collisions are resolved by merely taking the max.
      */
     private void convertToNormal() {
-        this.registerSet = new RegisterSet((int) Math.pow(2, p));
+        this.registerSet = new RegisterSet(1 << p);
         for (int k : sparseSet) {
             int idx = getIndex(k, p);
             int r = decodeRunLength(k);
@@ -483,7 +483,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 double zeros = 0;
                 for (int j = 0; j < registerSet.count; j++) {
                     int val = registerSet.get(j);
-                    registerSum += 1.0 / (1 << val);
+                    registerSum += Math.scalb(1d, -val);
                     if (val == 0) {
                         zeros++;
                     }
@@ -690,7 +690,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     @Override
     public int sizeof() {
         if (registerSet == null) {
-            return 4 * RegisterSet.getSizeForCount((int) Math.pow(2, p));
+            return 4 * RegisterSet.getSizeForCount(1 << p);
         }
         return registerSet.size * 4;
     }
@@ -904,7 +904,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
         @Override
         public int sizeof() {
-            int k = (int) Math.pow(2, p);
+            int k = 1 << p;
             return RegisterSet.getBits(k) * 5;
         }
 
@@ -949,7 +949,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 int size = oi.readInt();
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                RegisterSet registerSetFromBytes = new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes));
+                RegisterSet registerSetFromBytes = new RegisterSet(1 << p, Bits.getBits(longArrayBytes));
                 HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, registerSetFromBytes);
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
@@ -975,7 +975,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 int size = Varint.readUnsignedVarInt(oi);
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet((int) Math.pow(2, p), Bits.getBits(longArrayBytes)));
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet(1 << p, Bits.getBits(longArrayBytes)));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             } else {
