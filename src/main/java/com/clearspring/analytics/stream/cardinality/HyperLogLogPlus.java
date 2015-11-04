@@ -757,19 +757,19 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
 
     private static int transformToSortRepresentation(int x) {
         if ((x & 1) == 0) {
-            return (x << 6) ^ 0x7F;
+            return (x << 6) ^ 0x8000007F;
         }
         else {
-            return x ^ 1;
+            return x ^ 0x80000001;
         }
     }
 
     private static int transformFromSortRepresentation(int x) {
         if ((x & 1) == 1) {
-            return (x >>> 6) ^ 1;
+            return (x ^ 0x80000040) >>> 6;
         }
         else {
-            return x ^ 1;
+            return x ^ 0x80000001;
         }
     }
 
