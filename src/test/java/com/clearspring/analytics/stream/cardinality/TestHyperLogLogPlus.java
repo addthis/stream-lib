@@ -496,4 +496,16 @@ public class TestHyperLogLogPlus {
         a.addAll(b);
         assertEquals(14, a.cardinality());
     }
+    
+    @Test
+    public void testSerializationWithNewSortMethod() throws IOException {
+        HyperLogLogPlus hll = new HyperLogLogPlus(14, 25);
+        hll.offerHashed(0x0000000000000000l);
+        hll.offerHashed(0x7FFFFFFFFFFFFFFFl);
+        hll.offerHashed(0x8000000000000000l);
+        hll.offerHashed(0xFFFFFFFFFFFFFFFFl);
+
+        // test against old serialization
+        assertArrayEquals(new byte[]{-1, -1, -1, -2, 14, 25, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8}, hll.getBytes());
+    }
 }
