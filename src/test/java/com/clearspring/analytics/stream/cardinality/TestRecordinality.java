@@ -64,6 +64,9 @@ public class TestRecordinality {
         assertEquals(r.cardinality(), r2.cardinality());
     }
 
+    /**
+     * should not fail with probability 1/100
+     */
     @Test
     public void testHighCardinality() {
         int counter = 0;

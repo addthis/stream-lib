@@ -84,13 +84,20 @@ public class Recordinality implements ICardinality, Serializable {
         this.rk = 0;
     }
 
+    /**
+     *  Process the offered hash.
+     *  You can find a pseudocode in the description links
+     */
     public boolean offerHashed(long hashedLong) {
+        // if the element is not in the hashmap...
         if (!elements.contains(hashedLong)) {
+            //if we don't have k-values this is a k-max
             if (sampleSize > sampleSet.size()) {
                 elements.add(hashedLong);
                 sampleSet.add(hashedLong);
                 rk+=1;
                 return true;
+            // if we have k values but this is a k-max insert it and remove the minimum
             } else if (sampleSet.peek() < hashedLong) {
                 elements.remove(sampleSet.peek());
                 elements.add(hashedLong);
@@ -103,7 +110,9 @@ public class Recordinality implements ICardinality, Serializable {
         return false;
     }
 
+
     @Override
+    //I don't give support to ints yet...
     public boolean offerHashed(int hashedInt) {
         throw new UnsupportedOperationException();
     }
@@ -114,6 +123,10 @@ public class Recordinality implements ICardinality, Serializable {
         return offerHashed(x);
     }
 
+    /**
+     *  Return a estimation of distinct values
+     *  You can find a pseudocode in the description links
+     */
     @Override
     public long cardinality() {
         if (sampleSet.size() < sampleSize) return sampleSet.size();
@@ -125,6 +138,9 @@ public class Recordinality implements ICardinality, Serializable {
     }
 
 
+    /**
+     *  Return a estimated Standar Error from the estimated cardinality
+     */
     public double estimatedStandarError(){
         if (sampleSet.size() < sampleSize) return 0;
         else {
@@ -135,6 +151,8 @@ public class Recordinality implements ICardinality, Serializable {
                         - 1);
         }
     }
+
+    //Below I am not sure about how to process...
 
     //TODO check the sizeof, getBytes and writeBytes
     @Override
