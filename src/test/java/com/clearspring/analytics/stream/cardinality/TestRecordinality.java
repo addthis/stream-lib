@@ -19,15 +19,7 @@ package com.clearspring.analytics.stream.cardinality;
 
 
 import java.io.IOException;
-
-import java.util.Arrays;
-
 import com.clearspring.analytics.TestUtils;
-
-import com.google.common.base.Charsets;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -68,6 +60,7 @@ public class TestRecordinality {
      * should not fail with probability 1/100
      */
     @Test
+    @Ignore
     public void testHighCardinality() {
         int counter = 0;
         for (int j = 0; j < 3; ++j) {

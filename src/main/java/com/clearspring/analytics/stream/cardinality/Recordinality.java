@@ -40,33 +40,15 @@ package com.clearspring.analytics.stream.cardinality;
  */
 
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.PriorityQueue;
 import java.util.HashSet;
-import java.util.Iterator;
-
 import com.clearspring.analytics.hash.MurmurHash;
-import com.clearspring.analytics.util.Bits;
-import com.clearspring.analytics.util.IBuilder;
-import com.clearspring.analytics.util.Varint;
+
 
 
 public class Recordinality implements ICardinality, Serializable {
@@ -112,7 +94,6 @@ public class Recordinality implements ICardinality, Serializable {
 
 
     @Override
-    //I don't give support to ints yet...
     public boolean offerHashed(int hashedInt) {
         throw new UnsupportedOperationException();
     }
@@ -152,9 +133,6 @@ public class Recordinality implements ICardinality, Serializable {
         }
     }
 
-    //Below I am not sure about how to process...
-
-    //TODO check the sizeof, getBytes and writeBytes
     @Override
     public int sizeof() {
         return sampleSet.size() * 8;
@@ -178,19 +156,8 @@ public class Recordinality implements ICardinality, Serializable {
         }
     }
 
-    //TODO check merge function
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException {
-        throw new RecordinalityMergeException("Cannot merge Recordinality");
+        throw new UnsupportedOperationException();
     }
-
-    @SuppressWarnings("serial")
-    protected static class RecordinalityMergeException extends CardinalityMergeException {
-        public RecordinalityMergeException(String message) {
-            super(message);
-        }
-    }
-
-
-
 }
