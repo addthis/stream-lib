@@ -22,23 +22,36 @@ public class RegisterSet {
     public final static int REGISTER_SIZE = 5;
 
     public final int count;
-    public final int size;
 
-    private final int[] M;
+    private final RegisterSetStorage M;
 
     public RegisterSet(int count) {
         this(count, null);
     }
 
     public RegisterSet(int count, int[] initialValues) {
+        this(count, initialValues, RegisterSetStorage.Type.ARRAY_BACKED);
+    }
+
+    public RegisterSet(int count, int[] initialValues, RegisterSetStorage.Type type) {
         this.count = count;
 
-        if (initialValues == null) {
-            this.M = new int[getSizeForCount(count)];
-        } else {
-            this.M = initialValues;
+        switch (type) {
+            case ARRAY_BACKED:
+                if (initialValues == null)
+                    M = new RegisterSetStorage.ArrayBackedRegisterSetStorage(getSizeForCount(count));
+                else
+                    M = new RegisterSetStorage.ArrayBackedRegisterSetStorage(initialValues);
+                break;
+            case OFFHEAP:
+                if (initialValues == null)
+                    M = new RegisterSetStorage.OffHeapRegisterSetStorage(getSizeForCount(count));
+                else
+                    M = new RegisterSetStorage.OffHeapRegisterSetStorage(initialValues);
+                break;
+            default:
+                throw new RuntimeException("Unsupported RegisterSetStorage: " + type);
         }
-        this.size = this.M.length;
     }
 
     public static int getBits(int count) {
@@ -59,13 +72,13 @@ public class RegisterSet {
     public void set(int position, int value) {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
+        M.set(bucketPos, (M.get(bucketPos) & ~(0x1f << shift)) | (value << shift));
     }
 
     public int get(int position) {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
+        return (M.get(bucketPos) & (0x1f << shift)) >>> shift;
     }
 
     public boolean updateIfGreater(int position, int value) {
@@ -74,10 +87,10 @@ public class RegisterSet {
         int mask = 0x1f << shift;
 
         // Use long to avoid sign issues with the left-most shift
-        long curVal = this.M[bucket] & mask;
+        long curVal = M.get(bucket) & mask;
         long newVal = value << shift;
         if (curVal < newVal) {
-            this.M[bucket] = (int) ((this.M[bucket] & ~mask) | newVal);
+            M.set(bucket, (int) ((M.get(bucket) & ~mask) | newVal));
             return true;
         } else {
             return false;
@@ -85,26 +98,35 @@ public class RegisterSet {
     }
 
     public void merge(RegisterSet that) {
-        for (int bucket = 0; bucket < M.length; bucket++) {
+        for (int bucket = 0; bucket < M.size(); bucket++) {
             int word = 0;
             for (int j = 0; j < LOG2_BITS_PER_WORD; j++) {
                 int mask = 0x1f << (REGISTER_SIZE * j);
 
-                int thisVal = (this.M[bucket] & mask);
-                int thatVal = (that.M[bucket] & mask);
+                int thisVal = this.M.get(bucket) & mask;
+                int thatVal = that.M.get(bucket) & mask;
                 word |= (thisVal < thatVal) ? thatVal : thisVal;
             }
-            this.M[bucket] = word;
+            M.set(bucket, word);
         }
     }
 
     int[] readOnlyBits() {
-        return M;
+        return M.readOnlyBits();
     }
 
     public int[] bits() {
-        int[] copy = new int[size];
-        System.arraycopy(M, 0, copy, 0, M.length);
+        int [] bits = M.readOnlyBits();
+        int[] copy = new int[bits.length];
+        System.arraycopy(bits, 0, copy, 0, bits.length);
         return copy;
+    }
+
+    public int size() {
+        return M.size();
+    }
+
+    public RegisterSetStorage.Type storageType() {
+        return M.type();
     }
 }

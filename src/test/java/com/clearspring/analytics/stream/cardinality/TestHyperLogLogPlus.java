@@ -382,7 +382,7 @@ public class TestHyperLogLogPlus {
         dos.writeInt(bits);
         dos.writeInt(25);
         dos.writeInt(0);
-        dos.writeInt(baseline.getRegisterSet().size * 4);
+        dos.writeInt(baseline.getRegisterSet().size() * 4);
         for (int x : baseline.getRegisterSet().readOnlyBits()) {
             dos.writeInt(x);
         }
@@ -506,6 +506,26 @@ public class TestHyperLogLogPlus {
         hll.offerHashed(0xFFFFFFFFFFFFFFFFl);
 
         // test against old serialization
-        assertArrayEquals(new byte[]{-1, -1, -1, -2, 14, 25, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8}, hll.getBytes());
+        assertArrayEquals(new byte[]{-1, -1, -1, -3, 14, 25, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8}, hll.getBytes());
     }
+
+    @Test
+    public void testOldDeserialization() throws IOException {
+        byte [] b = new byte[]{-1, -1, -1, -2, 14, 25, 0, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8};
+        HyperLogLogPlus hll = HyperLogLogPlus.Builder.build(b);
+        assertEquals(hll.getRegisterSet().storageType(), RegisterSetStorage.Type.ARRAY_BACKED);
+    }
+    @Test
+    public void testDeserializationWithOffHeap() throws IOException {
+        byte [] b = new byte[]{-1, -1, -1, -3, 14, 25, 0, 2, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8};
+        //                                  ^ version     ^ offheap enum id
+        HyperLogLogPlus hll = HyperLogLogPlus.Builder.build(b);
+        assertEquals(hll.getRegisterSet().storageType(), RegisterSetStorage.Type.OFFHEAP);
+        b = new byte[]{-1, -1, -1, -3, 14, 25, 0, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8};
+        //                          ^ version     ^ array enum id
+        hll = HyperLogLogPlus.Builder.build(b);
+        assertEquals(hll.getRegisterSet().storageType(), RegisterSetStorage.Type.ARRAY_BACKED);
+
+    }
+
 }

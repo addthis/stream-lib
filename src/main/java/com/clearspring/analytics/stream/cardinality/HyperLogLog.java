@@ -187,7 +187,7 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     @Override
     public int sizeof() {
-        return registerSet.size * 4;
+        return registerSet.size() * 4;
     }
 
     @Override
@@ -201,7 +201,7 @@ public class HyperLogLog implements ICardinality, Serializable {
 
     private void writeBytes(DataOutput serializedByteStream) throws IOException {
         serializedByteStream.writeInt(log2m);
-        serializedByteStream.writeInt(registerSet.size * 4);
+        serializedByteStream.writeInt(registerSet.size() * 4);
         for (int x : registerSet.readOnlyBits()) {
             serializedByteStream.writeInt(x);
         }
@@ -382,4 +382,5 @@ public class HyperLogLog implements ICardinality, Serializable {
     protected static double linearCounting(int m, double V) {
         return m * Math.log(m / V);
     }
+
 }
