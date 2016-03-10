@@ -211,7 +211,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     public static HyperLogLogPlus offHeapHyperLogLogPlus(int p) {
-        return new HyperLogLogPlus(p, 0, null, new RegisterSet(1 << p, null, RegisterSetStorage.Type.OFFHEAP));
+        return new HyperLogLogPlus(p, 0, null, new RegisterSet(1 << p, null, true));
     }
 
     // for constructing a sparse mode hllp
@@ -698,7 +698,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         if (registerSet == null) {
             return 4 * RegisterSet.getSizeForCount(1 << p);
         }
-        return registerSet.size() * 4;
+        return registerSet.size * 4;
     }
 
     @Override
@@ -715,8 +715,8 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         switch (format) {
             case NORMAL:
                 Varint.writeUnsignedVarInt(0, dos);
-                Varint.writeUnsignedVarInt(registerSet.storageType().type, dos);
-                Varint.writeUnsignedVarInt(registerSet.size() * 4, dos);
+                dos.writeBoolean(registerSet.isDirect());
+                Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
                 for (int x : registerSet.readOnlyBits()) {
                     dos.writeInt(x);
                 }
@@ -958,7 +958,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 int size = oi.readInt();
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                RegisterSet registerSetFromBytes = new RegisterSet(1 << p, Bits.getBits(longArrayBytes));
+                RegisterSet registerSetFromBytes = new RegisterSet(1 << p, Bits.getBits(longArrayBytes), false);
                 HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, registerSetFromBytes);
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
@@ -981,13 +981,14 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             int sp = Varint.readUnsignedVarInt(oi);
             int formatType = Varint.readUnsignedVarInt(oi);
             if (formatType == 0) {
-                int storageType = 1;
-                if (version < -2)
-                    storageType = Varint.readUnsignedVarInt(oi);
+                boolean useDirect = false;
+                if (version < -2) {
+                    useDirect = oi.readBoolean();
+                }
                 int size = Varint.readUnsignedVarInt(oi);
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet(1 << p, Bits.getBits(longArrayBytes), RegisterSetStorage.Type.fromInt(storageType)));
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet(1 << p, Bits.getBits(longArrayBytes), useDirect));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             } else {

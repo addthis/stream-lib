@@ -16,42 +16,43 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
 public class RegisterSet {
 
     public final static int LOG2_BITS_PER_WORD = 6;
     public final static int REGISTER_SIZE = 5;
 
     public final int count;
+    public final int size;
 
-    private final RegisterSetStorage M;
+    private final IntBuffer M;
 
     public RegisterSet(int count) {
-        this(count, null);
+        this(count, null, false);
     }
 
-    public RegisterSet(int count, int[] initialValues) {
-        this(count, initialValues, RegisterSetStorage.Type.ARRAY_BACKED);
-    }
-
-    public RegisterSet(int count, int[] initialValues, RegisterSetStorage.Type type) {
+    public RegisterSet(int count, int[] initialValues, boolean direct) {
         this.count = count;
 
-        switch (type) {
-            case ARRAY_BACKED:
-                if (initialValues == null)
-                    M = new RegisterSetStorage.ArrayBackedRegisterSetStorage(getSizeForCount(count));
-                else
-                    M = new RegisterSetStorage.ArrayBackedRegisterSetStorage(initialValues);
-                break;
-            case OFFHEAP:
-                if (initialValues == null)
-                    M = new RegisterSetStorage.OffHeapRegisterSetStorage(getSizeForCount(count));
-                else
-                    M = new RegisterSetStorage.OffHeapRegisterSetStorage(initialValues);
-                break;
-            default:
-                throw new RuntimeException("Unsupported RegisterSetStorage: " + type);
+        if (initialValues == null) {
+            if (direct) {
+                this.M = ByteBuffer.allocateDirect(getSizeForCount(count) * 4).asIntBuffer();
+            } else {
+                this.M = IntBuffer.allocate(getSizeForCount(count));
+            }
+
+        } else {
+            if (direct) {
+                this.M = ByteBuffer.allocateDirect(initialValues.length * 4).asIntBuffer();
+                this.M.put(initialValues);
+                this.M.flip();
+            } else {
+                this.M = IntBuffer.wrap(initialValues);
+            }
         }
+        this.size = this.M.capacity();
     }
 
     public static int getBits(int count) {
@@ -72,13 +73,13 @@ public class RegisterSet {
     public void set(int position, int value) {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        M.set(bucketPos, (M.get(bucketPos) & ~(0x1f << shift)) | (value << shift));
+        this.M.put(bucketPos, (this.M.get(bucketPos) & ~(0x1f << shift)) | (value << shift));
     }
 
     public int get(int position) {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        return (M.get(bucketPos) & (0x1f << shift)) >>> shift;
+        return (this.M.get(bucketPos) & (0x1f << shift)) >>> shift;
     }
 
     public boolean updateIfGreater(int position, int value) {
@@ -87,10 +88,10 @@ public class RegisterSet {
         int mask = 0x1f << shift;
 
         // Use long to avoid sign issues with the left-most shift
-        long curVal = M.get(bucket) & mask;
+        long curVal = this.M.get(bucket) & mask;
         long newVal = value << shift;
         if (curVal < newVal) {
-            M.set(bucket, (int) ((M.get(bucket) & ~mask) | newVal));
+            this.M.put(bucket, (int) ((this.M.get(bucket) & ~mask) | newVal));
             return true;
         } else {
             return false;
@@ -98,35 +99,38 @@ public class RegisterSet {
     }
 
     public void merge(RegisterSet that) {
-        for (int bucket = 0; bucket < M.size(); bucket++) {
+        for (int bucket = 0; bucket < M.capacity(); bucket++) {
             int word = 0;
             for (int j = 0; j < LOG2_BITS_PER_WORD; j++) {
                 int mask = 0x1f << (REGISTER_SIZE * j);
 
-                int thisVal = this.M.get(bucket) & mask;
-                int thatVal = that.M.get(bucket) & mask;
+                int thisVal = (this.M.get(bucket) & mask);
+                int thatVal = (that.M.get(bucket) & mask);
                 word |= (thisVal < thatVal) ? thatVal : thisVal;
             }
-            M.set(bucket, word);
+            this.M.put(bucket, word);
         }
     }
 
     int[] readOnlyBits() {
-        return M.readOnlyBits();
+        if (M.hasArray()){
+            return M.array();
+        } else {
+            int [] array = new int[M.capacity()];
+            M.get(array);
+            M.flip();
+            return array;
+        }
     }
 
     public int[] bits() {
-        int [] bits = M.readOnlyBits();
-        int[] copy = new int[bits.length];
-        System.arraycopy(bits, 0, copy, 0, bits.length);
+        int[] copy = new int[M.capacity()];
+        M.get(copy);
+        M.flip();
         return copy;
     }
 
-    public int size() {
-        return M.size();
-    }
-
-    public RegisterSetStorage.Type storageType() {
-        return M.type();
+    public boolean isDirect() {
+        return M.isDirect();
     }
 }
