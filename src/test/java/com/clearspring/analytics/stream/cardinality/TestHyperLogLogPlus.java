@@ -211,6 +211,21 @@ public class TestHyperLogLogPlus {
     }
 
     @Test
+    public void testHighPrecisionInitialization() {
+        for (int sp = 4; sp <= 32; sp++) {
+            int expectedSm = (int)Math.pow(2, sp);
+
+            for (int p = 4; p <= sp; p++) {
+                int expectedM = (int)Math.pow(2, p);
+
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp);
+                assertEquals(expectedM, hyperLogLogPlus.getM());
+                assertEquals(expectedSm, hyperLogLogPlus.getSm());
+            }
+        }
+    }
+
+    @Test
     public void testHighCardinality() {
         long start = System.currentTimeMillis();
         HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(18, 25);

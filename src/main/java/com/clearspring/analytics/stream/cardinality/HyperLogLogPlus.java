@@ -229,7 +229,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         }
 
         this.p = p;
-        m = 1 << p;
+        m = p > 30 ? Integer.MAX_VALUE : 1 << p;
         format = Format.NORMAL;
         this.registerSet = registerSet;
         if (registerSet == null) {
@@ -237,7 +237,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             {
                 format = Format.SPARSE;
                 this.sp = sp;
-                sm = 1 << sp;
+                sm = sp > 30 ? Integer.MAX_VALUE : 1 << sp;
                 if (sparseSet == null) {
                     this.sparseSet = EMPTY_SPARSE;
                 } else {
@@ -245,11 +245,25 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 sparseSetThreshold = (int) (m * 0.75);
             } else {
-                this.registerSet = new RegisterSet(1 << p);
+                this.registerSet = new RegisterSet(m);
             }
         }
 
         this.alphaMM = HyperLogLog.getAlphaMM(p, m);
+    }
+
+    /**
+     * Package-protected for testing purposes.
+     */
+    int getM() {
+        return m;
+    }
+
+    /**
+     * Package-protected for testing purposes.
+     */
+    int getSm() {
+        return sm;
     }
 
     @Override public boolean equals(Object obj) {
