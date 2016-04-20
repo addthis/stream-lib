@@ -58,5 +58,5 @@ if test $HELP == 1; then
     exit 0
 fi
 
-java -cp "${STREAM_LIB_DIR}"/stream-*-exec.jar com.clearspring.analytics.util.TopK $*
+java -cp "${STREAM_LIB_DIR}"/stream-*SNAPSHOT.jar com.clearspring.analytics.util.TopK $*
 

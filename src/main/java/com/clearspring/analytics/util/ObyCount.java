@@ -20,8 +20,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import com.clearspring.analytics.stream.cardinality.AdaptiveCounting;
-import com.clearspring.analytics.stream.cardinality.ICardinality;
+import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 
 
 /**
@@ -65,9 +64,9 @@ public class ObyCount {
             }
         }
 
-        ICardinality card = AdaptiveCounting.Builder.obyCount(Integer.MAX_VALUE).build();
-
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+
+        HyperLogLogPlus card = new HyperLogLogPlus(14, 25);
 
         String line = null;
         while ((line = in.readLine()) != null) {
