@@ -169,7 +169,7 @@ public class HyperLogLog implements ICardinality, Serializable {
         double zeros = 0.0;
         for (int j = 0; j < registerSet.count; j++) {
             int val = registerSet.get(j);
-            registerSum += 1.0 / (1 << val);
+            registerSum += 1.0 / (1L << val);
             if (val == 0) {
                 zeros++;
             }
