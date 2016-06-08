@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeSet;
 
 import com.clearspring.analytics.stream.frequency.CountMinSketch.CMSMergeException;
@@ -93,7 +94,7 @@ public class CountMinSketchTest {
             sketch.add(x, 1);
         }
 
-        Map<String, Long> actualFreq = new HashMap<String, Long>();
+        Map<String, Long> actualFreq = new HashMap<>();
         for (String x : xs) {
             Long val = actualFreq.get(x);
             if (val == null) {
@@ -144,7 +145,7 @@ public class CountMinSketchTest {
 
         int maxScale = 20;
         Random r = new Random();
-        TreeSet<Integer> vals = new TreeSet<Integer>();
+        Set<Integer> vals = new TreeSet<>();
 
         CountMinSketch baseline = new CountMinSketch(epsOfTotalCount, confidence, seed);
         CountMinSketch[] sketchs = new CountMinSketch[numToMerge];
@@ -186,12 +187,16 @@ public class CountMinSketchTest {
         CountMinSketch serializedCms = (CountMinSketch)TestUtils.deserialize(bytes);
 
         assertEquals(cms.size, serializedCms.size);
+
         assertEquals(cms.eps, serializedCms.eps, 0);
         assertEquals(cms.confidence, serializedCms.confidence, 0);
+
         assertEquals(cms.width, serializedCms.width);
         assertEquals(cms.depth, serializedCms.depth);
+
         assertArrayEquals(cms.table, serializedCms.table);
         assertArrayEquals(cms.hashA, serializedCms.hashA);
+
         for (int i = 0; i < cms.depth; ++i) {
             assertEquals(cms.hashA[i], serializedCms.hashA[i]);
             for (int j = 0; j < cms.width; ++j) {
@@ -201,11 +206,12 @@ public class CountMinSketchTest {
     }
 
     @Test
-    public void testSerialization() throws IOException, ClassNotFoundException {
-        CountMinSketch cms1 = new CountMinSketch(12, 15, 1);
-        checkCountMinSketchSerialization(cms1);
+    public void testSerializationForDepthCms() throws IOException, ClassNotFoundException {
+        checkCountMinSketchSerialization(new CountMinSketch(12, 2045, 1));
+    }
 
-        CountMinSketch cms3 = new CountMinSketch(0.001, 1 - 1E-10, 1);
-        checkCountMinSketchSerialization(cms3);
+    @Test
+    public void testSerializationForConfidenceCms() throws IOException, ClassNotFoundException {
+        checkCountMinSketchSerialization(new CountMinSketch(0.0001, 0.99999999999, 1));
     }
 }
