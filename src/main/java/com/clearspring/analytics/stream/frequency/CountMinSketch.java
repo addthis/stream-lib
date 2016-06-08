@@ -34,6 +34,7 @@ import com.clearspring.analytics.stream.membership.Filter;
 public class CountMinSketch implements IFrequency, Serializable {
 
     public static final long PRIME_MODULUS = (1L << 31) - 1;
+    private static final long serialVersionUID = -5084982213094657923L;
 
     int depth;
     int width;

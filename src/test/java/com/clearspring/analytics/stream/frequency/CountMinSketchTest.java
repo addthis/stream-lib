@@ -14,17 +14,20 @@
 
 package com.clearspring.analytics.stream.frequency;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeSet;
 
 import com.clearspring.analytics.stream.frequency.CountMinSketch.CMSMergeException;
+import com.clearspring.analytics.TestUtils;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -176,5 +179,33 @@ public class CountMinSketchTest {
         CountMinSketch cms1 = new CountMinSketch(1, 1, 0);
         CountMinSketch cms2 = new CountMinSketch(0.1, 0.1, 0);
         CountMinSketch.merge(cms1, cms2);
+    }
+
+    private static void checkCountMinSketchSerialization(CountMinSketch cms) throws IOException, ClassNotFoundException {
+        byte[] bytes = TestUtils.serialize(cms);
+        CountMinSketch serializedCms = (CountMinSketch)TestUtils.deserialize(bytes);
+
+        assertEquals(cms.size, serializedCms.size);
+        assertEquals(cms.eps, serializedCms.eps, 0);
+        assertEquals(cms.confidence, serializedCms.confidence, 0);
+        assertEquals(cms.width, serializedCms.width);
+        assertEquals(cms.depth, serializedCms.depth);
+        assertArrayEquals(cms.table, serializedCms.table);
+        assertArrayEquals(cms.hashA, serializedCms.hashA);
+        for (int i = 0; i < cms.depth; ++i) {
+            assertEquals(cms.hashA[i], serializedCms.hashA[i]);
+            for (int j = 0; j < cms.width; ++j) {
+                assertEquals(cms.table[i][j], serializedCms.table[i][j]);
+            }
+        }
+    }
+
+    @Test
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        CountMinSketch cms1 = new CountMinSketch(12, 15, 1);
+        checkCountMinSketchSerialization(cms1);
+
+        CountMinSketch cms3 = new CountMinSketch(0.001, 1 - 1E-10, 1);
+        checkCountMinSketchSerialization(cms3);
     }
 }
