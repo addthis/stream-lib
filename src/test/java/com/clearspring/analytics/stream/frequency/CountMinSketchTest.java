@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeSet;
 
 import com.clearspring.analytics.stream.frequency.CountMinSketch.CMSMergeException;
@@ -94,7 +93,7 @@ public class CountMinSketchTest {
             sketch.add(x, 1);
         }
 
-        Map<String, Long> actualFreq = new HashMap<>();
+        Map<String, Long> actualFreq = new HashMap<String, Long>();
         for (String x : xs) {
             Long val = actualFreq.get(x);
             if (val == null) {
@@ -145,7 +144,7 @@ public class CountMinSketchTest {
 
         int maxScale = 20;
         Random r = new Random();
-        Set<Integer> vals = new TreeSet<>();
+        TreeSet<Integer> vals = new TreeSet<Integer>();
 
         CountMinSketch baseline = new CountMinSketch(epsOfTotalCount, confidence, seed);
         CountMinSketch[] sketchs = new CountMinSketch[numToMerge];
