@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -30,9 +31,10 @@ import com.clearspring.analytics.stream.membership.Filter;
  * An Improved Data Stream Summary: The Count-Min Sketch and its Applications
  * https://web.archive.org/web/20060907232042/http://www.eecs.harvard.edu/~michaelm/CS222/countmin.pdf
  */
-public class CountMinSketch implements IFrequency {
+public class CountMinSketch implements IFrequency, Serializable {
 
     public static final long PRIME_MODULUS = (1L << 31) - 1;
+    private static final long serialVersionUID = -5084982213094657923L;
 
     int depth;
     int width;
