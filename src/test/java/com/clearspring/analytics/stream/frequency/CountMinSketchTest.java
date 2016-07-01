@@ -36,15 +36,15 @@ public class CountMinSketchTest {
 
     @Test
     public void testSize() throws CMSMergeException {
-        CountMinSketch sketch1 = new CountMinSketch(0.00001, 0.99999, 1);
-        assertEquals(0, sketch1.size(), 0);
+        CountMinSketch sketch = new CountMinSketch(0.00001, 0.99999, 1);
+        assertEquals(0, sketch.size(), 0);
 
-        sketch1.add(1, 11);
-        sketch1.add(2, 22);
-        sketch1.add(3, 33);
+        sketch.add(1, 11);
+        sketch.add(2, 22);
+        sketch.add(3, 33);
 
         long expectedSize = 11 + 22 + 33;
-        assertEquals(expectedSize, sketch1.size(), 0);
+        assertEquals(expectedSize, sketch.size());
     }
 
     @Test
@@ -64,7 +64,7 @@ public class CountMinSketchTest {
         CountMinSketch newSketch = CountMinSketch.merge(sketch, sketch);
 
         long expectedSize = 2 * (freq1 + freq2);
-        assertEquals(expectedSize, newSketch.size(), 0);
+        assertEquals(expectedSize, newSketch.size());
     }
 
     @Test
