@@ -35,6 +35,39 @@ import static org.junit.Assert.assertTrue;
 public class CountMinSketchTest {
 
     @Test
+    public void testSize() throws CMSMergeException {
+        CountMinSketch sketch = new CountMinSketch(0.00001, 0.99999, 1);
+        assertEquals(0, sketch.size(), 0);
+
+        sketch.add(1, 11);
+        sketch.add(2, 22);
+        sketch.add(3, 33);
+
+        long expectedSize = 11 + 22 + 33;
+        assertEquals(expectedSize, sketch.size());
+    }
+
+    @Test
+    public void testSizeCanStoreLong() throws CMSMergeException {
+        double confidence = 0.999;
+        double epsilon = 0.0001;
+        int seed = 1;
+
+        CountMinSketch sketch = new CountMinSketch(epsilon, confidence, seed);
+
+        long freq1 = Integer.MAX_VALUE;
+        long freq2 = 156;
+
+        sketch.add(1, freq1);
+        sketch.add(2, freq2);
+
+        CountMinSketch newSketch = CountMinSketch.merge(sketch, sketch);
+
+        long expectedSize = 2 * (freq1 + freq2);
+        assertEquals(expectedSize, newSketch.size());
+    }
+
+    @Test
     public void testAccuracy() {
         int seed = 7364181;
         Random r = new Random(seed);

@@ -65,7 +65,7 @@ public class CountMinSketch implements IFrequency, Serializable {
         initTablesWith(depth, width, seed);
     }
 
-    CountMinSketch(int depth, int width, int size, long[] hashA, long[][] table) {
+    CountMinSketch(int depth, int width, long size, long[] hashA, long[][] table) {
         this.depth = depth;
         this.width = width;
         this.eps = 2.0 / width;
@@ -183,7 +183,7 @@ public class CountMinSketch implements IFrequency, Serializable {
             long[] hashA = Arrays.copyOf(estimators[0].hashA, estimators[0].hashA.length);
 
             long[][] table = new long[depth][width];
-            int size = 0;
+            long size = 0;
 
             for (CountMinSketch estimator : estimators) {
                 if (estimator.depth != depth) {
