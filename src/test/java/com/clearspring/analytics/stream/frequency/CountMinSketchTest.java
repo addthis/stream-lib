@@ -27,10 +27,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class CountMinSketchTest {
 
@@ -218,23 +215,7 @@ public class CountMinSketchTest {
         byte[] bytes = TestUtils.serialize(cms);
         CountMinSketch serializedCms = (CountMinSketch)TestUtils.deserialize(bytes);
 
-        assertEquals(cms.size, serializedCms.size);
-
-        assertEquals(cms.eps, serializedCms.eps, 0);
-        assertEquals(cms.confidence, serializedCms.confidence, 0);
-
-        assertEquals(cms.width, serializedCms.width);
-        assertEquals(cms.depth, serializedCms.depth);
-
-        assertArrayEquals(cms.table, serializedCms.table);
-        assertArrayEquals(cms.hashA, serializedCms.hashA);
-
-        for (int i = 0; i < cms.depth; ++i) {
-            assertEquals(cms.hashA[i], serializedCms.hashA[i]);
-            for (int j = 0; j < cms.width; ++j) {
-                assertEquals(cms.table[i][j], serializedCms.table[i][j]);
-            }
-        }
+        assertEquals(cms, serializedCms);
     }
 
     @Test
@@ -245,5 +226,64 @@ public class CountMinSketchTest {
     @Test
     public void testSerializationForConfidenceCms() throws IOException, ClassNotFoundException {
         checkCountMinSketchSerialization(new CountMinSketch(0.0001, 0.99999999999, 1));
+    }
+
+    @Test
+    public void testEquals() {
+        double eps1 = 0.0001;
+        double eps2 = 0.000001;
+        double confidence = 0.99;
+        int seed = 1;
+
+        final CountMinSketch sketch1 = new CountMinSketch(eps1, confidence, seed);
+        assertEquals(sketch1, sketch1);
+
+        final CountMinSketch sketch2 = new CountMinSketch(eps1, confidence, seed);
+        assertEquals(sketch1, sketch2);
+
+        final CountMinSketch sketch3 = new ConservativeAddSketch(eps1, confidence, seed);
+        assertNotEquals(sketch1, sketch3);
+
+        assertNotEquals(sketch1, null);
+
+        sketch1.add(1, 123);
+        sketch2.add(1, 123);
+        assertEquals(sketch1, sketch2);
+
+        sketch1.add(1, 4);
+        assertNotEquals(sketch1, sketch2);
+
+        final CountMinSketch sketch4 = new CountMinSketch(eps1, confidence, seed);
+        final CountMinSketch sketch5 = new CountMinSketch(eps2, confidence, seed);
+        assertNotEquals(sketch4, sketch5);
+
+        sketch3.add(1, 7);
+        sketch4.add(1, 7);
+        assertNotEquals(sketch4, sketch5);
+    }
+
+    @Test
+    public void testToString() {
+        double eps = 0.0001;
+        double confidence = 0.99;
+        int seed = 1;
+
+        final CountMinSketch sketch = new CountMinSketch(eps, confidence, seed);
+        assertEquals("CountMinSketch{" +
+                "eps=" + eps +
+                ", confidence=" + confidence +
+                ", depth=" + 7 +
+                ", width=" + 20000 +
+                ", size=" + 0 +
+                '}', sketch.toString());
+
+        sketch.add(12, 145);
+        assertEquals("CountMinSketch{" +
+                "eps=" + eps +
+                ", confidence=" + confidence +
+                ", depth=" + 7 +
+                ", width=" + 20000 +
+                ", size=" + 145 +
+                '}', sketch.toString());
     }
 }

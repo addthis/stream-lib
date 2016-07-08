@@ -75,6 +75,68 @@ public class CountMinSketch implements IFrequency, Serializable {
         this.size = size;
     }
 
+    @Override
+    public String toString() {
+        return "CountMinSketch{" +
+                "eps=" + eps +
+                ", confidence=" + confidence +
+                ", depth=" + depth +
+                ", width=" + width +
+                ", size=" + size +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final CountMinSketch that = (CountMinSketch) o;
+
+        if (depth != that.depth) {
+            return false;
+        }
+        if (width != that.width) {
+            return false;
+        }
+
+        if (Double.compare(that.eps, eps) != 0) {
+            return false;
+        }
+        if (Double.compare(that.confidence, confidence) != 0) {
+            return false;
+        }
+
+        if (size != that.size) {
+            return false;
+        }
+
+        if (!Arrays.deepEquals(table, that.table)) {
+            return false;
+        }
+        return Arrays.equals(hashA, that.hashA);
+    }
+
+    @Override
+    public int hashCode() {
+        int result;
+        long temp;
+        result = depth;
+        result = 31 * result + width;
+        result = 31 * result + Arrays.deepHashCode(table);
+        result = 31 * result + Arrays.hashCode(hashA);
+        result = 31 * result + (int) (size ^ (size >>> 32));
+        temp = Double.doubleToLongBits(eps);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(confidence);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        return result;
+    }
+
     private void initTablesWith(int depth, int width, int seed) {
         this.table = new long[depth][width];
         this.hashA = new long[depth];
