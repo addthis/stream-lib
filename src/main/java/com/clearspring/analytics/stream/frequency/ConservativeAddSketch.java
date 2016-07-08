@@ -36,7 +36,7 @@ public class ConservativeAddSketch extends CountMinSketch {
         super(epsOfTotalCount, confidence, seed);
     }
 
-    ConservativeAddSketch(int depth, int width, int size, long[] hashA, long[][] table) {
+    ConservativeAddSketch(int depth, int width, long size, long[] hashA, long[][] table) {
         super(depth, width, size, hashA, table);
     }
 

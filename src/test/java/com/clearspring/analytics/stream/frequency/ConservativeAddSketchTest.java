@@ -131,7 +131,7 @@ public class ConservativeAddSketchTest {
                 betterNumbers++;
             }
         }
-        int usedValues = actualFreq.size();
+        long usedValues = actualFreq.size();
         double pCorrect = 1 - 1.0 * numErrors / usedValues;
         System.out.println("Confidence : " + pCorrect + "   Errors : " + numErrors + "  Error margin : " + okayError);
         System.out.println("Total error : " + totalError + "  Average error : " + totalError / usedValues);
