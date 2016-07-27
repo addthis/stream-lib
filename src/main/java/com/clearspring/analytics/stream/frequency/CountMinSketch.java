@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import com.clearspring.analytics.stream.membership.Filter;
+import com.clearspring.analytics.util.Preconditions;
 
 /**
  * Count-Min Sketch datastructure.
@@ -72,6 +73,8 @@ public class CountMinSketch implements IFrequency, Serializable {
         this.confidence = 1 - 1 / Math.pow(2, depth);
         this.hashA = hashA;
         this.table = table;
+
+        Preconditions.checkState(size >= 0, "The size cannot be smaller than ZER0: " + size);
         this.size = size;
     }
 
@@ -171,6 +174,21 @@ public class CountMinSketch implements IFrequency, Serializable {
         return ((int) hash) % width;
     }
 
+    private static void checkSizeAfterOperation(long previousSize, String operation, long newSize) {
+        if (newSize < previousSize) {
+            throw new IllegalStateException("Overflow error: the size after calling `" + operation +
+                    "` is smaller than the previous size. " +
+                    "Previous size: " + previousSize +
+                    ", New size: " + newSize);
+        }
+    }
+
+    private void checkSizeAfterAdd(String item, long count) {
+        long previousSize = size;
+        size += count;
+        checkSizeAfterOperation(previousSize, "add(" + item + "," + count + ")", size);
+    }
+
     @Override
     public void add(long item, long count) {
         if (count < 0) {
@@ -183,7 +201,8 @@ public class CountMinSketch implements IFrequency, Serializable {
         for (int i = 0; i < depth; ++i) {
             table[i][hash(item, i)] += count;
         }
-        size += count;
+
+        checkSizeAfterAdd(String.valueOf(item), count);
     }
 
     @Override
@@ -199,7 +218,8 @@ public class CountMinSketch implements IFrequency, Serializable {
         for (int i = 0; i < depth; ++i) {
             table[i][buckets[i]] += count;
         }
-        size += count;
+
+        checkSizeAfterAdd(item, count);
     }
 
     @Override
@@ -263,7 +283,10 @@ public class CountMinSketch implements IFrequency, Serializable {
                         table[i][j] += estimator.table[i][j];
                     }
                 }
+
+                long previousSize = size;
                 size += estimator.size;
+                checkSizeAfterOperation(previousSize, "merge(" + estimator + ")", size);
             }
 
             merged = new CountMinSketch(depth, width, size, hashA, table);

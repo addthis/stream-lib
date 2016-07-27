@@ -31,6 +31,18 @@ import static org.junit.Assert.*;
 
 public class CountMinSketchTest {
 
+    @Test(expected = IllegalStateException.class)
+    public void negativeSize() {
+        new CountMinSketch(20, 4, -1, new long[]{1}, new long[][]{{10, 20}, {100, 200}});
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void sizeOverflow() {
+        CountMinSketch sketch = new CountMinSketch(0.0001, 0.99999, 1);
+        sketch.add(3, Long.MAX_VALUE);
+        sketch.add(4, 1);
+    }
+
     @Test
     public void testSize() throws CMSMergeException {
         CountMinSketch sketch = new CountMinSketch(0.00001, 0.99999, 1);
