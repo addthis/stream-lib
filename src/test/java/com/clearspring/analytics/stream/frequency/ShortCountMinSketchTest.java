@@ -12,9 +12,9 @@ import java.util.Random;
 import java.util.TreeSet;
 import java.util.UUID;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
+import com.clearspring.analytics.TestUtils;
 import com.clearspring.analytics.stream.frequency.ShortCountMinSketch.CMSMergeException;
 
 public class ShortCountMinSketchTest {
@@ -234,8 +234,8 @@ public class ShortCountMinSketchTest {
 
    private static void checkCountMinSketchSerialization(ShortCountMinSketch cms)
          throws IOException, ClassNotFoundException {
-      byte[] bytes = ShortCountMinSketch.serialize(cms);
-      ShortCountMinSketch serializedCms = (ShortCountMinSketch) ShortCountMinSketch.deserialize(bytes);
+      byte[] bytes = TestUtils.serialize(cms);
+      ShortCountMinSketch serializedCms = (ShortCountMinSketch) TestUtils.deserialize(bytes);
 
       assertEquals(cms, serializedCms);
    }
@@ -246,9 +246,8 @@ public class ShortCountMinSketchTest {
    }
 
    @Test
-   @Ignore("depends on the os. But works.")
    public void testSerializationForConfidenceCms() throws IOException, ClassNotFoundException {
-      checkCountMinSketchSerialization(new ShortCountMinSketch(0.0001, 0.99999999999, 1));
+      checkCountMinSketchSerialization(new ShortCountMinSketch(0.0001, 0.999999999992724, 1));
    }
 
    @Test
