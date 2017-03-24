@@ -16,42 +16,44 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.io.IOException;
+
 public class HyperBitBit implements ICardinality {
 
     public HyperBitBit() {}
 
     @Override
-    boolean offer(Object o) {
+    public boolean offer(Object o) {
         return false;
     }
 
     @Override
-    boolean offerHashed(long hashedLong) {
+    public boolean offerHashed(long hashedLong) {
         return false;
     }
 
     @Override
-    boolean offerHashed(int hashedInt) {
+    public boolean offerHashed(int hashedInt) {
         return false;
     }
 
     @Override
-    long cardinality() {
+    public long cardinality() {
         return 0;
     }
 
     @Override
-    int sizeof() {
+    public int sizeof() {
         return 0;
     }
 
     @Override
-    byte[] getBytes() throws IOException {
+    public byte[] getBytes() throws IOException {
         return new byte[0];
     }
 
     @Override
-    ICardinality merge(ICardinality... estimators) throws CardinalityMergeException {
+    public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException {
         HyperBitBit merged = new HyperBitBit();
         return merged;
     }
