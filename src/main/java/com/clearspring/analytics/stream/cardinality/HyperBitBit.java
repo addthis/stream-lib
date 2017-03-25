@@ -20,12 +20,46 @@ import com.clearspring.analytics.hash.MurmurHash;
 
 import java.io.IOException;
 
+/**
+ * Java implementation of HyperBitBit (HBB) algorithm as seen on the presentation
+ * by Robert Sedgewick:
+ * <p/>
+ * https://www.cs.princeton.edu/~rs/talks/AC11-Cardinality.pdf
+ * <p/>
+ * HBB aims to beat HyperLogLog.
+ * From the talk, on practical data:
+ * - HyperBitBit, for N < 2^64,
+ * -  Uses 128 + 6 bits. (in this implementation case 128 + 8)
+ * - Estimates cardinality within 10% of the actual.
+ * <p/>
+ * The algorithm still need some improvements.
+ * - If you insert twice the same element the structure can change (not as in HLL)
+ * - For small cardinalities it does not work AT ALL.
+ * - The constatn 5.4 used in the cardinality estimation formula should be refined
+ * with real world applications feedback
+ * <p/>
+ * Even so, HyperBitBit has the necessary characteristics to become
+ * a better algorithm than HyperLogLog:
+ * - Makes one pass through the stream.
+ * - Uses a few dozen machine instructions per value
+ * - Uses a few hundred bits
+ * - Achieves 10% relative accuracy or better
+ * <p/>
+ * Any feedback to improve the algorithm in its weak points will be welcome.
+ * <p/>
+ */
+
 public class HyperBitBit implements ICardinality {
 
     int lgN;
     long sketch;
     long sketch2;
 
+    /**
+     * Create a new HyperBitBit instance.
+     *
+     * Remember that it does not work well for small cardinalities!
+     */
     public HyperBitBit() {
         lgN = 5;
         sketch = 0;
