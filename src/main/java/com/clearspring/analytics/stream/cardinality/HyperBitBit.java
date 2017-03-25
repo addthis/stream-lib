@@ -16,30 +16,63 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import com.clearspring.analytics.hash.MurmurHash;
+
 import java.io.IOException;
 
 public class HyperBitBit implements ICardinality {
 
-    public HyperBitBit() {}
+    int lgN;
+    long sketch;
+    long sketch2;
+
+    public HyperBitBit() {
+        lgN = 5;
+        sketch = 0;
+        sketch2 = 0;
+    }
 
     @Override
     public boolean offer(Object o) {
-        return false;
+        final long x = MurmurHash.hash64(o);
+        return offerHashed(x);
     }
 
     @Override
     public boolean offerHashed(long hashedLong) {
-        return false;
+        long k = (hashedLong << 58) >> 58;
+        // Calculate the position of the leftmost 1-bit.
+        int r = Long.numberOfLeadingZeros(hashedLong >> 6) - 6;
+
+        boolean modified = false;
+
+        if (r > lgN) {
+            modified = true;
+            sketch = sketch | 1L << k;
+        }
+        if (r > lgN+1) {
+            modified = true;
+            sketch2 = sketch2 | 1L << k;
+        }
+        if (Long.bitCount(sketch) > 31) {
+            modified = true;
+            sketch = sketch2;
+            sketch2 = 0;
+            ++lgN;
+        }
+
+        return modified;
     }
 
     @Override
     public boolean offerHashed(int hashedInt) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long cardinality() {
-        return 0;
+        double exponent = lgN + 5.4 + Long.bitCount(sketch)/32.0;
+        return (long) Math.pow(2, exponent);
     }
 
     @Override
@@ -54,8 +87,13 @@ public class HyperBitBit implements ICardinality {
 
     @Override
     public ICardinality merge(ICardinality... estimators) throws CardinalityMergeException {
-        HyperBitBit merged = new HyperBitBit();
-        return merged;
+        throw new HyperBitBitMergeException("Cannot merge estimators of HyperBitBit class");
     }
 
+    @SuppressWarnings("serial")
+    static class HyperBitBitMergeException extends CardinalityMergeException {
+        public HyperBitBitMergeException(String message) {
+            super(message);
+        }
+    }
 }
