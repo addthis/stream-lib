@@ -19,22 +19,28 @@ package com.clearspring.analytics.stream.cardinality;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestHyperBitBit {
 
     @Test
-    public void testComputeCount() {
-        HyperBitBit hyperBitBit = new HyperBitBit();
-        hyperBitBit.offer(0);
-        hyperBitBit.offer(1);
-        hyperBitBit.offer(2);
-        hyperBitBit.offer(3);
-        hyperBitBit.offer(16);
-        hyperBitBit.offer(17);
-        hyperBitBit.offer(18);
-        hyperBitBit.offer(19);
-        hyperBitBit.offer(19);
-        assertEquals(8, hyperBitBit.cardinality());
+    public void testHighCardinality() {
+        int size = 10000000;
+        double errors_mean = 0;
+        for (int repetitions = 0; repetitions < 10; ++repetitions) {
+            long start = System.currentTimeMillis();
+            HyperBitBit hyperBitBit = new HyperBitBit();
+
+            for (int i = 0; i < size; i++) {
+                hyperBitBit.offer(TestICardinality.streamElement(i));
+            }
+            System.out.println("time: " + (System.currentTimeMillis() - start));
+            long estimate = hyperBitBit.cardinality();
+            double err = Math.abs(estimate - size) / (double) size;
+            errors_mean += (err/10);
+            System.out.println(err);
+        }
+        System.out.println(errors_mean);
+        assertTrue(errors_mean < .2);
     }
 }
