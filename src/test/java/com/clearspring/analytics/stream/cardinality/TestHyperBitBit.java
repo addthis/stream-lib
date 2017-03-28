@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 public class TestHyperBitBit {
 
     @Test
-    public void testHighCardinality() {
+    public void testSimpleHighCardinality() {
         int size = 10000000;
         double errors_mean = 0;
         for (int repetitions = 0; repetitions < 10; ++repetitions) {
@@ -41,6 +41,58 @@ public class TestHyperBitBit {
             System.out.println(err);
         }
         System.out.println(errors_mean);
-        assertTrue(errors_mean < .2);
+        assertTrue(errors_mean < .25);
+    }
+
+    @Test
+    public void testMultipleOrderedHighCardinality() {
+        int size = 10000000;
+
+        long start = System.currentTimeMillis();
+
+        HyperBitBit hyperBitBit = new HyperBitBit();
+
+        for (int i = 0; i < size; i++) {
+            hyperBitBit.offer(i);
+            hyperBitBit.offer(i);
+            hyperBitBit.offer(i);
+            hyperBitBit.offer(i);
+        }
+
+        System.out.println("time: " + (System.currentTimeMillis() - start));
+        long estimate = hyperBitBit.cardinality();
+        double err = Math.abs(estimate - size) / (double) size;
+        System.out.println(err);
+
+        assertTrue(err < .2);
+    }
+
+
+    @Test
+    public void testMultipleUnorderedHighCardinality() {
+        int size = 10000000;
+
+        long start = System.currentTimeMillis();
+
+        HyperBitBit hyperBitBit = new HyperBitBit();
+
+        for (int i = 0; i < size; i++) {
+            hyperBitBit.offer(i);
+        }
+
+        for (int i = 0; i < size; i++) {
+            hyperBitBit.offer(i);
+        }
+
+        for (int i = 0; i < size; i++) {
+            hyperBitBit.offer(i);
+        }
+
+        System.out.println("time: " + (System.currentTimeMillis() - start));
+        long estimate = hyperBitBit.cardinality();
+        double err = Math.abs(estimate - size) / (double) size;
+        System.out.println(err);
+
+        assertTrue(err < .2);
     }
 }
