@@ -16,6 +16,9 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
 public class RegisterSet {
 
     public final static int LOG2_BITS_PER_WORD = 6;
@@ -24,21 +27,32 @@ public class RegisterSet {
     public final int count;
     public final int size;
 
-    private final int[] M;
+    private final IntBuffer M;
 
     public RegisterSet(int count) {
-        this(count, null);
+        this(count, null, false);
     }
 
-    public RegisterSet(int count, int[] initialValues) {
+    public RegisterSet(int count, int[] initialValues, boolean direct) {
         this.count = count;
 
         if (initialValues == null) {
-            this.M = new int[getSizeForCount(count)];
+            if (direct) {
+                this.M = ByteBuffer.allocateDirect(getSizeForCount(count) * 4).asIntBuffer();
+            } else {
+                this.M = IntBuffer.allocate(getSizeForCount(count));
+            }
+
         } else {
-            this.M = initialValues;
+            if (direct) {
+                this.M = ByteBuffer.allocateDirect(initialValues.length * 4).asIntBuffer();
+                this.M.put(initialValues);
+                this.M.flip();
+            } else {
+                this.M = IntBuffer.wrap(initialValues);
+            }
         }
-        this.size = this.M.length;
+        this.size = this.M.capacity();
     }
 
     public static int getBits(int count) {
@@ -59,13 +73,13 @@ public class RegisterSet {
     public void set(int position, int value) {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
+        this.M.put(bucketPos, (this.M.get(bucketPos) & ~(0x1f << shift)) | (value << shift));
     }
 
     public int get(int position) {
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
-        return (this.M[bucketPos] & (0x1f << shift)) >>> shift;
+        return (this.M.get(bucketPos) & (0x1f << shift)) >>> shift;
     }
 
     public boolean updateIfGreater(int position, int value) {
@@ -74,10 +88,10 @@ public class RegisterSet {
         int mask = 0x1f << shift;
 
         // Use long to avoid sign issues with the left-most shift
-        long curVal = this.M[bucket] & mask;
+        long curVal = this.M.get(bucket) & mask;
         long newVal = value << shift;
         if (curVal < newVal) {
-            this.M[bucket] = (int) ((this.M[bucket] & ~mask) | newVal);
+            this.M.put(bucket, (int) ((this.M.get(bucket) & ~mask) | newVal));
             return true;
         } else {
             return false;
@@ -85,26 +99,38 @@ public class RegisterSet {
     }
 
     public void merge(RegisterSet that) {
-        for (int bucket = 0; bucket < M.length; bucket++) {
+        for (int bucket = 0; bucket < M.capacity(); bucket++) {
             int word = 0;
             for (int j = 0; j < LOG2_BITS_PER_WORD; j++) {
                 int mask = 0x1f << (REGISTER_SIZE * j);
 
-                int thisVal = (this.M[bucket] & mask);
-                int thatVal = (that.M[bucket] & mask);
+                int thisVal = (this.M.get(bucket) & mask);
+                int thatVal = (that.M.get(bucket) & mask);
                 word |= (thisVal < thatVal) ? thatVal : thisVal;
             }
-            this.M[bucket] = word;
+            this.M.put(bucket, word);
         }
     }
 
     int[] readOnlyBits() {
-        return M;
+        if (M.hasArray()){
+            return M.array();
+        } else {
+            int [] array = new int[M.capacity()];
+            M.get(array);
+            M.flip();
+            return array;
+        }
     }
 
     public int[] bits() {
-        int[] copy = new int[size];
-        System.arraycopy(M, 0, copy, 0, M.length);
+        int[] copy = new int[M.capacity()];
+        M.get(copy);
+        M.flip();
         return copy;
+    }
+
+    public boolean isDirect() {
+        return M.isDirect();
     }
 }

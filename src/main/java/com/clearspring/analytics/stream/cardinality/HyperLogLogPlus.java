@@ -76,7 +76,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
     }
 
     /** Used to mark codec version for serialization. */
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     // threshold and bias data taken from google's bias correction data set:  https://docs.google.com/document/d/1gyjfMHy43U9OWBXxfaeG-3MjGzejW1dlpyMwEYAAWEI/view?fullscreen#
     static final double[] thresholdData = {10, 20, 40, 80, 220, 400, 900, 1800, 3100, 6500, 11500, 20000, 50000, 120000, 350000};
@@ -208,6 +208,10 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             sparseSet[i] = nextValue + previousValue;
             previousValue = sparseSet[i];
         }
+    }
+
+    public static HyperLogLogPlus offHeapHyperLogLogPlus(int p) {
+        return new HyperLogLogPlus(p, 0, null, new RegisterSet(1 << p, null, true));
     }
 
     // for constructing a sparse mode hllp
@@ -725,6 +729,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
         switch (format) {
             case NORMAL:
                 Varint.writeUnsignedVarInt(0, dos);
+                dos.writeBoolean(registerSet.isDirect());
                 Varint.writeUnsignedVarInt(registerSet.size * 4, dos);
                 for (int x : registerSet.readOnlyBits()) {
                     dos.writeInt(x);
@@ -935,7 +940,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             // is not present then we'll use the legacy
             // decoding method
             if (version < 0) {
-                return decodeBytes(oi);
+                return decodeBytes(oi, version);
             } else {
                 // need to re-create this stream
                 // because the first int read above
@@ -953,7 +958,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             // is not present then we'll use the legacy
             // decoding method
             if (version < 0) {
-                return decodeBytes(oi);
+                return decodeBytes(oi, version);
             } else {
                 return legacyDecode(oi);
             }
@@ -967,7 +972,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 int size = oi.readInt();
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                RegisterSet registerSetFromBytes = new RegisterSet(1 << p, Bits.getBits(longArrayBytes));
+                RegisterSet registerSetFromBytes = new RegisterSet(1 << p, Bits.getBits(longArrayBytes), false);
                 HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, registerSetFromBytes);
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
@@ -985,15 +990,19 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
             }
         }
 
-        private static HyperLogLogPlus decodeBytes(DataInput oi) throws IOException {
+        private static HyperLogLogPlus decodeBytes(DataInput oi, int version) throws IOException {
             int p = Varint.readUnsignedVarInt(oi);
             int sp = Varint.readUnsignedVarInt(oi);
             int formatType = Varint.readUnsignedVarInt(oi);
             if (formatType == 0) {
+                boolean useDirect = false;
+                if (version < -2) {
+                    useDirect = oi.readBoolean();
+                }
                 int size = Varint.readUnsignedVarInt(oi);
                 byte[] longArrayBytes = new byte[size];
                 oi.readFully(longArrayBytes);
-                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet(1 << p, Bits.getBits(longArrayBytes)));
+                HyperLogLogPlus hyperLogLogPlus = new HyperLogLogPlus(p, sp, new RegisterSet(1 << p, Bits.getBits(longArrayBytes), useDirect));
                 hyperLogLogPlus.format = Format.NORMAL;
                 return hyperLogLogPlus;
             } else {

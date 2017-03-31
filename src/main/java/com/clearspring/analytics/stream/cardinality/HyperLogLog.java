@@ -353,7 +353,7 @@ public class HyperLogLog implements ICardinality, Serializable {
             int log2m = serializedByteStream.readInt();
             int byteArraySize = serializedByteStream.readInt();
             return new HyperLogLog(log2m,
-                    new RegisterSet(1 << log2m, Bits.getBits(serializedByteStream, byteArraySize)));
+                    new RegisterSet(1 << log2m, Bits.getBits(serializedByteStream, byteArraySize), false));
         }
     }
 
@@ -382,4 +382,5 @@ public class HyperLogLog implements ICardinality, Serializable {
     protected static double linearCounting(int m, double V) {
         return m * Math.log(m / V);
     }
+
 }

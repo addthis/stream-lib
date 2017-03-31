@@ -521,6 +521,26 @@ public class TestHyperLogLogPlus {
         hll.offerHashed(0xFFFFFFFFFFFFFFFFl);
 
         // test against old serialization
-        assertArrayEquals(new byte[]{-1, -1, -1, -2, 14, 25, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8}, hll.getBytes());
+        assertArrayEquals(new byte[]{-1, -1, -1, -3, 14, 25, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8}, hll.getBytes());
     }
+
+    @Test
+    public void oldDeserialization() throws IOException {
+        byte [] b = new byte[]{-1, -1, -1, -2, 14, 25, 0, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8};
+        HyperLogLogPlus hll = HyperLogLogPlus.Builder.build(b);
+        assertEquals(hll.getRegisterSet().isDirect(), false);
+    }
+    @Test
+    public void deserializationWithOffHeap() throws IOException {
+        byte [] b = new byte[]{-1, -1, -1, -3, 14, 25, 0, 1, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8};
+        //                                  ^ version     ^ direct boolean
+        HyperLogLogPlus hll = HyperLogLogPlus.Builder.build(b);
+        assertEquals(hll.getRegisterSet().isDirect(), true);
+        b = new byte[]{-1, -1, -1, -3, 14, 25, 0, 0, 4, 25, -27, -1, -1, 15, -101, -128, -128, -16, 7, -27, -1, -1, -97, 8};
+        //                          ^ version     ^ heap boolean
+        hll = HyperLogLogPlus.Builder.build(b);
+        assertEquals(hll.getRegisterSet().isDirect(), false);
+
+    }
+
 }
