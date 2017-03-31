@@ -44,7 +44,7 @@ public class TestMurmurHash {
         String input = "hashthis";
         byte[] inputBytes = input.getBytes();
 
-        long hashOfString = MurmurHash.hash64(input);
+        long hashOfString = -8896273065425798843L;
         assertEquals("MurmurHash.hash64(byte[]) did not match MurmurHash.hash64(String)",
                      hashOfString, MurmurHash.hash64(inputBytes));
 
