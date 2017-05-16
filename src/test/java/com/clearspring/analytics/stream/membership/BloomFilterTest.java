@@ -15,7 +15,7 @@
 * KIND, either express or implied.  See the License for the
 * specific language governing permissions and limitations
 * under the License.
-* 
+*
 */
 package com.clearspring.analytics.stream.membership;
 
@@ -112,6 +112,27 @@ public class BloomFilterTest {
     }
 
     @Test
+    public void testCardinalityOne() {
+        bf.add("a");
+        assertEquals(1, bf.cardinality());
+    }
+
+    @Test
+    public void testCardinalityTwo() {
+        bf.add("a");
+        bf.add("b");
+        assertEquals(2, bf.cardinality());
+    }
+
+    @Test
+    public void testCardinalityHundred() {
+        for (int i = 0; i < 100; ++i) {
+            bf.add(Integer.toString(i));
+        }
+        assertEquals(100, bf.cardinality());
+    }
+
+    @Test
     public void testGetFalsePositiveProbability() {
         // These probabilities are taken from the bloom filter probability table at
         // http://pages.cs.wisc.edu/~cao/papers/summary-cache/node8.html
@@ -204,7 +225,7 @@ public class BloomFilterTest {
 
         instance = new BloomFilter(1, 7);
         assertEquals(5, instance.getHashCount());
-        
+
         /*
          * Although technically 8*ln(2) = 5.545...
          * we round down here for speed
