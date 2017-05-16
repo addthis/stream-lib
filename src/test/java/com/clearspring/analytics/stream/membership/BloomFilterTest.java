@@ -85,6 +85,54 @@ public class BloomFilterTest {
     }
 
     @Test
+    public void testIntersectInPlace() {
+        BloomFilter bf3 = new BloomFilter(ELEMENTS, spec.bucketsPerElement);
+        for (int i = 0; i < 20; ++i) {
+            bf.add(Integer.toString(i));
+        }
+        for (int i = 10; i < 30; ++i) {
+            bf2.add(Integer.toString(i));
+        }
+        for (int i = 10; i < 20; ++i) {
+            bf3.add(Integer.toString(i));
+        }
+        bf.intersectInPlace(bf2);
+        for (int i = 0; i < 30; ++i) {
+            String iString = Integer.toString(i);
+            if (bf3.isPresent(iString)) {
+                assertTrue(bf.isPresent(iString));
+            } else {
+                assertFalse(bf.isPresent(iString));
+            }
+        }
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testIntersectInPlaceException() {
+        BloomFilter bf3 = new BloomFilter(ELEMENTS*10, 1);
+        bf3.intersectInPlace(bf);
+    }
+
+    @Test
+    public void testIntersect() {
+        for (int i = 0; i < 20; ++i) {
+            bf.add(Integer.toString(i));
+        }
+        for (int i = 10; i < 30; ++i) {
+            bf2.add(Integer.toString(i));
+        }
+        BloomFilter bf3 = bf.intersect(bf2);
+        for (int i = 0; i < 30; ++i) {
+            String iString = Integer.toString(i);
+            if (bf.isPresent(iString) && bf2.isPresent(iString)) {
+                assertTrue(bf3.isPresent(iString));
+            } else {
+                assertFalse(bf3.isPresent(iString));
+            }
+        }
+    }
+
+    @Test
     public void testFalsePositivesInt() {
         FilterTest.testFalsePositives(bf, FilterTest.intKeys(), FilterTest.randomKeys2());
     }

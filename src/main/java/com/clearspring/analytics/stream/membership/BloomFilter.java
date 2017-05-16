@@ -144,6 +144,27 @@ public class BloomFilter extends Filter {
         return merged;
     }
 
+    public void intersectInPlace(BloomFilter other) {
+        if (this.getHashCount() != other.getHashCount()) {
+            throw new IllegalArgumentException("Cannot intersect filters of different sizes");
+        }
+        this.filter().and(other.filter());
+    }
+
+    public BloomFilter intersect(BloomFilter... filters) {
+        BloomFilter intersected = new BloomFilter(this.getHashCount(), (BitSet) this.filter().clone());
+
+        if (filters == null) {
+            return intersected;
+        }
+
+        for (BloomFilter filter : filters) {
+            intersected.intersectInPlace(filter);
+        }
+
+        return intersected;
+    }
+
     /**
      * @return a BloomFilter that always returns a positive match, for testing
      */
