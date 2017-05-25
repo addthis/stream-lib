@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/addthis/stream-lib.svg?branch=master)](https://travis-ci.org/addthis/stream-lib)
+
 ## Description
 
 A Java library for summarizing data in streams for which it is
