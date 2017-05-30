@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/addthis/stream-lib.svg?branch=master)](https://travis-ci.org/addthis/stream-lib)
+
 ## Description
 
 A Java library for summarizing data in streams for which it is
@@ -18,7 +20,7 @@ others.  Please read the [Sources](#Sources) and
 
 ## Examples
 
-    $ echo -e "foo\nfoo\nbar" | ./bin/topk 
+    $ echo -e "foo\nfoo\nbar" | ./bin/topk
     item count error
     ---- ----- -----
      foo     2     0
@@ -27,19 +29,19 @@ others.  Please read the [Sources](#Sources) and
     Item count: 3
 
     
-    $ echo -e "foo\nfoo\nbar" | ./bin/cardinality 
+    $ echo -e "foo\nfoo\nbar" | ./bin/cardinality
     Item Count Cardinality Estimate
     ---------- --------------------
              3                    2
 
 
-## Maven Artifact
+## Maven Artifact [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.clearspring.analytics/stream/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.clearspring.analytics/stream)
 
 ``` xml
 <dependency>
   <groupId>com.clearspring.analytics</groupId>
   <artifactId>stream</artifactId>
-  <version>2.7.0</version>
+  <version>2.9.5</version>
 </dependency>
 ```
 
@@ -49,7 +51,7 @@ Assuming you have [Apache Maven](http://maven.apache.org/) installed
 and configured:
 
     mvn package
-   
+
 And you should be all set.
 
 ## Where People Hang Out
@@ -104,9 +106,9 @@ items in data streams. In ICALP ’02: Proceedings of the 29th
 International Colloquium on Automata, Languages and Programming,
 pages 693–703, London, UK, 2002. Springer-Verlag.
 
- * Stefan Heule, Marc Nunkesser, Alex Hall.  HyperLogLog in Practice: 
-Algorithmic Engineering of a State of The Art Cardinality Estimation 
-Algorithm.  Proceedings of the EDBT 2013 Conference, ACM, Genoa, Italy 
+ * Stefan Heule, Marc Nunkesser, Alex Hall.  HyperLogLog in Practice:
+Algorithmic Engineering of a State of The Art Cardinality Estimation
+Algorithm.  Proceedings of the EDBT 2013 Conference, ACM, Genoa, Italy
 
 
 #### Top-K
@@ -133,4 +135,3 @@ http://link.springer.com/chapter/10.1007/978-3-540-30570-5_27
  * Graham Cormode and S. Muthukrishnan. An improved data stream
 summary: The Count-Min sketch and its applications. 2004. 10.1016/j.jalgor.2003.12.001
 http://dl.acm.org/citation.cfm?id=1073718
-
