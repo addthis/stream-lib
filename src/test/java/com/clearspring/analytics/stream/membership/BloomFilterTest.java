@@ -55,6 +55,7 @@ public class BloomFilterTest {
     @Before
     public void clear() {
         bf.clear();
+        bf2.clear();
     }
 
     @Test
