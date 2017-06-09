@@ -76,6 +76,18 @@ public class BloomFilterTest {
         assertTrue(mergeBf.isPresent("c"));
     }
 
+    @Test
+    public void testIntersect() {
+        bf.add("a");
+        bf.add("b");
+        bf2.add("a");
+        bf2.add("c");
+        BloomFilter intersectionBf = (BloomFilter) bf.intersect(bf2);
+        assertTrue(intersectionBf.isPresent("a"));
+        assertFalse(intersectionBf.isPresent("b"));
+        assertFalse(intersectionBf.isPresent("c"));
+    }
+
     @Test(expected=IllegalArgumentException.class)
     public void testMergeException() {
         BloomFilter bf3 = new BloomFilter(ELEMENTS*10, 1);
