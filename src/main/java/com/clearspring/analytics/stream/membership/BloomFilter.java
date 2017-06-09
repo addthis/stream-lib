@@ -153,7 +153,7 @@ public class BloomFilter extends Filter {
         BitSet intersection = (BitSet) this.filter().clone();
         BloomFilter intersectionBloomFilter = new BloomFilter(this.getHashCount(), intersection);
         for (Filter otherFilter : filters) {
-            if (!(otherFilter instanceof BloomFilter || this.hashCount != otherFilter.hashCount)) {
+            if (!(otherFilter instanceof BloomFilter) || this.hashCount != otherFilter.hashCount) {
                 throw new IllegalArgumentException(("Cannot merge filters of different class or size"));
             }
             intersection.and(((BloomFilter) otherFilter).filter());
