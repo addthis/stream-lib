@@ -49,7 +49,7 @@ import com.clearspring.analytics.util.IBuilder;
  * This implementation implements a single counter.  If a large (millions)
  * number of counters are required you may want to refer to:
  * <p/>
- * http://dsiutils.dsi.unimi.it/
+ * http://dsiutils.di.unimi.it/
  * <p/>
  * It has a more complex implementation of HLL that supports multiple counters
  * in a single object, drastically reducing the java overhead from creating

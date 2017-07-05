@@ -52,4 +52,22 @@ public class TestMurmurHash {
         assertEquals("MurmurHash.hash64(Object) given a byte[] did not match MurmurHash.hash64(String)",
                      hashOfString, MurmurHash.hash64(bytesAsObject));
     }
+
+    // test the returned valued of hash functions against the reference implementation: https://github.com/aappleby/smhasher.git
+
+    @Test
+    public void testHash64() throws Exception {
+        final long actualHash = MurmurHash.hash64("hashthis");
+        final long expectedHash = -8896273065425798843L;
+
+        assertEquals("MurmurHash.hash64(String) returns wrong hash value", expectedHash, actualHash);
+    }
+
+    @Test
+    public void testHash() throws Exception {
+        final long actualHash = MurmurHash.hash("hashthis");
+        final long expectedHash = -1974946086L;
+
+        assertEquals("MurmurHash.hash(String) returns wrong hash value", expectedHash, actualHash);
+    }
 }
