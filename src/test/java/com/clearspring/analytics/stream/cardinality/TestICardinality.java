@@ -70,7 +70,7 @@ public class TestICardinality {
 
     static int se = 0;
 
-    protected static Object streamElement(int i) {
+    public static Object streamElement(int i) {
         return Long.toHexString(prng.nextLong());
         //return se++;
     }
