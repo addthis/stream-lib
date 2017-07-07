@@ -145,6 +145,23 @@ public class BloomFilter extends Filter {
     }
 
     /**
+     * Intersect a Bloom Filter with a number of other bloom filters.
+     * @param filters
+     * @return a new Bloom Filter that has each filter bit set if and only if all the input bloom filters had that bit set
+     */
+    public Filter intersect(Filter... filters) {
+        BitSet intersection = (BitSet) this.filter().clone();
+        BloomFilter intersectionBloomFilter = new BloomFilter(this.getHashCount(), intersection);
+        for (Filter otherFilter : filters) {
+            if (!(otherFilter instanceof BloomFilter) || this.hashCount != otherFilter.hashCount) {
+                throw new IllegalArgumentException(("Cannot merge filters of different class or size"));
+            }
+            intersection.and(((BloomFilter) otherFilter).filter());
+        }
+        return intersectionBloomFilter;
+    }
+
+    /**
      * @return a BloomFilter that always returns a positive match, for testing
      */
     public static BloomFilter alwaysMatchingBloomFilter() {
