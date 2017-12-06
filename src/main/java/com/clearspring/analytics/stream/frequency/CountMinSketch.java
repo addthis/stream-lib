@@ -163,6 +163,14 @@ public class CountMinSketch implements IFrequency, Serializable {
         return confidence;
     }
 
+    public int getDepth() {
+        return depth;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
     int hash(long item, int i) {
         long hash = hashA[i] * item;
         // A super fast way of computing x mod 2^p-1
