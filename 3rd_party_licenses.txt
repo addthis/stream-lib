@@ -1,0 +1,114 @@
+
+ LICENSES FOR THIRD-PARTY COMPONENTS 
+
+===============================================================================
+   
+The following sections list licensing information for
+libraries included with the stream-lib source and components
+used to test stream-lib. 
+
+The following software may be included in this product:
+
+===============================================================================
+
+        Fastutil » 8.1.1
+
+Fastutil » 8.1.1 uses the Apache 2.0 license, shown below. See the License for details about distribution rights, and the specific rights regarding derivate works.
+
+http://www.apache.org/licenses/LICENSE-2.0.txt
+
+--------------------------------------------------------------------------- 
+
+        JUnit
+
+  
+
+JUnit » 4.12 uses Eclipse Public License - Version 1.0, shown below. See the License for details about distribution rights, and the specific rights regarding derivate works. 
+
+
+http://www.eclipse.org/org/documents/epl-v10.php
+
+
+--------------------------------------------------------------------------- 
+
+
+        SLF4J Simple Binding 
+
+        SLF4J API Module 
+
+ Copyright (c) 2004-2007 QOS.ch
+
+SLF4J Simple Binding 1.7.25 and SLF4J API Module 1.7.25 use MIT license, shown below. See the License for details about distribution rights, and the specific rights regarding derivate works. 
+
+
+https://opensource.org/licenses/mit-license.php
+
+--------------------------------------------------------------------------- 
+
+        Colt » 1.2.0
+
+Packages cern.colt* , cern.jet*, cern.clhep
+
+Copyright (c) 1999 CERN - European Organization for Nuclear Research.
+Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation. CERN makes no representations about the suitability of this software for any purpose. It is provided "as is" without expressed or implied warranty.
+
+Packages hep.aida.*
+
+Written by Pavel Binko, Dino Ferrero Merlino, Wolfgang Hoschek, Tony Johnson, Andreas Pfeiffer, and others. Check the FreeHEP home page for more info. Permission to use and/or redistribute this work is granted under the terms of the LGPL License, with the exception that any usage related to military applications is expressly forbidden. The software and documentation made available under the terms of this license are provided with no warranty.
+
+--------------------------------------------------------------------------- 
+
+        Charts4j » 1.3
+
+https://github.com/julienchastang/charts4j/blob/master/LICENSE.txt
+
+/**
+ *
+ * The MIT License
+ *
+ * Copyright (c) 2011 the original author or authors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+ --------------------------------------------------------------------------- 
+
+        Apache Commons Codec » 1.11
+
+
+Apache 2.0 license, shown below. See the License for details about distribution rights, and the specific rights regarding derivate works. 
+
+https://www.apache.org/licenses/LICENSE-2.0.txt
+
+---------------------------------------------------------------------------
+
+        Guava: Google Core Libraries For Java
+
+Guava: Google Core Libraries For Java » 24.1-jre uses the Apache 2.0 license, shown below. See the License for details about distribution rights, and the specific rights regarding derivate works.
+
+http://www.apache.org/licenses/LICENSE-2.0.txt
+
+--------------------------------------------------------------------------- 
+
+        Mahout Math » 0.13.0
+
+Mahout Math » 0.13.0 uses the Apache 2.0 license, shown below. See the License for details about distribution rights, and the specific rights regarding derivate works.
+
+
+https://github.com/apache/mahout/blob/master/LICENSE.txt
