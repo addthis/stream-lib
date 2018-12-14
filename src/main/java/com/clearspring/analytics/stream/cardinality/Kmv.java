@@ -1,10 +1,14 @@
 package com.clearspring.analytics.stream.cardinality;
 
+import com.clearspring.analytics.util.IBuilder;
+import com.yahoo.memory.Memory;
 import com.yahoo.sketches.theta.Intersection;
 import com.yahoo.sketches.theta.Sketch;
+import com.yahoo.sketches.theta.Sketches;
 import com.yahoo.sketches.theta.Union;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 public abstract class Kmv implements ICardinality {
 
@@ -58,6 +62,8 @@ public abstract class Kmv implements ICardinality {
         intersection.update(this.sketch);
         return new NonUpdateableKmv(intersection.getResult());
     }
+
+
 
     protected static class KmvMergeException extends CardinalityMergeException {
 
