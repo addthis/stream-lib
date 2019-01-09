@@ -195,6 +195,7 @@ public class HyperLogLog implements ICardinality, Serializable {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput dos = new DataOutputStream(baos);
         writeBytes(dos);
+        baos.close();
 
         return baos.toByteArray();
     }
