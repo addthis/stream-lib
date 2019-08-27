@@ -740,6 +740,7 @@ public class HyperLogLogPlus implements ICardinality, Serializable {
                 }
                 break;
         }
+        dos.close();
 
         return baos.toByteArray();
     }

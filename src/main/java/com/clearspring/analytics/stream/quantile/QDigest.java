@@ -332,6 +332,7 @@ public class QDigest implements IQuantileEstimator {
                 s.writeLong(k);
                 s.writeLong(d.node2count.get(k));
             }
+            s.close();
             return bos.toByteArray();
         } catch (IOException e) {
             // Should never happen
