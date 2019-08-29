@@ -83,6 +83,12 @@ public class BloomFilter extends Filter {
         return true;
     }
 
+    public long cardinality() {
+        int m = buckets();
+        double fractionOfBits = ((double) filter_.cardinality()) / m;
+        return Math.round(-m * Math.log1p(-fractionOfBits) / hashCount);
+    }
+
     /*
      @param key -- value whose hash is used to fill
      the filter_.
