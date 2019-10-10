@@ -57,6 +57,7 @@ public class RegisterSet {
     }
 
     public void set(int position, int value) {
+        value = value & 0x1F; //make sure value would not longger than REGISTER_SIZE
         int bucketPos = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucketPos * LOG2_BITS_PER_WORD));
         this.M[bucketPos] = (this.M[bucketPos] & ~(0x1f << shift)) | (value << shift);
@@ -69,6 +70,7 @@ public class RegisterSet {
     }
 
     public boolean updateIfGreater(int position, int value) {
+        value = value & 0x1F; //make sure value would not longger than REGISTER_SIZE
         int bucket = position / LOG2_BITS_PER_WORD;
         int shift = REGISTER_SIZE * (position - (bucket * LOG2_BITS_PER_WORD));
         int mask = 0x1f << shift;

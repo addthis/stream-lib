@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import com.clearspring.analytics.TestUtils;
 import com.clearspring.analytics.stream.membership.KeyGenerator.RandomStringGenerator;
 
 import org.junit.Before;
@@ -56,7 +57,15 @@ public class BloomFilterTest {
     public void clear() {
         bf.clear();
     }
-
+    @Test
+    public void testCardinality(){
+        Random r = new Random();
+        for(int i =0;i<7799;i++){
+            String str = Integer.toHexString(r.nextInt());
+            bf.add(str);
+        }
+        System.out.println(bf.getCardinality());
+    }
     @Test
     public void testOne() {
         bf.add("a");

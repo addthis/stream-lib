@@ -178,6 +178,17 @@ public class BloomFilter extends Filter {
 
         return filter;
     }
+    /**
+     * this method return the cardinality estimation of current bloom filter
+     * base on article "cardinality estimation for dynamic bloomfilter"
+     * */
+    public long getCardinality(){
+        int nhash = this.getHashCount();
+        int mbits = this.buckets();
+
+        int bitsUsed = this.buckets() - this.emptyBuckets();
+        return Math.round(1.0/nhash * Math.log(1.0-1.0*bitsUsed/mbits)/Math.log(1-1.0/mbits));
+    }
 }
 
 class BloomFilterSerializer implements ICompactSerializer<BloomFilter> {

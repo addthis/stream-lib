@@ -28,7 +28,14 @@ public class RegisterSetTest {
     public void testGetAndSet() throws Exception {
         RegisterSet rs = new RegisterSet((int) Math.pow(2, 4));
         rs.set(0, 11);
+        rs.set(1, 11);
+        rs.set(2, 11);
         assertEquals(11, rs.get(0));
+        assertEquals(11, rs.get(1));
+        assertEquals(11, rs.get(2));
+        rs.set(0, 0xFF);
+        assertEquals(11, rs.get(1));
+        assertEquals(11, rs.get(2));
     }
 
     @Test
