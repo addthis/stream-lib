@@ -110,6 +110,9 @@ pages 693–703, London, UK, 2002. Springer-Verlag.
 Algorithmic Engineering of a State of The Art Cardinality Estimation
 Algorithm.  Proceedings of the EDBT 2013 Conference, ACM, Genoa, Italy
 
+* Ahmed Helmi, Jerémie Lumbroso, Conrado Martínez and Alfredo Viola. Data Streams as Random Permutations:
+the Distinct Element Problem. 22nd International Meeting on Probabilistic, Combinatorial, and
+Asymptotic Methods in the Analysis of Algorithms (AofA'12), 2012, Montreal, Canada.
 
 #### Top-K
 
