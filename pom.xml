@@ -46,6 +46,12 @@
       <artifactId>fastutil</artifactId>
     </dependency>
 
+      <dependency>
+          <groupId>com.yahoo.datasketches</groupId>
+          <artifactId>sketches-core</artifactId>
+          <version>0.12.0</version>
+      </dependency>
+
     <!-- Test -->
     <dependency>
       <groupId>junit</groupId>

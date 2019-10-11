@@ -16,6 +16,8 @@
 
 package com.clearspring.analytics.stream.cardinality;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import java.io.IOException;
 
 
@@ -69,4 +71,8 @@ public interface ICardinality {
      * @throws CardinalityMergeException If at least one of the estimators is not compatible with this one
      */
     ICardinality merge(ICardinality... estimators) throws CardinalityMergeException;
+
+    default ICardinality intersect(ICardinality... estimators) throws CardinalityMergeException{
+        throw new NotImplementedException();
+    }
 }
