@@ -1,5 +1,8 @@
 package com.clearspring.analytics.hash;
 
+import java.nio.charset.Charset;
+
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -45,7 +48,7 @@ public class MurmurHash {
             return hashLong(Float.floatToRawIntBits((Float) o));
         }
         if (o instanceof String) {
-            return hash(((String) o).getBytes());
+            return hash(((String) o).getBytes(Charset.forName("UTF8")));
         }
         if (o instanceof byte[]) {
             return hash((byte[]) o);
@@ -136,7 +139,7 @@ public class MurmurHash {
         if (o == null) {
             return 0l;
         } else if (o instanceof String) {
-            final byte[] bytes = ((String) o).getBytes();
+            final byte[] bytes = ((String) o).getBytes(Charset.forName("UTF8"));
             return hash64(bytes, bytes.length);
         } else if (o instanceof byte[]) {
             final byte[] bytes = (byte[]) o;
