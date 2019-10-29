@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import java.nio.ByteBuffer;
 
@@ -476,11 +476,11 @@ public class TDigest {
 
     public static class Group implements Comparable<Group> {
 
-        private static final AtomicInteger uniqueCount = new AtomicInteger(1);
+        private static final AtomicLong uniqueCount = new AtomicLong(1);
 
         private double centroid = 0;
         private int count = 0;
-        private int id;
+        private long id;
 
         private List<Double> actualData = null;
 
@@ -493,7 +493,7 @@ public class TDigest {
 
         public Group(double x) {
             this(false);
-            start(x, uniqueCount.getAndIncrement());
+            start(x, uniqueCount.incrementAndGet());
         }
 
         public Group(double x, int id) {
@@ -506,7 +506,7 @@ public class TDigest {
             start(x, id);
         }
 
-        private void start(double x, int id) {
+        private void start(double x, long id) {
             this.id = id;
             add(x, 1);
         }
@@ -527,7 +527,7 @@ public class TDigest {
             return count;
         }
 
-        public int id() {
+        public long id() {
             return id;
         }
 
@@ -541,14 +541,14 @@ public class TDigest {
 
         @Override
         public int hashCode() {
-            return id;
+            return Long.hashCode(id);
         }
 
         @Override
         public int compareTo(Group o) {
             int r = Double.compare(centroid, o.centroid);
             if (r == 0) {
-                r = id - o.id;
+                r = Long.compare(id, o.id);
             }
             return r;
         }
