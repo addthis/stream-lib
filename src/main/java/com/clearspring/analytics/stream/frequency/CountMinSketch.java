@@ -308,6 +308,7 @@ public class CountMinSketch implements IFrequency, Serializable {
                     s.writeLong(sketch.table[i][j]);
                 }
             }
+            s.close();
             return bos.toByteArray();
         } catch (IOException e) {
             // Shouldn't happen

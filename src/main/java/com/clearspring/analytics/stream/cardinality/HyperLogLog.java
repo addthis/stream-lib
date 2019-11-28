@@ -102,6 +102,14 @@ public class HyperLogLog implements ICardinality, Serializable {
         return 1.106 / Math.sqrt(Math.exp(log2m * Math.log(2)));
     }
 
+    private static double logBase(double exponent, double base) {
+        return Math.log(exponent) / Math.log(base);
+    }
+
+    private static int accuracyToLog2m(double accuracy) {
+        return Math.toIntExact(2 * Math.round(logBase(1.04 / (1 - accuracy), 2)));
+    }
+
     private static void validateLog2m(int log2m) {
         if (log2m < 0 || log2m > 30) {
             throw new IllegalArgumentException("log2m argument is "
@@ -113,7 +121,7 @@ public class HyperLogLog implements ICardinality, Serializable {
      * Create a new HyperLogLog instance.  The log2m parameter defines the accuracy of
      * the counter.  The larger the log2m the better the accuracy.
      * <p/>
-     * accuracy = 1.04/sqrt(2^log2m)
+     * accuracy = 1 - 1.04/sqrt(2^log2m)
      *
      * @param log2m - the number of bits to use as the basis for the HLL instance
      */
@@ -195,6 +203,7 @@ public class HyperLogLog implements ICardinality, Serializable {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput dos = new DataOutputStream(baos);
         writeBytes(dos);
+        baos.close();
 
         return baos.toByteArray();
     }
@@ -343,6 +352,8 @@ public class HyperLogLog implements ICardinality, Serializable {
         public static Builder withRsd(double rsd) {
             return new Builder(rsd);
         }
+
+        public static Builder withAccuracy(double accuracy) { return new Builder(accuracyToLog2m(accuracy)); }
 
         public static HyperLogLog build(byte[] bytes) throws IOException {
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);

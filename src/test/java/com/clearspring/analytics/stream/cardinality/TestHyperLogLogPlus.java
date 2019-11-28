@@ -402,6 +402,7 @@ public class TestHyperLogLogPlus {
             dos.writeInt(x);
         }
 
+        dos.close();
         byte[] legacyBytes = baos.toByteArray();
 
         // decode legacy
@@ -443,6 +444,7 @@ public class TestHyperLogLogPlus {
             dos.write(bytes);
         }
         dos.writeInt(-1);
+        dos.close();
 
         byte[] legacyBytes = baos.toByteArray();
 
